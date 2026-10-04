@@ -114,7 +114,7 @@ community can review them.
 | Language    | Version                                   | Embedded via                       | Notes |
 |-------------|-------------------------------------------|------------------------------------|-------|
 | TeaScript   | HEAD (0.18.0 pre-release); pinned to 0.18.0 after its release | native API | header-only |
-| ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018 |
+| ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library |
 | Lua         | 5.5.1                                     | LuaBridge3                         | compiled library |
 | Python      | 3.15.0 (final due 2026-10-09) or 3.14.x   | pybind11 3.1 (embedded interpreter) | prebuilt DLL |
@@ -204,6 +204,8 @@ Costs the host application pays for embedding, measured by the harness:
 - [x] **Phase 1a:** project setup: CMake with MSVC/GCC presets, harness, C++ reference, TeaScript
       runner with variants, `fib_recursive`.
 - [x] **Phase 1b:** ChaiScript runners (default and no-threads); `loop` and `mandelbrot` benchmarks.
+- [ ] **Phase 1c (next):** apply the decisions of 2026-10-04: series over n (`fib_recursive`:
+      15 / 20 / 25), time budget for slow runs, ChaiScript `no-threads` as headline (README, report).
 - [ ] **Phase 2:** Lua (LuaBridge3) and AngelScript runners.
 - [ ] **Phase 3:** Python (pybind11) runner.
 - [ ] **Phase 4:** the full discipline catalogue, including interop and host API.
@@ -227,6 +229,11 @@ Costs the host application pays for embedding, measured by the harness:
 - ChaiScript scripts use the value of the last expression instead of `return`, because ChaiScript
   implements `return` with a C++ exception (see `benchmarks/fib_recursive/README.md`). This gives
   ChaiScript its best case, and matches the TeaScript scripts.
+- ChaiScript headline: the `no-threads` build, the closer match to TeaScript's single-threaded
+  engine. The default (thread-safe) build stays available and is reported as a variant.
+- `fib_recursive` is reported as a series over n (e.g. 15 / 20 / 25) instead of one default n,
+  which makes ChaiScript's quadratic cost per call visible.
+- Slow runs get a time budget: stop measuring after a configurable time, with at least 3 samples.
 
 ## 10. Open questions
 
@@ -234,12 +241,8 @@ Costs the host application pays for embedding, measured by the harness:
   TeaScript needs fmt there (`CSB_FMT_DIR`), because GCC < 13 has no `std::format`.
   WSL still needs CMake (`sudo apt install cmake`; Ubuntu 22.04 ships 3.22.1, which is enough).
 - Python: 3.15.0 or 3.14.x as the first version?
-- ChaiScript headline: the default (thread-safe) build, or `no-threads`? TeaScript's engine is
-  single-threaded by design, so `no-threads` is the closer match; the default is what users get.
-- `fib_recursive` default n: ChaiScript's cost per call grows with the number of calls within one
-  host call (quadratic, see `benchmarks/fib_recursive/README.md`). With n = 25 one ChaiScript call
-  takes ~18 s, with n = 20 ~0.15 s; the ratio to other languages depends strongly on n. Keep 25
-  (as in the earlier published benchmark), lower it, or report a scaling series (e.g. 15/20/25)?
-- Slow runs: add a time budget (e.g. stop measuring after N seconds, with at least 3 samples)?
+- Series (e.g. for `fib_recursive`): how to define them (per benchmark in the registry, or on the
+  command line), and how to show them in the report?
+- Time budget: the default budget per benchmark?
 - Process priority and CPU pinning for less noise?
 - Format of the published results: Markdown tables, charts, a web page?
