@@ -1,0 +1,11 @@
+# build output (see CMakePresets.json)
+/build/
+/out/
+
+# user specific CMake presets with local library paths
+CMakeUserPresets.json
+
+# IDEs
+.vs/
+.vscode/
+*.user
