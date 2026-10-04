@@ -9,6 +9,8 @@
 namespace csb::reference {
 
 std::int64_t fib_recursive( std::int64_t n );
+std::int64_t loop( std::int64_t n );
+std::int64_t mandelbrot( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -19,6 +21,8 @@ std::span<BenchmarkInfo const> all_benchmarks()
 {
     static constexpr BenchmarkInfo list[] = {
         { "fib_recursive", "core", "Recursive Fibonacci: function call and recursion overhead", 25, &reference::fib_recursive },
+        { "loop",          "core", "Counting loop with a minimal body", 1'000'000, &reference::loop },
+        { "mandelbrot",    "core", "Mandelbrot set: floating point arithmetic in nested loops", 100, &reference::mandelbrot },
     };
     return list;
 }

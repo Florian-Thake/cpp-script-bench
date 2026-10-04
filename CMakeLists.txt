@@ -35,6 +35,9 @@ set( CSB_TEASCRIPT_DIR "" CACHE PATH "Root of the TeaScript C++ Library (the dir
 set( CSB_TEASCRIPT_DEFAULT_VARIANT "vm-O1" CACHE STRING "TeaScript variant used when no --variant is given" )
 set_property( CACHE CSB_TEASCRIPT_DEFAULT_VARIANT PROPERTY STRINGS vm-O0 vm-O1 vm-O2 ast )
 
+option( CSB_WITH_CHAISCRIPT "Build the ChaiScript runners (needs CSB_CHAISCRIPT_DIR)" OFF )
+set( CSB_CHAISCRIPT_DIR "" CACHE PATH "Root of ChaiScript (the directory containing include/chaiscript); use the develop branch" )
+
 
 csb_git_describe( "${CMAKE_CURRENT_SOURCE_DIR}" CSB_GIT_VERSION )
 message( STATUS "cpp-script-bench ${PROJECT_VERSION} (${CSB_GIT_VERSION}), arch: ${CSB_ARCH}" )

@@ -6,8 +6,8 @@ Each benchmark discipline has an equivalent script for every language. A small C
 through the language's own C++ embedding API and does all the measuring. Only CPU and RAM work is
 measured, no IO.
 
-> **Status:** early development. The harness, the C++ reference and the TeaScript runner work, with
-> one benchmark so far. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> **Status:** early development. The harness and the C++, TeaScript and ChaiScript runners work,
+> with the first core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
 
 ## Languages
 
@@ -15,7 +15,7 @@ measured, no IO.
 |-------------|----------------------------|-----------|
 | C++         | native reference           | available |
 | TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval) |
-| ChaiScript  | native C++ API             | planned   |
+| ChaiScript  | native C++ API             | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`) |
 | AngelScript | native C++ API + add-ons   | planned   |
 | Lua         | LuaBridge3                 | planned   |
 | Python      | pybind11 (embedded)        | planned   |
@@ -74,11 +74,13 @@ On Linux, inherit from the `gcc` preset instead (Ninja, Release).
 | `CSB_TEASCRIPT_DIR`             | root of the TeaScript C++ Library (contains `include/teascript`) |
 | `CSB_TEASCRIPT_DEFAULT_VARIANT` | variant used when no `--variant` is given (default `vm-O1`) |
 | `CSB_FMT_DIR`                   | optional: root of the fmt library, used by TeaScript (needed for GCC < 13, which has no `std::format`) |
+| `CSB_WITH_CHAISCRIPT`           | build the ChaiScript runners `csb_chaiscript` and `csb_chaiscript_nothreads` |
+| `CSB_CHAISCRIPT_DIR`            | root of ChaiScript (contains `include/chaiscript`); use the `develop` branch |
 | `CSB_ARCH`                      | `x86-64-v3` (AVX2, default) or `default` |
 
 ## Running
 
-There is one runner executable per language: `csb_cpp`, `csb_teascript`, ...
+There is one runner executable per language: `csb_cpp`, `csb_teascript`, `csb_chaiscript`, ...
 
 ```
 csb_teascript --list                        # benchmarks and variants

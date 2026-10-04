@@ -146,9 +146,9 @@ Options parse_options( int const argc, char *argv[], LanguageEntry const &langua
     return opt;
 }
 
-void print_usage( LanguageEntry const &language )
+void print_usage( char const *const argv0, LanguageEntry const &language )
 {
-    std::printf( "Usage: csb_%s [options]\n\n", language.id.c_str() );
+    std::printf( "Usage: %s [options]\n\n", std::filesystem::path( argv0 ).stem().string().c_str() );
     std::printf( "  --list               list the benchmarks and variants, then exit\n" );
     std::printf( "  --bench <a,b,...>    run only these benchmarks (default: all)\n" );
     std::printf( "  --variant <v,...>    variants to run, or 'all' (default: %s)\n", language.default_variant.empty() ? "the only one" : language.default_variant.c_str() );
@@ -317,12 +317,12 @@ int run_main( int const argc, char *argv[], LanguageEntry const &language, std::
         opt = parse_options( argc, argv, language, benchmarks );
     } catch( std::exception const &ex ) {
         std::fprintf( stderr, "%s\n\n", ex.what() );
-        print_usage( language );
+        print_usage( argv[0], language );
         return 2;
     }
 
     if( opt.help ) {
-        print_usage( language );
+        print_usage( argv[0], language );
         return 0;
     }
     if( opt.list ) {
