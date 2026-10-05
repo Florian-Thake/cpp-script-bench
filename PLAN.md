@@ -155,12 +155,14 @@ the exact git state. A library only moves forward when that is done on purpose.
 | Toolchain | Optimization            | Instruction set     |
 |-----------|-------------------------|---------------------|
 | MSVC 2022 | `/O2 /Ob2` (Release)    | `/arch:AVX2`        |
-| GCC       | `-O2`                   | `-march=x86-64-v3`  |
+| GCC 11    | `-O2`                   | `-march=x86-64-v3`  |
 
 - No LTO and no PGO for code built from source.
 - Results are only compared within one toolchain on one machine. MSVC and GCC numbers never appear
   in the same chart.
 - GCC is tested on WSL and on a Linux VPS.
+- GCC baseline: GCC 11 (11.4 on WSL Ubuntu 22.04). TeaScript needs fmt there (`CSB_FMT_DIR`),
+  because GCC < 13 has no `std::format`. GCC 13 may become the baseline later.
 
 ## 7. Disciplines
 
@@ -270,14 +272,12 @@ Costs the host application pays for embedding, measured by the harness:
   longer than about 2 s, and ChaiScript's fib(25) needs ~72 s with either budget, because of the
   3 measured calls.
 - Each runner marks its headline variant (console and JSON), independent of the default variant.
-- GCC: `-O2`.
+- GCC: `-O2`. Baseline is GCC 11 from WSL (Ubuntu 22.04), the simple choice for now; it may move
+  to GCC 13 later, which supports C++20 better.
 - Python: start with 3.14.x.
 
 ## 10. Open questions
 
-- GCC: which version as baseline? (`-O2` is decided.) GCC 11.4 (WSL Ubuntu 22.04) works, but
-  TeaScript needs fmt there (`CSB_FMT_DIR`), because GCC < 13 has no `std::format`.
-  WSL still needs CMake (`sudo apt install cmake`; Ubuntu 22.04 ships 3.22.1, which is enough).
 - Series: how to show them in the report (e.g. one row per n, or a chart over n)?
 - Process priority and CPU pinning for less noise?
 - Format of the published results: Markdown tables, charts, a web page?
