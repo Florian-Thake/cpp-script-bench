@@ -11,7 +11,9 @@
 
 #include <csb/runner.hpp>
 
+#include <teascript/ControlFlow.hpp>
 #include <teascript/Engine.hpp>
+#include <teascript/Exception.hpp>
 #include <teascript/Parser.hpp>
 #include <teascript/StackVMCompiler.hpp>
 #include <teascript/version.h>
@@ -61,6 +63,31 @@ double seconds_since( Clock::time_point const start )
     return std::chrono::duration<double>( Clock::now() - start ).count();
 }
 
+/// Builds a one-line message with the category and, if known, the source location of \param ex
+/// (like teascript::util::pretty_print(), which prints to stdout instead).
+std::string error_message( teascript::exception::runtime_error const &ex )
+{
+    std::string msg = std::string( ex.GetCategory() ) + " error";
+    if( ex.IsSourceLocSet() ) {
+        msg += " at line " + std::to_string( ex.GetLine() ) + ", column " + std::to_string( ex.GetColumn() );
+    }
+    return msg + ": " + ex.ErrorStr_or_What();
+}
+
+/// Runs \param func and converts TeaScript errors into std::runtime_error with a helpful message.
+template< typename F >
+auto translate_errors( F &&func ) -> decltype(func())
+{
+    try {
+        return func();
+    } catch( teascript::exception::runtime_error const &ex ) {
+        throw std::runtime_error( error_message( ex ) );
+    } catch( teascript::control::ControlBase const &ex ) {
+        // Only possible when the AST is evaluated directly. Engine::EvaluateContent() converts them the same way.
+        throw std::runtime_error( std::string( "a TeaScript control flow exception escaped: " ) + ex.what() );
+    }
+}
+
 
 class TeaScriptLanguage final : public csb::Language
 {
@@ -95,34 +122,38 @@ public:
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
     {
-        std::vector<csb::Phase> phases;
+        return translate_errors( [&]() {
+            std::vector<csb::Phase> phases;
 
-        auto start = Clock::now();
-        teascript::Parser  parser;
-        mAst = parser.Parse( teascript::Content( source.data(), source.size() ), std::string( info.name ) );
-        phases.push_back( { "parse", seconds_since( start ) } );
+            auto start = Clock::now();
+            teascript::Parser  parser;
+            mAst = parser.Parse( teascript::Content( source.data(), source.size() ), std::string( info.name ) );
+            phases.push_back( { "parse", seconds_since( start ) } );
 
-        if( mVariant.compile ) {
-            start = Clock::now();
-            teascript::StackVM::Compiler  compiler;
-            auto const program = compiler.Compile( mAst, mVariant.opt_level );
-            phases.push_back( { "compile", seconds_since( start ) } );
+            if( mVariant.compile ) {
+                start = Clock::now();
+                teascript::StackVM::Compiler  compiler;
+                auto const program = compiler.Compile( mAst, mVariant.opt_level );
+                phases.push_back( { "compile", seconds_since( start ) } );
 
-            start = Clock::now();
-            (void)mEngine->ExecuteProgram( program );
-            phases.push_back( { "top_level", seconds_since( start ) } );
-        } else {
-            start = Clock::now();
-            (void)mAst->Eval( mEngine->GetContext() );
-            phases.push_back( { "top_level", seconds_since( start ) } );
-        }
+                start = Clock::now();
+                (void)mEngine->ExecuteProgram( program );
+                phases.push_back( { "top_level", seconds_since( start ) } );
+            } else {
+                start = Clock::now();
+                (void)mAst->Eval( mEngine->GetContext() );
+                phases.push_back( { "top_level", seconds_since( start ) } );
+            }
 
-        return phases;
+            return phases;
+        } );
     }
 
     std::int64_t call_bench( std::int64_t const n ) override
     {
-        return mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) ).GetAsInteger();
+        return translate_errors( [&]() {
+            return mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) ).GetAsInteger();
+        } );
     }
 
     void destroy_engine() override
