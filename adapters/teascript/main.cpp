@@ -175,8 +175,9 @@ public:
 int main( int argc, char *argv[] )
 {
     csb::LanguageEntry entry;
-    entry.id              = "teascript";
-    entry.default_variant = CSB_TEASCRIPT_DEFAULT_VARIANT;
+    entry.id               = "teascript";
+    entry.default_variant  = CSB_TEASCRIPT_DEFAULT_VARIANT;
+    entry.headline_variant = "vm-O1";  // independent of the default variant, which can be changed with CMake
     for( auto const &variant : variants ) {
         entry.variants.emplace_back( variant.name );
     }

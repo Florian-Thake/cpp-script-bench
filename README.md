@@ -14,8 +14,8 @@ measured, no IO.
 | Language    | Embedded via               | Status    |
 |-------------|----------------------------|-----------|
 | C++         | native reference           | available |
-| TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval) |
-| ChaiScript  | native C++ API             | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`) |
+| TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval; headline: O1) |
+| ChaiScript  | native C++ API             | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
 | AngelScript | native C++ API + add-ons   | planned   |
 | Lua         | LuaBridge3                 | planned   |
 | Python      | pybind11 (embedded)        | planned   |
@@ -87,7 +87,17 @@ csb_teascript --list                        # benchmarks and variants
 csb_teascript                               # all benchmarks, default variant
 csb_teascript --variant all                 # TeaStackVM O0, O1, O2 and AST eval
 csb_teascript --bench fib_recursive --n 30 --runs 20 --json results.json
+csb_chaiscript_nothreads --budget 0         # no time budget, always 3 warm-up and 10 measured calls
 ```
+
+Some benchmarks run a series of workload sizes, e.g. `fib_recursive` with n = 15, 20 and 25. Each n
+is a separate row. `--n 20` or `--n 10,20` replaces the series.
+
+Slow runs are limited by a time budget (default 30 s for all calls of one benchmark and n). At least
+3 calls are always measured. The details are in [PLAN.md](PLAN.md#3-what-is-measured).
+
+Each language has one headline variant for the main comparison. The runners mark it with
+"(headline)".
 
 Columns in the output:
 
@@ -96,6 +106,7 @@ Columns in the output:
 | startup | creating the engine including its standard library |
 | load    | making the script runnable: parse, compile, run its top-level code |
 | first   | the very first call of `bench( n )` |
+| runs    | the number of measured calls; fewer than `--runs` if the time budget ended the run early, marked with "(time budget)" |
 | median, min, stddev | the measured calls of `bench( n )` after warm-up; the headline numbers |
 
 ## Layout

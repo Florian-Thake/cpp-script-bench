@@ -29,7 +29,9 @@ struct BenchResult
     std::vector<Phase>   load_phases;     ///< sub-phases of load(), if available
     double               first    = 0.0;  ///< the very first call of bench( n )
     double               teardown = 0.0;  ///< destroy_engine()
+    int                  warmup   = 0;    ///< the number of warm-up calls made
     std::vector<double>  samples;         ///< the measured calls of bench( n ) after warm-up
+    bool                 budget_limited = false;  ///< the time budget ended the warm-up or the measured calls early
 
     bool ok() const { return status == "ok"; }
 };
@@ -37,7 +39,8 @@ struct BenchResult
 struct VariantResult
 {
     std::string               variant;
-    std::vector<BenchResult>  benchmarks;
+    bool                      headline = false;  ///< the variant for the main comparison
+    std::vector<BenchResult>  benchmarks;        ///< one entry per benchmark and n
 };
 
 struct Report
@@ -47,8 +50,10 @@ struct Report
     std::string                 language_version;
     SystemInfo                  system;
     std::string                 timestamp;  ///< UTC, ISO 8601
-    int                         warmup = 0;
-    int                         runs   = 0;
+    int                         warmup   = 0;
+    int                         runs     = 0;
+    int                         budget   = 0;  ///< seconds, 0 == unlimited
+    int                         min_runs = 0;
     std::vector<VariantResult>  variants;
 };
 

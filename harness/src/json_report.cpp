@@ -63,6 +63,8 @@ void write_benchmark( BenchResult const &b, std::ostream &out )
         out << (b.load_phases.empty() ? "},\n" : " },\n");
         out << ind << "\"first_s\": " << num( b.first ) << ",\n";
         out << ind << "\"teardown_s\": " << num( b.teardown ) << ",\n";
+        out << ind << "\"warmup\": " << b.warmup << ",\n";
+        out << ind << "\"budget_limited\": " << (b.budget_limited ? "true" : "false") << ",\n";
 
         auto const s = compute_stats( b.samples );
         out << ind << "\"execute_s\": {\n";
@@ -98,12 +100,14 @@ void write_json( Report const &report, std::ostream &out )
     out << "    \"build_config\": " << str( report.system.build_config ) << ",\n";
     out << "    \"arch\": " << str( report.system.arch ) << "\n";
     out << "  },\n";
-    out << "  \"settings\": { \"warmup\": " << report.warmup << ", \"runs\": " << report.runs << " },\n";
+    out << "  \"settings\": { \"warmup\": " << report.warmup << ", \"runs\": " << report.runs << ", \"budget_s\": " << report.budget
+        << ", \"min_runs\": " << report.min_runs << " },\n";
     out << "  \"variants\": [\n";
     for( size_t v = 0; v < report.variants.size(); ++v ) {
         auto const &variant = report.variants[v];
         out << "    {\n";
         out << "      \"variant\": " << str( variant.variant ) << ",\n";
+        out << "      \"headline\": " << (variant.headline ? "true" : "false") << ",\n";
         out << "      \"benchmarks\": [\n";
         for( size_t b = 0; b < variant.benchmarks.size(); ++b ) {
             write_benchmark( variant.benchmarks[b], out );

@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 
@@ -16,11 +17,11 @@ namespace csb {
 /// verifying the script results.
 struct BenchmarkInfo
 {
-    std::string_view  name;         ///< directory and file base name below benchmarks/
-    std::string_view  group;        ///< discipline group, e.g. "core", "data", "interop", "host"
-    std::string_view  description;
-    std::int64_t      default_n;    ///< workload size passed to bench( n )
-    std::int64_t    (*reference)( std::int64_t n );  ///< C++ reference implementation, returns the expected checksum
+    std::string_view               name;         ///< directory and file base name below benchmarks/
+    std::string_view               group;        ///< discipline group, e.g. "core", "data", "interop", "host"
+    std::string_view               description;
+    std::span<std::int64_t const>  series;       ///< workload sizes passed to bench( n ), each one is a separate run; usually only one
+    std::int64_t                 (*reference)( std::int64_t n );  ///< C++ reference implementation, returns the expected checksum
 };
 
 

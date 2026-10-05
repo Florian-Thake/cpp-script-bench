@@ -30,13 +30,13 @@ build/msvc-local/adapters/<lang>/Release/csb_<lang>.exe --list
 wsl -e bash -lc "cd <repo path in WSL> && cmake --preset gcc-local && cmake --build --preset gcc-local-release"
 ```
 
-Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N`, `--warmup W`, `--runs R`,
-`--scripts dir`, `--json file`.
+Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--warmup W`, `--runs R`,
+`--budget S`, `--scripts dir`, `--json file`.
 
 - Only Release builds give meaningful numbers.
 - Never take timings while something else compiles or runs. WSL and Windows share the CPU.
-- ChaiScript's `fib_recursive` with n = 25 takes ~18 s per call. Limit runs with
-  `--bench`, `--runs` and `--warmup` when you only verify results.
+- ChaiScript's `fib_recursive` with n = 25 takes ~18 s per call, ~72 s per run even with the time
+  budget. Use `--n 20` (and `--bench`, `--runs`, `--warmup`) when you only verify results.
 - Verify every change with both toolchains (MSVC and GCC). Every result must be "ok", i.e. match
   the C++ reference checksum.
 
@@ -52,16 +52,17 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N`, `--warmup W
 
 ## Adding a benchmark
 
-1. `benchmarks/<name>/README.md`: task, pseudo code, default n, checksum, rules, notes per language.
+1. `benchmarks/<name>/README.md`: task, pseudo code, n (or a series of n), checksum, rules, notes per language.
 2. `benchmarks/<name>/reference.cpp`: `std::int64_t csb::reference::<name>( std::int64_t n )`.
 3. One script per language, defining `bench( n )` and returning the integer checksum.
-4. Register it in `benchmarks/registry.cpp` and add `reference.cpp` to `benchmarks/CMakeLists.txt`.
+4. Register it with its n (or series) in `benchmarks/registry.cpp` and add `reference.cpp` to
+   `benchmarks/CMakeLists.txt`.
 5. Update the discipline table in PLAN.md.
 
 ## Adding a language
 
 1. `adapters/<lang>/CMakeLists.txt` and `main.cpp`: implement `csb::Language`, and provide a
-   `csb::LanguageEntry` with its variants.
+   `csb::LanguageEntry` with its variants and its headline variant.
 2. Add `CSB_WITH_<LANG>` and `CSB_<LANG>_DIR` to the top-level `CMakeLists.txt`, and the
    subdirectory to `adapters/CMakeLists.txt`.
 3. Libraries built from source (Lua, AngelScript) must use `csb_apply_compiler_options()` too.

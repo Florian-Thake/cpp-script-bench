@@ -11,7 +11,7 @@ fib( x ) = x                        if x < 2
 fib( x ) = fib( x - 1 ) + fib( x - 2 )  otherwise
 ```
 
-- Default `n`: 25. The checksum is `fib( n )` (75025 for n = 25).
+- Series: n = 15, 20 and 25. The checksum is `fib( n )`: 610, 6765 and 75025.
 - All values fit into 32 bit signed integers for n <= 46.
 
 ## Rules
@@ -32,4 +32,4 @@ fib( x ) = fib( x - 1 ) + fib( x - 2 )  otherwise
   outermost call returns (`save_function_params()` / `pop_function_call()` in
   `dispatchkit/dispatchkit.hpp`). This makes the run time quadratic in the number of calls.
   Measured with MSVC: fib(15) 2.4 ms, fib(20) 152 ms, fib(25) 18.0 s (11x more calls cost 118x
-  more time). ChaiScript 6.1.0 behaves the same.
+  more time). ChaiScript 6.1.0 behaves the same. The series n = 15 / 20 / 25 shows this growth.

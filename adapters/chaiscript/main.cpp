@@ -21,10 +21,13 @@
 
 namespace {
 
+// The no-threads build is the headline, the closer match to the single-threaded engines of the others.
 #if defined( CHAISCRIPT_NO_THREADS )
 constexpr char const variant_name[] = "no-threads";
+constexpr bool       is_headline    = true;
 #else
 constexpr char const variant_name[] = "default";
+constexpr bool       is_headline    = false;
 #endif
 
 
@@ -125,7 +128,8 @@ int main( int argc, char *argv[] )
         "chaiscript",
         { variant_name },
         variant_name,
-        []( std::string const & ) -> std::unique_ptr<csb::Language> { return std::make_unique<ChaiScriptLanguage>(); }
+        []( std::string const & ) -> std::unique_ptr<csb::Language> { return std::make_unique<ChaiScriptLanguage>(); },
+        is_headline ? std::optional<std::string>( variant_name ) : std::nullopt
     };
     return csb::run_main( argc, argv, entry, csb::all_benchmarks() );
 }

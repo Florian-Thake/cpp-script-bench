@@ -50,7 +50,8 @@ int main( int argc, char *argv[] )
         "cpp",
         { "" },
         "",
-        []( std::string const & ) -> std::unique_ptr<csb::Language> { return std::make_unique<CppReference>(); }
+        []( std::string const & ) -> std::unique_ptr<csb::Language> { return std::make_unique<CppReference>(); },
+        ""
     };
     return csb::run_main( argc, argv, entry, csb::all_benchmarks() );
 }

@@ -17,12 +17,21 @@ std::int64_t mandelbrot( std::int64_t n );
 
 namespace csb {
 
+namespace {
+
+// The workload sizes. A series (more than one n) shows how the run time grows with n.
+constexpr std::int64_t fib_recursive_n[] = { 15, 20, 25 };
+constexpr std::int64_t loop_n[]          = { 1'000'000 };
+constexpr std::int64_t mandelbrot_n[]    = { 100 };
+
+} // namespace
+
 std::span<BenchmarkInfo const> all_benchmarks()
 {
     static constexpr BenchmarkInfo list[] = {
-        { "fib_recursive", "core", "Recursive Fibonacci: function call and recursion overhead", 25, &reference::fib_recursive },
-        { "loop",          "core", "Counting loop with a minimal body", 1'000'000, &reference::loop },
-        { "mandelbrot",    "core", "Mandelbrot set: floating point arithmetic in nested loops", 100, &reference::mandelbrot },
+        { "fib_recursive", "core", "Recursive Fibonacci: function call and recursion overhead", fib_recursive_n, &reference::fib_recursive },
+        { "loop",          "core", "Counting loop with a minimal body", loop_n, &reference::loop },
+        { "mandelbrot",    "core", "Mandelbrot set: floating point arithmetic in nested loops", mandelbrot_n, &reference::mandelbrot },
     };
     return list;
 }

@@ -59,9 +59,29 @@ Each script defines a function `bench( n )` which returns an integer checksum. T
 through the language's normal C++ API, once per sample. The cost of this one call is negligible
 compared to the workload. The interop disciplines measure call costs explicitly.
 
+### Series
+
+A benchmark can define a series of workload sizes in the registry instead of a single n
+(`fib_recursive`: n = 15 / 20 / 25). Each n is a separate run with a fresh engine, so the results
+show how the run time grows with n. `--n` replaces the series of all selected benchmarks
+(e.g. `--n 20` or `--n 10,20`).
+
 ### Statistics
 
 Defaults: 3 warm-up calls, 10 measured calls; both can be changed on the command line.
+
+**Time budget** (default 30 s, `--budget`, 0 = unlimited). It limits all calls of `bench( n )` of
+one run (one benchmark, one n), starting with the first call:
+- A call is only made if it is expected to finish within the budget, estimated with the duration of
+  the latest call.
+- At least 3 calls are always measured (fewer only if `--runs` is lower). A warm-up call is only made
+  if the budget also has room for those 3.
+- A run which was cut short is marked: `budget_limited` in the JSON, "(time budget)" on the console.
+
+With the defaults the budget only takes effect when one call takes longer than about 2 s.
+Example: ChaiScript's `fib_recursive` with n = 25 takes ~18 s per call. With the budget it makes
+1 first + 0 warm-up + 3 measured calls (~72 s) instead of 1 + 3 + 10 (~4 min).
+
 Reported: min, median, mean, standard deviation, max, and all raw samples (JSON).
 Every result file also records the CPU, OS, compiler, build configuration, instruction set, and
 the version and git state of cpp-script-bench and of each language library.
@@ -107,6 +127,10 @@ Variants which need a different build become separate executables: ChaiScript is
 `csb_chaiscript` (variant `default`, thread-safe) and `csb_chaiscript_nothreads` (variant
 `no-threads`, with `CHAISCRIPT_NO_THREADS`).
 
+**Headline variant.** Each language has one variant for the main comparison: TeaScript `vm-O1`,
+ChaiScript `no-threads`. It is independent of the default variant. The runners mark it in their
+output and in the JSON (`"headline": true`).
+
 **Scripts are separate files** (not strings in C++ code), so they get syntax highlighting and each
 community can review them.
 
@@ -118,7 +142,7 @@ community can review them.
 | ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library |
 | Lua         | 5.5.1                                     | LuaBridge3                         | compiled library |
-| Python      | 3.15.0 (final due 2026-10-09) or 3.14.x   | pybind11 3.1 (embedded interpreter) | prebuilt DLL |
+| Python      | 3.14.x (the latest patch release)         | pybind11 3.1 (embedded interpreter) | prebuilt DLL |
 | C++         | n/a                                       | reference                          | |
 
 Deferred: Jinx (limited core library, dormant). It may be added later if it can run most disciplines.
@@ -146,7 +170,7 @@ Status: ✅ implemented, ⬜ planned.
 
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
-| fib_recursive  | recursive `fib( n )`: call and recursion overhead | ✅ |
+| fib_recursive  | recursive `fib( n )`: call and recursion overhead; series n = 15 / 20 / 25 | ✅ |
 | loop           | counting loop, body `sum = sum + (i & 7)`         | ✅ |
 | int_arith      | Collatz step counts for 1..N                      | ⬜ |
 | mandelbrot     | float arithmetic: Mandelbrot grid, checksum = integer iteration count | ✅ |
@@ -205,9 +229,9 @@ Costs the host application pays for embedding, measured by the harness:
 - [x] **Phase 1a:** project setup: CMake with MSVC/GCC presets, harness, C++ reference, TeaScript
       runner with variants, `fib_recursive`.
 - [x] **Phase 1b:** ChaiScript runners (default and no-threads); `loop` and `mandelbrot` benchmarks.
-- [ ] **Phase 1c (next):** apply the decisions of 2026-10-04: series over n (`fib_recursive`:
-      15 / 20 / 25), time budget for slow runs, ChaiScript `no-threads` as headline (README, report).
-- [ ] **Phase 2:** Lua (LuaBridge3) and AngelScript runners.
+- [x] **Phase 1c:** apply the decisions of 2026-10-04: series over n (`fib_recursive`:
+      15 / 20 / 25), time budget for slow runs, headline variants marked (ChaiScript `no-threads`).
+- [ ] **Phase 2 (next):** Lua (LuaBridge3) and AngelScript runners.
 - [ ] **Phase 3:** Python (pybind11) runner.
 - [ ] **Phase 4:** the full discipline catalogue, including interop and host API.
 - [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
@@ -239,15 +263,21 @@ Costs the host application pays for embedding, measured by the harness:
 **2026-10-05**
 - The checksum must be returned as an integer type (TeaScript: `Integer`, ChaiScript: `int`). The
   runners reject other types instead of converting them, so e.g. a float result can't pass by accident.
+- Series are defined per benchmark in the registry (`BenchmarkInfo::series`). `--n` replaces them
+  with a list from the command line. How to show series in the report is still open.
+- Time budget: 30 s by default per run (one benchmark, one n), at least 3 measured calls; the rules
+  are in section 3. 30 s rather than 60 s: with the defaults the budget only takes effect for calls
+  longer than about 2 s, and ChaiScript's fib(25) needs ~72 s with either budget, because of the
+  3 measured calls.
+- Each runner marks its headline variant (console and JSON), independent of the default variant.
+- GCC: `-O2`.
+- Python: start with 3.14.x.
 
 ## 10. Open questions
 
-- GCC: which version as baseline, and `-O2` or `-O3`? GCC 11.4 (WSL Ubuntu 22.04) works, but
+- GCC: which version as baseline? (`-O2` is decided.) GCC 11.4 (WSL Ubuntu 22.04) works, but
   TeaScript needs fmt there (`CSB_FMT_DIR`), because GCC < 13 has no `std::format`.
   WSL still needs CMake (`sudo apt install cmake`; Ubuntu 22.04 ships 3.22.1, which is enough).
-- Python: 3.15.0 or 3.14.x as the first version?
-- Series (e.g. for `fib_recursive`): how to define them (per benchmark in the registry, or on the
-  command line), and how to show them in the report?
-- Time budget: the default budget per benchmark?
+- Series: how to show them in the report (e.g. one row per n, or a chart over n)?
 - Process priority and CPU pinning for less noise?
 - Format of the published results: Markdown tables, charts, a web page?

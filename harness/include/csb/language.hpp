@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,7 @@ struct LanguageEntry
     std::vector<std::string>  variants;         ///< all variants; a single empty string if there is only one
     std::string               default_variant;  ///< used when no --variant is given
     std::function<std::unique_ptr<Language>( std::string const &variant )>  make;
+    std::optional<std::string>  headline_variant;  ///< the variant for the main comparison (see PLAN.md), if this runner has it
 };
 
 } // namespace csb

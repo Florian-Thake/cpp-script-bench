@@ -34,17 +34,23 @@ double seconds_between( Clock::time_point const start, Clock::time_point const e
 }
 
 
+/// The minimum number of measured calls, also when the time budget is exceeded (unless --runs is lower).
+constexpr int min_runs = 3;
+
 struct Options
 {
-    bool                         help = false;
-    bool                         list = false;
-    std::vector<std::string>     benchmarks;  // empty == all
-    std::vector<std::string>     variants;
-    std::optional<std::int64_t>  n;
-    int                          warmup = 3;
-    int                          runs   = 10;
-    std::filesystem::path        scripts_dir = CSB_DEFAULT_SCRIPTS_DIR;
-    std::filesystem::path        json_file;
+    bool                       help = false;
+    bool                       list = false;
+    std::vector<std::string>   benchmarks;  // empty == all
+    std::vector<std::string>   variants;
+    std::vector<std::int64_t>  n;           // empty == the series of each benchmark
+    int                        warmup = 3;
+    int                        runs   = 10;
+    int                        budget = 30;  // seconds for all calls of bench( n ) of one run, 0 == unlimited
+    std::filesystem::path      scripts_dir = CSB_DEFAULT_SCRIPTS_DIR;
+    std::filesystem::path      json_file;
+
+    int min_runs() const { return std::min( csb::min_runs, runs ); }
 };
 
 std::vector<std::string> split( std::string_view s, char const sep )
@@ -112,11 +118,16 @@ Options parse_options( int const argc, char *argv[], LanguageEntry const &langua
         } else if( arg == "--variant" ) {
             variant_arg = value();
         } else if( arg == "--n" ) {
-            opt.n = parse_int( arg, value(), 0 );
+            opt.n.clear();
+            for( auto const &part : split( value(), ',' ) ) {
+                opt.n.push_back( parse_int( arg, part, 0 ) );
+            }
         } else if( arg == "--warmup" ) {
             opt.warmup = static_cast<int>(parse_int( arg, value(), 0 ));
         } else if( arg == "--runs" ) {
             opt.runs = static_cast<int>(parse_int( arg, value(), 1 ));
+        } else if( arg == "--budget" ) {
+            opt.budget = static_cast<int>(parse_int( arg, value(), 0 ));
         } else if( arg == "--scripts" ) {
             opt.scripts_dir = value();
         } else if( arg == "--json" ) {
@@ -152,9 +163,11 @@ void print_usage( char const *const argv0, LanguageEntry const &language )
     std::printf( "  --list               list the benchmarks and variants, then exit\n" );
     std::printf( "  --bench <a,b,...>    run only these benchmarks (default: all)\n" );
     std::printf( "  --variant <v,...>    variants to run, or 'all' (default: %s)\n", language.default_variant.empty() ? "the only one" : language.default_variant.c_str() );
-    std::printf( "  --n <N>              override the workload size of all selected benchmarks\n" );
+    std::printf( "  --n <N,...>          override the workload sizes (series) of all selected benchmarks\n" );
     std::printf( "  --warmup <W>         unmeasured calls after the first call (default: 3)\n" );
     std::printf( "  --runs <R>           measured calls (default: 10)\n" );
+    std::printf( "  --budget <S>         time budget in seconds for all calls of bench( n ) per benchmark and n,\n" );
+    std::printf( "                       0 = unlimited (default: 30). At least %d calls are measured.\n", min_runs );
     std::printf( "  --scripts <dir>      benchmark scripts directory (default: %s)\n", CSB_DEFAULT_SCRIPTS_DIR );
     std::printf( "  --json <file>        also write the results as JSON\n" );
 }
@@ -173,13 +186,24 @@ void print_list( LanguageEntry const &language, Options const &opt, std::span<Be
     std::printf( "Benchmarks:\n" );
     for( auto const &info : benchmarks ) {
         bool const has_script = extension.empty() || std::filesystem::exists( script_path( opt, info, extension ) );
-        std::printf( "  %-20s %-8s n=%-10lld %s%s\n", std::string( info.name ).c_str(), std::string( info.group ).c_str(),
-                     static_cast<long long>(info.default_n), std::string( info.description ).c_str(), has_script ? "" : "  [no script]" );
+        std::string series;
+        for( auto const n : info.series ) {
+            series += (series.empty() ? "" : ",") + std::to_string( n );
+        }
+        std::printf( "  %-20s %-8s n=%-10s %s%s\n", std::string( info.name ).c_str(), std::string( info.group ).c_str(),
+                     series.c_str(), std::string( info.description ).c_str(), has_script ? "" : "  [no script]" );
     }
 
     std::printf( "\nVariants:\n" );
     for( auto const &variant : language.variants ) {
-        std::printf( "  %s%s\n", variant.empty() ? "(only one)" : variant.c_str(), variant == language.default_variant ? " (default)" : "" );
+        std::string tags;
+        if( variant == language.default_variant ) {
+            tags = "default";
+        }
+        if( variant == language.headline_variant ) {
+            tags += (tags.empty() ? "" : ", ") + std::string( "headline" );
+        }
+        std::printf( "  %s%s\n", variant.empty() ? "(only one)" : variant.c_str(), tags.empty() ? "" : (" (" + tags + ")").c_str() );
     }
 }
 
@@ -196,12 +220,13 @@ std::string read_file( std::filesystem::path const &path )
 
 struct WrongResult {};
 
-BenchResult run_benchmark( LanguageEntry const &language, std::string const &variant, BenchmarkInfo const &info, Options const &opt )
+BenchResult run_benchmark( LanguageEntry const &language, std::string const &variant, BenchmarkInfo const &info, std::int64_t const n,
+                           Options const &opt )
 {
     BenchResult r;
     r.benchmark = info.name;
     r.group     = info.group;
-    r.n         = opt.n.value_or( info.default_n );
+    r.n         = n;
 
     try {
         auto lang = language.make( variant );
@@ -228,6 +253,7 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
         r.startup = seconds_between( t0, t1 );
         r.load    = seconds_between( t1, t2 );
 
+        double last = 0.0;  // the duration of the latest call
         auto const measure = [&]() -> double {
             lang->collect_garbage();
             auto const start = Clock::now();
@@ -236,17 +262,28 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
             if( r.checksum != r.expected ) {
                 throw WrongResult{};
             }
-            return seconds_between( start, end );
+            last = seconds_between( start, end );
+            return last;
+        };
+
+        // The time budget covers all calls, starting with the first one. A call is only made if it is expected to
+        // finish within the budget (estimated with the duration of the latest call), except for the minimum
+        // number of measured calls. A warm-up call also needs room for those.
+        auto const calls_start = Clock::now();
+        auto const fits = [&]( int const calls ) {
+            return opt.budget == 0 || seconds_between( calls_start, Clock::now() ) + calls * last <= opt.budget;
         };
 
         r.first = measure();
-        for( int i = 0; i < opt.warmup; ++i ) {
+        while( r.warmup < opt.warmup && fits( 1 + opt.min_runs() ) ) {
             (void)measure();
+            ++r.warmup;
         }
         r.samples.reserve( static_cast<size_t>(opt.runs) );
-        for( int i = 0; i < opt.runs; ++i ) {
+        while( std::ssize( r.samples ) < opt.runs && (std::ssize( r.samples ) < opt.min_runs() || fits( 1 )) ) {
             r.samples.push_back( measure() );
         }
+        r.budget_limited = r.warmup < opt.warmup || std::ssize( r.samples ) < opt.runs;
 
         auto const t3 = Clock::now();
         lang->destroy_engine();
@@ -281,9 +318,9 @@ void print_result( BenchResult const &r )
         auto const s = compute_stats( r.samples );
         char spread[16];
         std::snprintf( spread, sizeof( spread ), "%.1f%%", s.median > 0.0 ? s.stddev / s.median * 100.0 : 0.0 );
-        std::printf( "%-20s %8lld %11s %11s %11s %11s %11s %7s  ok\n", r.benchmark.c_str(), static_cast<long long>(r.n),
-                     format_time( r.startup ).c_str(), format_time( r.load ).c_str(), format_time( r.first ).c_str(),
-                     format_time( s.median ).c_str(), format_time( s.min ).c_str(), spread );
+        std::printf( "%-20s %8lld %11s %11s %11s %5zu %11s %11s %7s  ok%s\n", r.benchmark.c_str(), static_cast<long long>(r.n),
+                     format_time( r.startup ).c_str(), format_time( r.load ).c_str(), format_time( r.first ).c_str(), r.samples.size(),
+                     format_time( s.median ).c_str(), format_time( s.min ).c_str(), spread, r.budget_limited ? " (time budget)" : "" );
     } else if( r.status == "wrong result" ) {
         std::printf( "%-20s %8lld  WRONG RESULT: got %lld, expected %lld\n", r.benchmark.c_str(), static_cast<long long>(r.n),
                      static_cast<long long>(r.checksum), static_cast<long long>(r.expected) );
@@ -336,6 +373,8 @@ int run_main( int const argc, char *argv[], LanguageEntry const &language, std::
     report.timestamp   = utc_timestamp();
     report.warmup      = opt.warmup;
     report.runs        = opt.runs;
+    report.budget      = opt.budget;
+    report.min_runs    = opt.min_runs();
     {
         auto const probe        = language.make( opt.variants.front() );
         report.language_name    = probe->name();
@@ -347,26 +386,36 @@ int run_main( int const argc, char *argv[], LanguageEntry const &language, std::
     std::printf( "cpu      : %s\n", report.system.cpu.c_str() );
     std::printf( "os       : %s\n", report.system.os.c_str() );
     std::printf( "compiler : %s, %s, arch %s\n", report.system.compiler.c_str(), report.system.build_config.c_str(), report.system.arch.c_str() );
-    std::printf( "settings : warmup %d, runs %d\n", opt.warmup, opt.runs );
+    if( opt.budget > 0 ) {
+        std::printf( "settings : warmup %d, runs %d, time budget %d s (at least %d runs)\n", opt.warmup, opt.runs, opt.budget, opt.min_runs() );
+    } else {
+        std::printf( "settings : warmup %d, runs %d, no time budget\n", opt.warmup, opt.runs );
+    }
 #if !defined( NDEBUG )
     std::printf( "\nWARNING: This is not an optimized build. The results are not meaningful!\n" );
 #endif
 
     bool all_ok = true;
     for( auto const &variant : opt.variants ) {
-        std::printf( "\n== %s%s%s ==\n", report.language_name.c_str(), variant.empty() ? "" : " ", variant.c_str() );
-        std::printf( "%-20s %8s %11s %11s %11s %11s %11s %7s  %s\n", "benchmark", "n", "startup", "load", "first", "median", "min", "stddev", "status" );
-
         VariantResult vr;
-        vr.variant = variant;
+        vr.variant  = variant;
+        vr.headline = variant == language.headline_variant;
+
+        std::printf( "\n== %s%s%s%s ==\n", report.language_name.c_str(), variant.empty() ? "" : " ", variant.c_str(), vr.headline ? " (headline)" : "" );
+        std::printf( "%-20s %8s %11s %11s %11s %5s %11s %11s %7s  %s\n", "benchmark", "n", "startup", "load", "first", "runs", "median", "min", "stddev",
+                     "status" );
+
         for( auto const &info : benchmarks ) {
             if( not opt.benchmarks.empty() && not contains( opt.benchmarks, std::string( info.name ) ) ) {
                 continue;
             }
-            auto r = run_benchmark( language, variant, info, opt );
-            print_result( r );
-            all_ok = all_ok && (r.ok() || r.status == "n/a");
-            vr.benchmarks.push_back( std::move( r ) );
+            auto const series = opt.n.empty() ? info.series : std::span<std::int64_t const>( opt.n );
+            for( auto const n : series ) {
+                auto r = run_benchmark( language, variant, info, n, opt );
+                print_result( r );
+                all_ok = all_ok && (r.ok() || r.status == "n/a");
+                vr.benchmarks.push_back( std::move( r ) );
+            }
         }
         report.variants.push_back( std::move( vr ) );
     }
