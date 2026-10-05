@@ -152,7 +152,13 @@ public:
     std::int64_t call_bench( std::int64_t const n ) override
     {
         return translate_errors( [&]() {
-            return mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) ).GetAsInteger();
+            auto const res = mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) );
+            // Only an Integer is accepted. GetAsInteger() would also convert e.g. a f64 or a String silently.
+            auto const *const p = res.GetValuePtr<teascript::Integer>();
+            if( p == nullptr ) {
+                throw std::runtime_error( "bench() must return an Integer, but returned: " + res.GetTypeInfo()->GetName() );
+            }
+            return static_cast<std::int64_t>(*p);
         } );
     }
 

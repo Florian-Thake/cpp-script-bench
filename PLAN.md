@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-04.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-05.
 
 ## 1. Goal
 
@@ -14,7 +14,8 @@ interaction with the C++ host, and the host-side costs of embedding (startup, pa
 ## 2. Fairness rules
 
 1. **Same algorithm, same input, same result.** Every script returns a checksum, and the harness
-   checks it against the C++ reference. A wrong result makes the run invalid.
+   checks it against the C++ reference. A wrong result makes the run invalid. The checksum must have
+   the language's integer type; the runners don't convert other types (e.g. a float or a string).
 2. **Inputs come from the host at runtime**, so no optimizer can compute the workload ahead of time.
 3. **Each language uses its natural construct for the task**, e.g. numeric `for` in Lua,
    `for ... in range` in Python, `forall` in TeaScript. Alternative variants may be reported as
@@ -234,6 +235,10 @@ Costs the host application pays for embedding, measured by the harness:
 - `fib_recursive` is reported as a series over n (e.g. 15 / 20 / 25) instead of one default n,
   which makes ChaiScript's quadratic cost per call visible.
 - Slow runs get a time budget: stop measuring after a configurable time, with at least 3 samples.
+
+**2026-10-05**
+- The checksum must be returned as an integer type (TeaScript: `Integer`, ChaiScript: `int`). The
+  runners reject other types instead of converting them, so e.g. a float result can't pass by accident.
 
 ## 10. Open questions
 

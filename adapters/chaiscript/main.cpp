@@ -98,8 +98,13 @@ public:
         if( n > INT_MAX ) {
             throw std::out_of_range( "n does not fit into a ChaiScript int" );
         }
-        return translate_errors( [&]() {
-            return chaiscript::Boxed_Number( mBench( static_cast<int>(n) ) ).get_as<std::int64_t>();
+        return translate_errors( [&]() -> std::int64_t {
+            auto const res = mBench( static_cast<int>(n) );
+            // Only an int is accepted. Boxed_Number would also convert e.g. a double silently.
+            if( not res.get_type_info().bare_equal( chaiscript::user_type<int>() ) ) {
+                throw std::runtime_error( "bench() must return an int, but returned: " + mChai->get_type_name( res.get_type_info() ) );
+            }
+            return chaiscript::boxed_cast<int>( res );
         } );
     }
 
