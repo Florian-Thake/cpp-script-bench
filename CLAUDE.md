@@ -76,6 +76,9 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 - ChaiScript: no `return`. It throws a C++ exception unless it is the last statement; use the
   value of the last expression.
 - TeaScript: there is no `while`. Use `repeat` with `if( <negated condition> ) { stop }`.
+- Lua: helper functions are `local function`, `bench` is global. Constants are `local x <const>`
+  where TeaScript uses `const`.
+- AngelScript: statically typed; the entry point is exactly `int bench( int n )`.
 
 ## Code style
 

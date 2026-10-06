@@ -19,8 +19,8 @@ return sum
 ## Rules
 
 - Use the language's natural counting loop. Examples: `for( var i = 0; i < n; ++i )` in ChaiScript,
-  `forall( i in _seq( 0, n - 1, 1 ) )` in TeaScript, `for i = 0, n - 1 do` in Lua,
-  `for i in range( n )` in Python.
+  `for( int i = 0; i < n; ++i )` in AngelScript, `forall( i in _seq( 0, n - 1, 1 ) )` in TeaScript,
+  `for i = 0, n - 1 do` in Lua, `for i in range( n )` in Python.
 - Write the body as `sum = sum + (i & 7)` (or the language's operator names); no compound assignment
   like `+=`, so all languages do the same operations.
 - `sum` is a local variable of `bench`.

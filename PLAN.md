@@ -30,7 +30,8 @@ interaction with the C++ host, and the host-side costs of embedding (startup, pa
 7. **Same compiler and flags for everything built from source**: harness, TeaScript, ChaiScript,
    AngelScript, Lua. Python is the documented exception: the installed Python is used as it is
    (official or distro binaries, built separately, usually with PGO). The report records its exact
-   version and build.
+   version and build. A library may add a flag its own build requires for correct code, e.g.
+   `-fno-strict-aliasing` for AngelScript with GCC.
 8. **Execution modes are reported separately.** TeaScript has TeaStackVM and AST eval; the others
    have one default mode each. JIT engines (LuaJIT, the Python JIT) can only appear as optional
    entries outside the main comparison.
@@ -49,7 +50,7 @@ Every benchmark run goes through these phases, each measured separately:
 | Phase    | What                                                      |
 |----------|-----------------------------------------------------------|
 | startup  | create the engine including its standard library          |
-| load     | make the script runnable; sub-phases where the language can separate them: `parse`, `compile`, `top_level` |
+| load     | make the script runnable; sub-phases where the language can separate them: `parse`, `compile`, `top_level`; `parse_compile` where parsing and compiling is one step (AngelScript, Lua) |
 | first    | the very first call of `bench( n )`                       |
 | execute  | R measured calls of `bench( n )` after W warm-up calls: **the headline numbers** |
 | teardown | destroy the engine                                        |
@@ -126,11 +127,14 @@ runner/       (later) orchestrates all runners, collects JSON, produces tables a
 `vm-O2`, `ast`. The CMake option `CSB_TEASCRIPT_DEFAULT_VARIANT` changes the default.
 Variants which need a different build become separate executables: ChaiScript is built as
 `csb_chaiscript` (variant `default`, thread-safe) and `csb_chaiscript_nothreads` (variant
-`no-threads`, with `CHAISCRIPT_NO_THREADS`).
+`no-threads`, with `CHAISCRIPT_NO_THREADS`). AngelScript likewise: `csb_angelscript` (variants
+`default` and `no-line-cues`, thread-safe) and `csb_angelscript_nothreads` (variants `no-threads` and
+`no-threads-no-line-cues`, with `AS_NO_THREADS`). Without line cues means compiled with
+`asEP_BUILD_WITHOUT_LINE_CUES`.
 
 **Headline variant.** Each language has one variant for the main comparison: TeaScript `vm-O1`,
-ChaiScript `no-threads`. It is independent of the default variant. The runners mark it in their
-output and in the JSON (`"headline": true`).
+ChaiScript `no-threads`, AngelScript `no-threads-no-line-cues`; Lua has only one. It is independent
+of the default variant. The runners mark it in their output and in the JSON (`"headline": true`).
 
 **Scripts are separate files** (not strings in C++ code), so they get syntax highlighting and each
 community can review them.
@@ -141,8 +145,8 @@ community can review them.
 |-------------|-------------------------------------------|------------------------------------|-------|
 | TeaScript   | HEAD (0.18.0 pre-release); pinned to 0.18.0 after its release | native API | header-only |
 | ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018; headline build: `no-threads` |
-| AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library |
-| Lua         | 5.5.1                                     | LuaBridge3                         | compiled library |
+| AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library; headline: `AS_NO_THREADS`, without line cues |
+| Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings (Phase 4) | compiled library, as C |
 | Python      | the installed system Python (any version pybind11 supports) | pybind11 3.1 (embedded interpreter) | prebuilt; exact version and build recorded |
 | C++         | n/a                                       | reference                          | |
 
@@ -238,8 +242,8 @@ Costs the host application pays for embedding, measured by the harness:
 - [x] **Phase 1b:** ChaiScript runners (default and no-threads); `loop` and `mandelbrot` benchmarks.
 - [x] **Phase 1c:** apply the decisions of 2026-10-04: series over n (`fib_recursive`:
       15 / 20 / 25), time budget for slow runs, headline variants marked (ChaiScript `no-threads`).
-- [ ] **Phase 2 (next):** Lua (LuaBridge3) and AngelScript runners.
-- [ ] **Phase 3:** Python (pybind11) runner.
+- [x] **Phase 2:** Lua and AngelScript runners, with scripts for the three core benchmarks.
+- [ ] **Phase 3 (next):** Python (pybind11) runner.
 - [ ] **Phase 4:** the full discipline catalogue, including interop and host API.
 - [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
@@ -294,6 +298,23 @@ Costs the host application pays for embedding, measured by the harness:
   package for Windows, but no official binaries for Linux.
 - Local Linux tests run on WSL Ubuntu 22.04 (Python 3.10), which stays unchanged. The VPS (Ubuntu
   24.04, GCC 13, Python 3.12) is controlled via ssh; how to use it best is decided after Phase 3.
+- Lua: compiled as C, like the official distribution (on Linux with `LUA_USE_LINUX`, like
+  `make linux`). The runner calls `bench` through the Lua C API (`lua_getglobal` + `lua_pcall`), the
+  canonical way to call Lua from C and C++. LuaBridge3 (pinned to `3.0-rc12`, the latest release; there
+  is no final 3.0 yet) is only needed for the bindings in Phase 4. Its `LuaRef::call<LuaRef>()` does
+  not compile with MSVC (ambiguous overload, also on master).
+- Lua's standard library is opened without `package` (`require`), and `dofile` and `loadfile` are
+  removed, matching ChaiScript's `No_Load_Modules` and `No_External_Scripts`.
+- Lua scripts: helper functions are `local function` (idiomatic; called through an upvalue instead of
+  the global table), `bench` is global. Constants are `<const>` where TeaScript uses `const`.
+- AngelScript: built twice like ChaiScript (default thread-safe, and `AS_NO_THREADS`), each with and
+  without line cues. Headline: `no-threads-no-line-cues`. The AngelScript manual ("Fine tuning")
+  recommends both when they are not needed, and it matches ChaiScript's `no-threads` headline.
+  Automatic garbage collection stays on, because GC work during a call counts (rule 10).
+  The runner reuses one context and looks `bench` up once, as the manual recommends.
+- AngelScript with GCC: `-fno-strict-aliasing`, like the SDK's own makefile (`projects/gnuc`);
+  without it GCC warns that the VM's type punning may be broken by the optimizer.
+- Sub-phase name `parse_compile` for languages which parse and compile in one step.
 
 ## 10. Open questions
 

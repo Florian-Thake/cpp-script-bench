@@ -6,8 +6,8 @@ Each benchmark discipline has an equivalent script for every language. A small C
 through the language's own C++ embedding API and does all the measuring. Only CPU and RAM work is
 measured, no IO.
 
-> **Status:** early development. The harness and the C++, TeaScript and ChaiScript runners work,
-> with the first core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> **Status:** early development. The harness and the C++, TeaScript, ChaiScript, AngelScript and Lua
+> runners work, with the first core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
 
 ## Languages
 
@@ -16,8 +16,8 @@ measured, no IO.
 | C++         | native reference           | available |
 | TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval; headline: O1) |
 | ChaiScript  | native C++ API             | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
-| AngelScript | native C++ API + add-ons   | planned   |
-| Lua         | LuaBridge3                 | planned   |
+| AngelScript | native C++ API + add-ons (string, array, dictionary, math) | available (two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues) |
+| Lua         | Lua C API; LuaBridge3 for the bindings (later) | available |
 | Python      | pybind11 (embedded)        | planned   |
 
 ## Fairness
@@ -34,7 +34,8 @@ especially if a script does not use its language well.
 
 Requirements:
 - CMake 3.22 or newer
-- a C++20 compiler: MSVC 2022 or GCC
+- a C++20 compiler: MSVC 2022 or GCC (plus the C compiler for Lua, and MASM for AngelScript with MSVC;
+  both come with the compilers)
 - the script language libraries you want to test (see below)
 
 You provide the script language libraries yourself and tell CMake where they are in a
@@ -76,11 +77,17 @@ On Linux, inherit from the `gcc` preset instead (Ninja, Release).
 | `CSB_FMT_DIR`                   | optional: root of the fmt library, used by TeaScript (needed for GCC < 13, which has no `std::format`) |
 | `CSB_WITH_CHAISCRIPT`           | build the ChaiScript runners `csb_chaiscript` and `csb_chaiscript_nothreads` |
 | `CSB_CHAISCRIPT_DIR`            | root of ChaiScript (contains `include/chaiscript`); use the `develop` branch |
+| `CSB_WITH_ANGELSCRIPT`          | build the AngelScript runners `csb_angelscript` and `csb_angelscript_nothreads` |
+| `CSB_ANGELSCRIPT_DIR`           | the `sdk` directory of the AngelScript SDK (contains `angelscript/include` and `add_on`) |
+| `CSB_WITH_LUA`                  | build the Lua runner `csb_lua` |
+| `CSB_LUA_DIR`                   | root of the Lua source distribution (contains `src/lua.h`) |
 | `CSB_ARCH`                      | `x86-64-v3` (AVX2, default) or `default` |
 
 ## Running
 
-There is one runner executable per language: `csb_cpp`, `csb_teascript`, `csb_chaiscript`, ...
+There is one runner executable per language: `csb_cpp`, `csb_teascript`, `csb_chaiscript`, `csb_lua`, ...
+Languages with two builds have two: `csb_chaiscript` and `csb_chaiscript_nothreads`,
+`csb_angelscript` and `csb_angelscript_nothreads`.
 
 ```
 csb_teascript --list                        # benchmarks and variants

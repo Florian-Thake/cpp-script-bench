@@ -40,3 +40,10 @@ return count
   endless loop with the negated condition as exit: `if( k >= max_iter or zr * zr + zi * zi > 4.0 ) { stop }`.
 - Use plain assignments like `k = k + 1`, no compound assignment.
 - All variables are locals of `bench`.
+
+## Notes per language
+
+- `max_iter` is a constant where the language has constants: `const` in TeaScript,
+  `const int` in AngelScript, `local max_iter <const>` in Lua (a compile-time constant, so the
+  comparison `k < max_iter` uses an immediate operand). ChaiScript has no constant locals.
+- AngelScript: statically typed, `int` for the counters and `double` for the coordinates.

@@ -23,6 +23,14 @@ fib( x ) = fib( x - 1 ) + fib( x - 2 )  otherwise
 
 ## Notes per language
 
+**AngelScript**
+- Statically typed: `int fib( int x )` and `int bench( int n )`. `int` is 32 bit.
+
+**Lua**
+- `fib` is a `local function` at the top of the script, the idiomatic form for a module-level
+  function in Lua. The recursive calls then reach `fib` through an upvalue instead of a lookup in
+  the global table. `bench` is global, so the host can find it.
+
 **ChaiScript**
 - `return` is implemented with a C++ exception (`detail::Return_Value`), unless it is the last
   statement of a function (then the optimizer removes it). Exceptions are expensive, especially
