@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-05.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-06.
 
 ## 1. Goal
 
@@ -28,8 +28,9 @@ interaction with the C++ host, and the host-side costs of embedding (startup, pa
 6. **Values stay within 32-bit signed integers, or are masked explicitly.** ChaiScript's `int` is
    32-bit, Python integers are unbounded. No discipline may depend on overflow behaviour.
 7. **Same compiler and flags for everything built from source**: harness, TeaScript, ChaiScript,
-   AngelScript, Lua. Python is the documented exception: its official binaries are built separately
-   (with PGO).
+   AngelScript, Lua. Python is the documented exception: the installed Python is used as it is
+   (official or distro binaries, built separately, usually with PGO). The report records its exact
+   version and build.
 8. **Execution modes are reported separately.** TeaScript has TeaStackVM and AST eval; the others
    have one default mode each. JIT engines (LuaJIT, the Python JIT) can only appear as optional
    entries outside the main comparison.
@@ -142,7 +143,7 @@ community can review them.
 | ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library |
 | Lua         | 5.5.1                                     | LuaBridge3                         | compiled library |
-| Python      | 3.14.x (the latest patch release)         | pybind11 3.1 (embedded interpreter) | prebuilt DLL |
+| Python      | the installed system Python (any version pybind11 supports) | pybind11 3.1 (embedded interpreter) | prebuilt; exact version and build recorded |
 | C++         | n/a                                       | reference                          | |
 
 Deferred: Jinx (limited core library, dormant). It may be added later if it can run most disciplines.
@@ -160,7 +161,11 @@ the exact git state. A library only moves forward when that is done on purpose.
 - No LTO and no PGO for code built from source.
 - Results are only compared within one toolchain on one machine. MSVC and GCC numbers never appear
   in the same chart.
-- GCC is tested on WSL and on a Linux VPS.
+- GCC is tested on WSL and on a Linux VPS:
+  - WSL: Ubuntu 22.04, GCC 11.4, Python 3.10. For local tests. It stays as it is, because it is
+    also the primary Linux build system of TeaScript.
+  - VPS: Ubuntu 24.04, GCC 13, Python 3.12. Controlled via ssh. How to use it best is decided after
+    Phase 3.
 - GCC baseline: GCC 11 (11.4 on WSL Ubuntu 22.04). TeaScript needs fmt there (`CSB_FMT_DIR`),
   because GCC < 13 has no `std::format`. GCC 13 may become the baseline later.
 
@@ -276,8 +281,28 @@ Costs the host application pays for embedding, measured by the harness:
   to GCC 13 later, which supports C++20 better.
 - Python: start with 3.14.x.
 
+**2026-10-06**
+- Python: the runner uses the Python installed on the system instead of a fixed version, so the
+  suite is easier to use. CMake finds the default with `find_package( Python COMPONENTS Interpreter
+  Development.Embed )`; another installed Python can be chosen with the standard hints
+  `Python_ROOT_DIR` or `Python_EXECUTABLE`. Any version pybind11 supports is accepted.
+- The report records the full `sys.version` (including the compiler Python was built with), and
+  whether it is a free-threaded build and whether the JIT is on. The headline uses the default
+  build with the GIL, and the experimental JIT stays off (rule 8).
+- Python's speed differs a lot between versions (3.11 was a big step). Published results use a
+  current Python. CMake can't provide one quickly on every platform: there is an official NuGet
+  package for Windows, but no official binaries for Linux.
+- Local Linux tests run on WSL Ubuntu 22.04 (Python 3.10), which stays unchanged. The VPS (Ubuntu
+  24.04, GCC 13, Python 3.12) is controlled via ssh; how to use it best is decided after Phase 3.
+
 ## 10. Open questions
 
-- Series: how to show them in the report (e.g. one row per n, or a chart over n)?
-- Process priority and CPU pinning for less noise?
-- Format of the published results: Markdown tables, charts, a web page?
+- TeaScript host call (decide by Phase 4 at the latest): the runner calls `bench( n )` with
+  `CallFuncEx`. In compile mode this looks up the function by name and creates a new VM machine
+  for each call (`Machine<false>`, without suspend support), and runs it with `ExecSubroutine`.
+  `ExecuteProgram` would use the engine's own machine (`Machine<true>`) and `Exec`. Which path is
+  the fair counterpart to the competitors' host calls? Compare both paths with a measurement first.
+- Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
+  already has one entry per n.
+- Process priority and CPU pinning for less noise? Phase 5, before the published runs.
+- Format of the published results: Markdown tables, charts, a web page? Phase 5.
