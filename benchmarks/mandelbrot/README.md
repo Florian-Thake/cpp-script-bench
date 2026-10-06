@@ -45,5 +45,6 @@ return count
 
 - `max_iter` is a constant where the language has constants: `const` in TeaScript,
   `const int` in AngelScript, `local max_iter <const>` in Lua (a compile-time constant, so the
-  comparison `k < max_iter` uses an immediate operand). ChaiScript has no constant locals.
+  comparison `k < max_iter` uses an immediate operand). ChaiScript and Python have no constant
+  locals; there it is a normal local variable.
 - AngelScript: statically typed, `int` for the counters and `double` for the coordinates.

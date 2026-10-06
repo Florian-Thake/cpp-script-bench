@@ -96,6 +96,8 @@ Only work between CPU and RAM is measured:
 - No module imports or `require` inside measured regions. Python imports happen during setup.
 - TeaScript: the tsb path stays empty, so Bootstrap neither reads nor writes `.tsb` files.
 - Python's startup reads its standard library from disk. Its startup number is marked accordingly.
+  The interpreter uses the isolated configuration without the `site` module, so no site-packages
+  or `.pth` files are read.
 
 Tests which include file IO (e.g. loading TeaScript `.tsb` versus Python `.pyc`) may become a
 separate, opt-in category later.
@@ -147,7 +149,7 @@ community can review them.
 | ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library; headline: `AS_NO_THREADS`, without line cues |
 | Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings (Phase 4) | compiled library, as C |
-| Python      | the installed system Python (any version pybind11 supports) | pybind11 3.1 (embedded interpreter) | prebuilt; exact version and build recorded |
+| Python      | the installed system Python (any version pybind11 supports, 3.9+) | pybind11 3.1.0 (embedded interpreter) | prebuilt; exact version and build recorded |
 | C++         | n/a                                       | reference                          | |
 
 Deferred: Jinx (limited core library, dormant). It may be added later if it can run most disciplines.
@@ -234,6 +236,8 @@ Costs the host application pays for embedding, measured by the harness:
 - **Composite workload:** e.g. a "game tick" which mixes the above.
 - **Idiomatic track:** each language at its best, native helpers allowed (see rule 4).
 - **IO track:** e.g. loading precompiled scripts from disk.
+- **Python JIT:** the official Python 3.14 builds for Windows contain the experimental JIT (off by
+  default, `PYTHON_JIT=1`). It could become an optional variant outside the main comparison (rule 8).
 
 ## 8. Roadmap
 
@@ -243,8 +247,8 @@ Costs the host application pays for embedding, measured by the harness:
 - [x] **Phase 1c:** apply the decisions of 2026-10-04: series over n (`fib_recursive`:
       15 / 20 / 25), time budget for slow runs, headline variants marked (ChaiScript `no-threads`).
 - [x] **Phase 2:** Lua and AngelScript runners, with scripts for the three core benchmarks.
-- [ ] **Phase 3 (next):** Python (pybind11) runner.
-- [ ] **Phase 4:** the full discipline catalogue, including interop and host API.
+- [x] **Phase 3:** Python (pybind11) runner.
+- [ ] **Phase 4 (next):** the full discipline catalogue, including interop and host API.
 - [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish.
@@ -315,6 +319,20 @@ Costs the host application pays for embedding, measured by the harness:
 - AngelScript with GCC: `-fno-strict-aliasing`, like the SDK's own makefile (`projects/gnuc`);
   without it GCC warns that the VM's type punning may be broken by the optimizer.
 - Sub-phase name `parse_compile` for languages which parse and compile in one step.
+- Python runner (pybind11 v3.1.0, the latest release):
+  - One interpreter per engine: startup is `Py_InitializeFromConfig()`, teardown `Py_Finalize()`.
+    Restarting the interpreter in one process works for the standard library.
+  - The isolated configuration (recommended for embedding by the Python documentation): environment
+    variables like `PYTHONPATH` and `PYTHON_JIT` are ignored. No `site` module (like `python -S`):
+    site-packages and `.pth` files are machine-dependent disk IO and not part of the standard library.
+  - The Python home is set to the installation CMake found (`sys.base_prefix`). On Windows its DLL is
+    copied next to the runner, so exactly that Python is used, independent of `PATH`.
+  - The runner refuses to run if the JIT is enabled (`sys._jit`, Python 3.14+). A free-threaded build
+    is reported as the variant `free-threaded`, which is not a headline. `Py_GetVersion()` (the full
+    `sys.version`, including the compiler) is the version string.
+  - load: `Py_CompileString()` (`parse_compile`), then `PyEval_EvalCode()` in a fresh module-like
+    namespace (`top_level`). The result must be exactly an `int` (not a `bool`).
+  - Python scripts: module-level functions, all hot variables are locals.
 
 ## 10. Open questions
 
@@ -326,4 +344,8 @@ Costs the host application pays for embedding, measured by the harness:
 - Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
   already has one entry per n.
 - Process priority and CPU pinning for less noise? Phase 5, before the published runs.
+- The first engine in a process starts slower than the following ones (cold caches, first DLL and
+  file access), e.g. Python with MSVC ~31 ms vs ~5.4 ms, Lua ~130 us vs ~45 us. This affects the
+  `startup` of the first run of every runner. Options: a warm-up engine before the first run, or
+  report startup separately in `engine_lifecycle` (Phase 4).
 - Format of the published results: Markdown tables, charts, a web page? Phase 5.

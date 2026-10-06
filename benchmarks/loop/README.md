@@ -24,3 +24,8 @@ return sum
 - Write the body as `sum = sum + (i & 7)` (or the language's operator names); no compound assignment
   like `+=`, so all languages do the same operations.
 - `sum` is a local variable of `bench`.
+
+## Notes per language
+
+- Python: the variable is called `total`, because a local `sum` would hide the built-in function
+  `sum()`, which idiomatic Python avoids. The name has no effect on the speed.

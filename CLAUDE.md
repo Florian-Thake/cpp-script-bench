@@ -79,6 +79,8 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 - Lua: helper functions are `local function`, `bench` is global. Constants are `local x <const>`
   where TeaScript uses `const`.
 - AngelScript: statically typed; the entry point is exactly `int bench( int n )`.
+- Python: module-level functions, hot variables are locals; don't shadow built-ins (e.g. `total`
+  instead of `sum`).
 
 ## Code style
 

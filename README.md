@@ -6,8 +6,8 @@ Each benchmark discipline has an equivalent script for every language. A small C
 through the language's own C++ embedding API and does all the measuring. Only CPU and RAM work is
 measured, no IO.
 
-> **Status:** early development. The harness and the C++, TeaScript, ChaiScript, AngelScript and Lua
-> runners work, with the first core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> **Status:** early development. The harness and the runners for all languages work, with the
+> first core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
 
 ## Languages
 
@@ -18,7 +18,7 @@ measured, no IO.
 | ChaiScript  | native C++ API             | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
 | AngelScript | native C++ API + add-ons (string, array, dictionary, math) | available (two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues) |
 | Lua         | Lua C API; LuaBridge3 for the bindings (later) | available |
-| Python      | pybind11 (embedded)        | planned   |
+| Python      | pybind11 (embedded)        | available (the installed Python, see below) |
 
 ## Fairness
 
@@ -37,6 +37,8 @@ Requirements:
 - a C++20 compiler: MSVC 2022 or GCC (plus the C compiler for Lua, and MASM for AngelScript with MSVC;
   both come with the compilers)
 - the script language libraries you want to test (see below)
+- for Python: an installed Python 3.9 or newer with its development files (on Windows included in the
+  python.org installer; on Debian/Ubuntu the package `python3-dev`)
 
 You provide the script language libraries yourself and tell CMake where they are in a
 `CMakeUserPresets.json` next to `CMakePresets.json`. That file is ignored by git. Example:
@@ -81,11 +83,15 @@ On Linux, inherit from the `gcc` preset instead (Ninja, Release).
 | `CSB_ANGELSCRIPT_DIR`           | the `sdk` directory of the AngelScript SDK (contains `angelscript/include` and `add_on`) |
 | `CSB_WITH_LUA`                  | build the Lua runner `csb_lua` |
 | `CSB_LUA_DIR`                   | root of the Lua source distribution (contains `src/lua.h`) |
+| `CSB_WITH_PYTHON`               | build the Python runner `csb_python` |
+| `CSB_PYBIND11_DIR`              | root of pybind11 (contains `include/pybind11`) |
+| `Python_ROOT_DIR`, `Python_EXECUTABLE` | optional: another installed Python than the one CMake finds by default (standard hints of CMake's FindPython) |
 | `CSB_ARCH`                      | `x86-64-v3` (AVX2, default) or `default` |
 
 ## Running
 
-There is one runner executable per language: `csb_cpp`, `csb_teascript`, `csb_chaiscript`, `csb_lua`, ...
+There is one runner executable per language: `csb_cpp`, `csb_teascript`, `csb_chaiscript`, `csb_lua`,
+`csb_python`, ...
 Languages with two builds have two: `csb_chaiscript` and `csb_chaiscript_nothreads`,
 `csb_angelscript` and `csb_angelscript_nothreads`.
 

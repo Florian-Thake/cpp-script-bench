@@ -44,6 +44,11 @@ set( CSB_LUA_DIR "" CACHE PATH "Root of the Lua source distribution (the directo
 option( CSB_WITH_ANGELSCRIPT "Build the AngelScript runners (needs CSB_ANGELSCRIPT_DIR)" OFF )
 set( CSB_ANGELSCRIPT_DIR "" CACHE PATH "Root of the AngelScript SDK (the directory containing angelscript/include and add_on)" )
 
+# Python is the installed one, found by CMake (FindPython). Another installed Python can be chosen with the
+# standard hints Python_ROOT_DIR or Python_EXECUTABLE.
+option( CSB_WITH_PYTHON "Build the Python runner (needs CSB_PYBIND11_DIR and an installed Python with its development files)" OFF )
+set( CSB_PYBIND11_DIR "" CACHE PATH "Root of pybind11 (the directory containing include/pybind11)" )
+
 # Lua is written in C. AngelScript needs an assembler file for native calls with MSVC x64.
 if( CSB_WITH_LUA )
     enable_language( C )

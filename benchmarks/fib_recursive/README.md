@@ -31,6 +31,10 @@ fib( x ) = fib( x - 1 ) + fib( x - 2 )  otherwise
   function in Lua. The recursive calls then reach `fib` through an upvalue instead of a lookup in
   the global table. `bench` is global, so the host can find it.
 
+**Python**
+- `fib` is a module-level function. The recursive calls look it up in the module namespace, which
+  Python 3.11 and newer speed up with a specialized instruction.
+
 **ChaiScript**
 - `return` is implemented with a C++ exception (`detail::Return_Value`), unless it is the last
   statement of a function (then the optimizer removes it). Exceptions are expensive, especially

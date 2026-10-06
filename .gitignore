@@ -9,3 +9,6 @@ CMakeUserPresets.json
 .vs/
 .vscode/
 *.user
+
+# Python bytecode caches
+__pycache__/
