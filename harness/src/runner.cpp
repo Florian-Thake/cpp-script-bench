@@ -220,6 +220,45 @@ std::string read_file( std::filesystem::path const &path )
 
 struct WrongResult {};
 
+/// A throw-away run before the first measured run of a variant: creates an engine, loads the script of \param info,
+/// calls bench( n ) once with the smallest n and destroys the engine. Nothing is measured or reported. It warms up
+/// what is only cold once per process (the first use of the code, the libraries and their files), so the first
+/// measured run is comparable to the following ones. Errors are ignored here, the measured run reports them.
+/// \return false if the language has no script for \param info.
+bool warm_up( LanguageEntry const &language, std::string const &variant, BenchmarkInfo const &info, Options const &opt )
+{
+    std::int64_t n = *std::ranges::min_element( info.series );
+    for( auto const v : opt.n ) {
+        n = std::min( n, v );
+    }
+
+    try {
+        auto lang = language.make( variant );
+        std::string source;
+        auto const  extension = lang->script_extension();
+        if( not extension.empty() ) {
+            auto const path = script_path( opt, info, extension );
+            if( not std::filesystem::exists( path ) ) {
+                return false;
+            }
+            source = read_file( path );
+        }
+
+        lang->create_engine();
+        try {
+            (void)lang->load( info, source );
+            (void)lang->call_bench( n );
+        } catch( std::exception const & ) {
+            lang->destroy_engine();
+            throw;
+        }
+        lang->destroy_engine();
+    } catch( std::exception const & ) {
+        // reported by the measured run
+    }
+    return true;
+}
+
 BenchResult run_benchmark( LanguageEntry const &language, std::string const &variant, BenchmarkInfo const &info, std::int64_t const n,
                            Options const &opt )
 {
@@ -404,6 +443,13 @@ int run_main( int const argc, char *argv[], LanguageEntry const &language, std::
         std::printf( "\n== %s%s%s%s ==\n", report.language_name.c_str(), variant.empty() ? "" : " ", variant.c_str(), vr.headline ? " (headline)" : "" );
         std::printf( "%-20s %8s %11s %11s %11s %5s %11s %11s %7s  %s\n", "benchmark", "n", "startup", "load", "first", "runs", "median", "min", "stddev",
                      "status" );
+
+        // One throw-away run per variant, with the first selected benchmark which has a script.
+        for( auto const &info : benchmarks ) {
+            if( (opt.benchmarks.empty() || contains( opt.benchmarks, std::string( info.name ) )) && warm_up( language, variant, info, opt ) ) {
+                break;
+            }
+        }
 
         for( auto const &info : benchmarks ) {
             if( not opt.benchmarks.empty() && not contains( opt.benchmarks, std::string( info.name ) ) ) {

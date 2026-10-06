@@ -107,7 +107,9 @@ Some benchmarks run a series of workload sizes, e.g. `fib_recursive` with n = 15
 is a separate row. `--n 20` or `--n 10,20` replaces the series.
 
 Slow runs are limited by a time budget (default 30 s for all calls of one benchmark and n). At least
-3 calls are always measured. The details are in [PLAN.md](PLAN.md#3-what-is-measured).
+3 calls are always measured. Before the first run of each variant, the runner makes one unmeasured
+warm-up run, so the first run is not slowed down by cold caches. The details are in
+[PLAN.md](PLAN.md#3-what-is-measured).
 
 Each language has one headline variant for the main comparison. The runners mark it with
 "(headline)".

@@ -61,6 +61,12 @@ Each script defines a function `bench( n )` which returns an integer checksum. T
 through the language's normal C++ API, once per sample. The cost of this one call is negligible
 compared to the workload. The interop disciplines measure call costs explicitly.
 
+**Warm-up engine.** Before the first measured run of each variant, the runner makes one throw-away
+run: create an engine, load the first selected benchmark, call `bench( n )` once with its smallest
+n, destroy the engine. Nothing of it is measured or reported. Without it, the first run of a process
+is slower than the following ones (cold caches, first use of the code, the libraries and their
+files), e.g. Python's startup with MSVC: ~31 ms instead of ~5.4 ms.
+
 ### Series
 
 A benchmark can define a series of workload sizes in the registry instead of a single n
@@ -333,6 +339,9 @@ Costs the host application pays for embedding, measured by the harness:
   - load: `Py_CompileString()` (`parse_compile`), then `PyEval_EvalCode()` in a fresh module-like
     namespace (`top_level`). The result must be exactly an `int` (not a `bool`).
   - Python scripts: module-level functions, all hot variables are locals.
+- The first engine in a process started slower than the following ones (cold caches, first use of
+  the code, the libraries and their files), e.g. Python with MSVC ~31 ms vs ~5.4 ms, Lua ~130 us vs
+  ~45 us. Solution: one throw-away warm-up run per variant before the first measured run (section 3).
 
 ## 10. Open questions
 
@@ -344,8 +353,4 @@ Costs the host application pays for embedding, measured by the harness:
 - Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
   already has one entry per n.
 - Process priority and CPU pinning for less noise? Phase 5, before the published runs.
-- The first engine in a process starts slower than the following ones (cold caches, first DLL and
-  file access), e.g. Python with MSVC ~31 ms vs ~5.4 ms, Lua ~130 us vs ~45 us. This affects the
-  `startup` of the first run of every runner. Options: a warm-up engine before the first run, or
-  report startup separately in `engine_lifecycle` (Phase 4).
 - Format of the published results: Markdown tables, charts, a web page? Phase 5.
