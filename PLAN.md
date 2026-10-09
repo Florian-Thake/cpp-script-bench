@@ -250,7 +250,17 @@ Costs the host application pays for embedding, measured by the harness:
       15 / 20 / 25), time budget for slow runs, headline variants marked (ChaiScript `no-threads`).
 - [x] **Phase 2:** Lua and AngelScript runners, with scripts for the three core benchmarks.
 - [x] **Phase 3:** Python (pybind11) runner.
-- [ ] **Phase 4 (next):** the full discipline catalogue, including interop and host API.
+- [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
+      all languages at once (one commit each).
+  - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The TeaScript
+        host call is settled (decision log 2026-10-09).
+  - [ ] **4b Data:** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
+        round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
+  - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
+        Extends `csb::Language`; brings in LuaBridge3.
+  - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
+        `function_lookup`, `engine_reset`, `memory`. A new kind of benchmark: the runner times C++
+        operations. `memory` may move to Phase 5.
 - [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish.
@@ -352,15 +362,23 @@ Costs the host application pays for embedding, measured by the harness:
   header, which is only rewritten when the version changed, so nothing is recompiled otherwise.
 - Machine-specific setup (paths, hosts, access) stays out of the repo; only toolchain and OS
   versions are documented here.
+- Phase 4 is split into four subphases by category, in this order: 4a Core and 4b Data fit the
+  existing `bench( n )` protocol, 4c Interop extends the adapter interface, and 4d Host API reuses
+  its binding code and needs a new measurement model. The disciplines of one category share their
+  fairness decisions (e.g. the natural container per language), so each subphase starts with one
+  design round. Within a subphase, one discipline is implemented for all languages at a time (one
+  commit each), so the scripts can be reviewed per discipline.
+- TeaScript host call (was an open question): the runner keeps `CallFuncEx`. It is TeaScript's API
+  for calling a script function from C++, the counterpart of `lua_pcall`, AngelScript's `Execute()`
+  and the function handles of pybind11 and ChaiScript. Users call script functions this way, so the
+  benchmark does too. (`ExecuteProgram` is meant for running whole programs.)
 
 ## 10. Open questions
 
-- TeaScript host call (decide by Phase 4 at the latest): the runner calls `bench( n )` with
-  `CallFuncEx`. In compile mode this looks up the function by name and creates a new VM machine
-  for each call (`Machine<false>`, without suspend support), and runs it with `ExecSubroutine`.
-  `ExecuteProgram` would use the engine's own machine (`Machine<true>`) and `Exec`. Which path is
-  the fair counterpart to the competitors' host calls? Compare both paths with a measurement first.
 - Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
   already has one entry per n.
 - Process priority and CPU pinning for less noise? Phase 5, before the published runs.
+- `math_builtins`: the catalogue says "compared with a tolerance", but rule 1 requires an integer
+  checksum. E.g. a scaled and truncated sum, if all languages give bit-identical results on one
+  machine (they likely call the same C library). Decide in 4a.
 - Format of the published results: Markdown tables, charts, a web page? Phase 5.
