@@ -5,6 +5,9 @@
 # user specific CMake presets with local library paths
 CMakeUserPresets.json
 
+# user specific notes on the local setup (paths, hosts, access), see CLAUDE.md
+/LOCAL.md
+
 # IDEs
 .vs/
 .vscode/

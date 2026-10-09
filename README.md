@@ -52,7 +52,7 @@ You provide the script language libraries yourself and tell CMake where they are
       "inherits": "msvc",
       "cacheVariables": {
         "CSB_WITH_TEASCRIPT": "ON",
-        "CSB_TEASCRIPT_DIR": "D:/code/repos/TeaScriptLibrary"
+        "CSB_TEASCRIPT_DIR": "C:/path/to/TeaScriptLibrary"
       }
     }
   ],

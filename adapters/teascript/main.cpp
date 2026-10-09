@@ -7,6 +7,7 @@
 //   vm-O0, vm-O1, vm-O2 : compiled and executed in the TeaStackVM with the given optimization level.
 //   ast                 : the parsed AST is evaluated directly (no compilation).
 
+#include "csb_teascript_git_version.h"
 #include "registry.hpp"
 
 #include <csb/runner.hpp>

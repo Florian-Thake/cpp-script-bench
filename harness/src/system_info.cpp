@@ -4,6 +4,8 @@
  */
 #include "system_info.hpp"
 
+#include "csb_git_version.h"
+
 #include <cstring>
 #include <string>
 

@@ -18,7 +18,6 @@ if( CSB_FMT_DIR )
     message( STATUS "TeaScript runner: using fmt from ${CSB_FMT_DIR}" )
 endif()
 target_compile_definitions( csb_teascript PRIVATE
-    CSB_TEASCRIPT_GIT_VERSION="${CSB_TEASCRIPT_GIT_VERSION}"
     CSB_TEASCRIPT_DEFAULT_VARIANT="${CSB_TEASCRIPT_DEFAULT_VARIANT}" )
 if( MSVC )
     target_compile_definitions( csb_teascript PRIVATE
@@ -26,4 +25,5 @@ if( MSVC )
         _SILENCE_CXX20_U8PATH_DEPRECATION_WARNING )
 endif()
 target_link_libraries( csb_teascript PRIVATE csb_benchmarks )
+csb_target_git_version( csb_teascript CSB_TEASCRIPT_GIT_VERSION "${CSB_TEASCRIPT_DIR}" )
 csb_apply_compiler_options( csb_teascript )

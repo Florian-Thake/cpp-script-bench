@@ -7,6 +7,7 @@
 //   csb_chaiscript            ChaiScript in its default configuration, which is thread-safe (variant "default").
 //   csb_chaiscript_nothreads  with CHAISCRIPT_NO_THREADS: no locking for multi-threaded use (variant "no-threads").
 
+#include "csb_chaiscript_git_version.h"
 #include "registry.hpp"
 
 #include <csb/runner.hpp>

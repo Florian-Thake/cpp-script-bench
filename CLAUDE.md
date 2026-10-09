@@ -11,6 +11,8 @@ AngelScript, Lua, Python; native C++ as the reference).
   discipline catalogue, the roadmap (what's next), the decision log and the open questions.
 - Keep PLAN.md current: record every decision in the decision log (with date), tick roadmap
   items, and move answered open questions into the decision log.
+- If `LOCAL.md` exists, read it too: the setup of the local machines (paths, hosts, access). It is
+  git-ignored. Such details go there, never into committed files.
 - Fairness is the core value of this project. The maintainer is the TeaScript author, so never
   favour TeaScript. When a script choice affects a competitor's speed, give that language its best
   idiomatic form and document the reason in the benchmark's README.
@@ -26,15 +28,18 @@ cmake --preset msvc-local
 cmake --build --preset msvc-local-release
 build/msvc-local/adapters/<lang>/Release/csb_<lang>.exe --list
 
-# Linux / WSL, GCC (from Git Bash: prefix the wsl call with MSYS_NO_PATHCONV=1)
-wsl -e bash -lc "cd <repo path in WSL> && cmake --preset gcc-local && cmake --build --preset gcc-local-release"
+# Linux, GCC
+cmake --preset gcc-local
+cmake --build --preset gcc-local-release
+build/gcc-local/adapters/<lang>/csb_<lang> --list
 ```
 
 Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--warmup W`, `--runs R`,
 `--budget S`, `--scripts dir`, `--json file`.
 
 - Only Release builds give meaningful numbers.
-- Never take timings while something else compiles or runs. WSL and Windows share the CPU.
+- Never take timings while something else compiles or runs on the same machine. A VM or WSL shares
+  the CPU with its host.
 - ChaiScript's `fib_recursive` with n = 25 takes ~18 s per call, ~72 s per run even with the time
   budget. Use `--n 20` (and `--bench`, `--runs`, `--warmup`) when you only verify results.
 - Verify every change with both toolchains (MSVC and GCC). Every result must be "ok", i.e. match

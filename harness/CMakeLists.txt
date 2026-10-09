@@ -15,9 +15,9 @@ target_include_directories( csb_harness
 
 target_compile_definitions( csb_harness PRIVATE
     CSB_VERSION="${PROJECT_VERSION}"
-    CSB_GIT_VERSION="${CSB_GIT_VERSION}"
     CSB_ARCH="${CSB_ARCH}"
     CSB_BUILD_CONFIG="$<CONFIG>"
     CSB_DEFAULT_SCRIPTS_DIR="${PROJECT_SOURCE_DIR}/benchmarks" )
 
+csb_target_git_version( csb_harness CSB_GIT_VERSION "${PROJECT_SOURCE_DIR}" )
 csb_apply_compiler_options( csb_harness )

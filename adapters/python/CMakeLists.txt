@@ -26,9 +26,9 @@ message( STATUS "Python runner: Python ${Python_VERSION} (${CSB_PYTHON_HOME}), p
 add_executable( csb_python main.cpp )
 target_include_directories( csb_python SYSTEM PRIVATE "${CSB_PYBIND11_DIR}/include" )
 target_compile_definitions( csb_python PRIVATE
-    CSB_PYTHON_HOME="${CSB_PYTHON_HOME}"
-    CSB_PYBIND11_GIT_VERSION="${CSB_PYBIND11_GIT_VERSION}" )
+    CSB_PYTHON_HOME="${CSB_PYTHON_HOME}" )
 target_link_libraries( csb_python PRIVATE csb_benchmarks Python::Python )
+csb_target_git_version( csb_python CSB_PYBIND11_GIT_VERSION "${CSB_PYBIND11_DIR}" )
 csb_apply_compiler_options( csb_python )
 
 if( WIN32 )

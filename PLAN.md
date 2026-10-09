@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-06.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-09.
 
 ## 1. Goal
 
@@ -173,13 +173,9 @@ the exact git state. A library only moves forward when that is done on purpose.
 - No LTO and no PGO for code built from source.
 - Results are only compared within one toolchain on one machine. MSVC and GCC numbers never appear
   in the same chart.
-- GCC is tested on WSL and on a Linux VPS:
-  - WSL: Ubuntu 22.04, GCC 11.4, Python 3.10. For local tests. It stays as it is, because it is
-    also the primary Linux build system of TeaScript.
-  - VPS: Ubuntu 24.04, GCC 13, Python 3.12. Controlled via ssh. How to use it best is decided after
-    Phase 3.
-- GCC baseline: GCC 11 (11.4 on WSL Ubuntu 22.04). TeaScript needs fmt there (`CSB_FMT_DIR`),
-  because GCC < 13 has no `std::format`. GCC 13 may become the baseline later.
+- GCC is tested with GCC 11.4 (Ubuntu 22.04) and GCC 13.3 (Ubuntu 24.04).
+- GCC baseline: GCC 11. TeaScript needs fmt there (`CSB_FMT_DIR`), because GCC < 13 has no
+  `std::format`. GCC 13 may become the baseline later.
 
 ## 7. Disciplines
 
@@ -291,7 +287,7 @@ Costs the host application pays for embedding, measured by the harness:
   longer than about 2 s, and ChaiScript's fib(25) needs ~72 s with either budget, because of the
   3 measured calls.
 - Each runner marks its headline variant (console and JSON), independent of the default variant.
-- GCC: `-O2`. Baseline is GCC 11 from WSL (Ubuntu 22.04), the simple choice for now; it may move
+- GCC: `-O2`. Baseline is GCC 11 (Ubuntu 22.04), the simple choice for now; it may move
   to GCC 13 later, which supports C++20 better.
 - Python: start with 3.14.x.
 
@@ -306,8 +302,7 @@ Costs the host application pays for embedding, measured by the harness:
 - Python's speed differs a lot between versions (3.11 was a big step). Published results use a
   current Python. CMake can't provide one quickly on every platform: there is an official NuGet
   package for Windows, but no official binaries for Linux.
-- Local Linux tests run on WSL Ubuntu 22.04 (Python 3.10), which stays unchanged. The VPS (Ubuntu
-  24.04, GCC 13, Python 3.12) is controlled via ssh; how to use it best is decided after Phase 3.
+- Linux tests use the distribution's Python: 3.10 (Ubuntu 22.04) and 3.12 (Ubuntu 24.04).
 - Lua: compiled as C, like the official distribution (on Linux with `LUA_USE_LINUX`, like
   `make linux`). The runner calls `bench` through the Lua C API (`lua_getglobal` + `lua_pcall`), the
   canonical way to call Lua from C and C++. LuaBridge3 (pinned to `3.0-rc12`, the latest release; there
@@ -342,6 +337,21 @@ Costs the host application pays for embedding, measured by the harness:
 - The first engine in a process started slower than the following ones (cold caches, first use of
   the code, the libraries and their files), e.g. Python with MSVC ~31 ms vs ~5.4 ms, Lua ~130 us vs
   ~45 us. Solution: one throw-away warm-up run per variant before the first measured run (section 3).
+
+**2026-10-09**
+- Both warm-ups stay. They remove different cold costs: the warm-up engine the process-wide ones
+  (for startup, load and first of the first run), the warm-up calls the per-engine ones (for the
+  headline). Measured with `--warmup 0` (MSVC): only the first call of an engine is slower, and only
+  noticeably for short calls (AngelScript `loop` n = 1000: 26 us first, 11 us after; Python: 31 us vs
+  29 us). One warm-up call would be enough today; 3 stay as a margin, e.g. for Phase 4's
+  allocation-heavy disciplines.
+- GCC 13.3 (Ubuntu 24.04) is tested as well. TeaScript uses `std::format` there, not fmt.
+- The git versions in the result files (cpp-script-bench, TeaScript, ChaiScript, pybind11) are
+  determined on every build, not only when CMake configures. Before, a build after a new commit
+  without a re-run of CMake reported the previous commit. `csb_target_git_version()` generates a
+  header, which is only rewritten when the version changed, so nothing is recompiled otherwise.
+- Machine-specific setup (paths, hosts, access) stays out of the repo; only toolchain and OS
+  versions are documented here.
 
 ## 10. Open questions
 

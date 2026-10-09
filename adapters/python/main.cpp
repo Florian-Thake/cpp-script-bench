@@ -8,6 +8,7 @@
 // CPython has one way of running code, so there is one variant. A free-threaded build (without the GIL) is
 // reported as the variant "free-threaded", which is not part of the main comparison.
 
+#include "csb_pybind11_git_version.h"
 #include "registry.hpp"
 
 #include <csb/runner.hpp>
