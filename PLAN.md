@@ -152,7 +152,7 @@ community can review them.
 | Language    | Version                                   | Embedded via                       | Notes |
 |-------------|-------------------------------------------|------------------------------------|-------|
 | TeaScript   | HEAD (0.18.0 pre-release); pinned to 0.18.0 after its release | native API | header-only |
-| ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API | the last release (6.1.0) is from 2018; headline build: `no-threads` |
+| ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API; ChaiScript_Extras `math.hpp` (from 4a) | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library; headline: `AS_NO_THREADS`, without line cues |
 | Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings (Phase 4) | compiled library, as C |
 | Python      | the installed system Python (any version pybind11 supports, 3.9+) | pybind11 3.1.0 (embedded interpreter) | prebuilt; exact version and build recorded |
@@ -187,11 +187,11 @@ Status: ✅ implemented, ⬜ planned.
 |----------------|--------------------------------------------------|--------|
 | fib_recursive  | recursive `fib( n )`: call and recursion overhead; series n = 15 / 20 / 25 | ✅ |
 | loop           | counting loop, body `sum = sum + (i & 7)`         | ✅ |
-| int_arith      | Collatz step counts for 1..N                      | ⬜ |
+| int_arith      | Collatz step counts for 1..n: `%` and integer division | ⬜ |
 | mandelbrot     | float arithmetic: Mandelbrot grid, checksum = integer iteration count | ✅ |
-| math_builtins  | sums of `sqrt`/`sin` (compared with a tolerance)  | ⬜ |
-| calls          | tiny function called N times with 0, 1 and 3 arguments | ⬜ |
-| tak            | Tak function: deeper recursion                    | ⬜ |
+| math_builtins  | sum of `floor( sqrt( i ) )`, an exact integer checksum | ⬜ |
+| calls          | tiny functions with 0, 1 and 3 arguments, called in one loop | ⬜ |
+| tak            | Tak function: recursion with 3 arguments and calls as arguments; series n = 4 / 5 / 6 | ⬜ |
 | branching      | if/else dispatch, short-circuit logic             | ⬜ |
 
 ### Data
@@ -252,8 +252,8 @@ Costs the host application pays for embedding, measured by the harness:
 - [x] **Phase 3:** Python (pybind11) runner.
 - [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
       all languages at once (one commit each).
-  - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The TeaScript
-        host call is settled (decision log 2026-10-09).
+  - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The design
+        round is done (decision log 2026-10-09); next: implement one discipline per commit.
   - [ ] **4b Data:** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
         round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
@@ -372,13 +372,46 @@ Costs the host application pays for embedding, measured by the harness:
   for calling a script function from C++, the counterpart of `lua_pcall`, AngelScript's `Execute()`
   and the function handles of pybind11 and ChaiScript. Users call script functions this way, so the
   benchmark does too. (`ExecuteProgram` is meant for running whole programs.)
+- 4a design round. The sizes are tuned during the implementation: the slowest headline variant
+  should need 0.1-0.5 s per call, like `loop` and `mandelbrot` (except ChaiScript's recursion).
+  - `int_arith`: Collatz step counts for s = 1..n:
+    `x = s; while x != 1: (if x % 2 == 0: x = x / 2 else: x = 3 * x + 1); total = total + 1`.
+    `%` and integer division (`//` in Python and Lua, `mod` and `/` in TeaScript), no bit
+    operations (`loop` covers them). n = 10,000 (checksum 849,666). The values stay below 2^31
+    for all n < 113,383.
+  - `calls`: `f0() = 1`, `f1( a ) = a & 7`, `f3( a, b, c ) = (a + b + c) & 7`, called in the loop
+    of `loop`: `sum = sum + f0() + f1( i ) + f3( i, 1, 2 )`. Named functions, called by name like
+    `fib`. One combined benchmark, not one per argument count. n = 100,000 (checksum 800,000).
+  - `tak`: if `y < x`, `tak( x, y, z )` returns
+    `tak( tak( x - 1, y, z ), tak( y - 1, z, x ), tak( z - 1, x, y ) )`, else `z`;
+    `bench( n ) = tak( 3n, 2n, n )`. Series n = 4 / 5 / 6 (results 5 / 10 / 7;
+    1,733 / 10,345 / 63,609 calls). Not larger: ChaiScript's cost of a recursion is quadratic in
+    its calls (n = 6 ~11 s per call; n = 7 would take minutes per call). tak is not deeper than
+    fib; it adds 3 arguments and calls as arguments.
+  - `branching`: `k = i & 7`; an if/else chain `k == 0` (+1), `k == 1` (+2), `k < 4` (+3),
+    else (+4); then `if (k > 2 and k < 6) or k == 7` (+5). No switch or match (TeaScript and Lua
+    have none); explicit parentheses, so operator precedence plays no role. n = 1,000,000
+    (checksum 5,625,000).
+  - `math_builtins`: the sum of `floor( sqrt( i ) )` for i = 1..n, accumulated in the type the
+    functions return and converted to an integer once at the end. Exact, because `sqrt` is
+    correctly rounded (IEEE 754) and `floor` is exact, so no tolerance is needed (this answers
+    the open question). `sin` is dropped: TeaScript has none, and it is not correctly rounded.
+    n = 100,000 (checksum 21,032,170).
+- Math functions per language: Python `from math import sqrt, floor` and Lua
+  `local sqrt, floor = math.sqrt, math.floor` (the idiomatic fast forms), AngelScript the
+  scriptmath add-on, TeaScript the Core Library's convenience functions `sqrt` and `floor` (not the
+  native `_sqrt` and `_trunc`), ChaiScript the `math.hpp` module of ChaiScript_Extras. That is
+  ChaiScript's official module for `<cmath>` (its standard library has no math functions), the
+  counterpart of AngelScript's add-on; pinned to a commit when it is added. Its overload dispatch
+  with an `int` argument is checked during the implementation.
+- ChaiScript's quadratic call cost only affects recursion. The saved parameters are cleared
+  whenever the script call depth returns to 0, and the host calls `bench` through a function
+  handle, so calls made directly from `bench` stay linear (measured: 10k / 20k / 40k calls of a
+  1-argument function in 7.5 / 15 / 31 ms). The note in `fib_recursive/README.md` is corrected.
 
 ## 10. Open questions
 
 - Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
   already has one entry per n.
 - Process priority and CPU pinning for less noise? Phase 5, before the published runs.
-- `math_builtins`: the catalogue says "compared with a tolerance", but rule 1 requires an integer
-  checksum. E.g. a scaled and truncated sum, if all languages give bit-identical results on one
-  machine (they likely call the same C library). Decide in 4a.
 - Format of the published results: Markdown tables, charts, a web page? Phase 5.

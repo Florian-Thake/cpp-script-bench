@@ -39,9 +39,10 @@ fib( x ) = fib( x - 1 ) + fib( x - 2 )  otherwise
 - `return` is implemented with a C++ exception (`detail::Return_Value`), unless it is the last
   statement of a function (then the optimizer removes it). Exceptions are expensive, especially
   with MSVC. The script therefore uses the value of the last expression, like the TeaScript script.
-- The cost per call grows with the number of calls made so far within one call from the host:
-  every call inserts its parameters at the *front* of a vector which is only cleared when the
-  outermost call returns (`save_function_params()` / `pop_function_call()` in
-  `dispatchkit/dispatchkit.hpp`). This makes the run time quadratic in the number of calls.
+- The cost per call grows with the number of calls made so far within one outermost script call
+  (here `fib( n )`, called from `bench`): every call inserts its parameters at the *front* of a
+  vector which is only cleared when the script call depth returns to 0 (`save_function_params()` /
+  `pop_function_call()` in `dispatchkit/dispatchkit.hpp`). This makes the run time of a recursion
+  quadratic in its number of calls. Calls made directly from `bench` are not affected.
   Measured with MSVC: fib(15) 2.4 ms, fib(20) 152 ms, fib(25) 18.0 s (11x more calls cost 118x
   more time). ChaiScript 6.1.0 behaves the same. The series n = 15 / 20 / 25 shows this growth.
