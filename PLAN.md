@@ -192,7 +192,7 @@ Status: ✅ implemented, ⬜ planned.
 | math_builtins  | sum of `floor( sqrt( i ) )`, an exact integer checksum | ⬜ |
 | calls          | tiny functions with 0, 1 and 3 arguments, called in one loop | ✅ |
 | tak            | Tak function: recursion with 3 arguments and calls as arguments; series n = 4 / 5 / 6 | ✅ |
-| branching      | if/else dispatch, short-circuit logic             | ⬜ |
+| branching      | if/else dispatch, short-circuit logic             | ✅ |
 
 ### Data
 
@@ -253,7 +253,7 @@ Costs the host application pays for embedding, measured by the harness:
 - [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
       all languages at once (one commit each).
   - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The design
-        round is done (decision log 2026-10-09); one discipline per commit. Done: `int_arith`, `calls`, `tak`.
+        round is done (decision log 2026-10-09); one discipline per commit. Done: `int_arith`, `calls`, `tak`, `branching`.
   - [ ] **4b Data:** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
         round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
@@ -425,6 +425,11 @@ Costs the host application pays for embedding, measured by the harness:
   round. n = 7 (395,757 calls) would still take minutes per call, so the series stays 4 / 5 / 6.
   The other languages need at most ~50 ms for n = 6, below the usual target; the series is limited
   by ChaiScript's cost of a recursion.
+- `branching`: n = 300,000 instead of 1,000,000 (checksum 1,687,500). With 1,000,000 the slowest
+  headlines (TeaScript `vm-O1` and ChaiScript `no-threads`, MSVC) needed ~1.1 s per call.
+- Python's chained comparison (`2 < k < 6`) is not used: the spec's `and` form evaluates the same
+  comparisons as in the other languages, and it is the faster form in CPython (the chained one
+  was ~9% slower in this loop with Python 3.14).
 
 ## 10. Open questions
 
