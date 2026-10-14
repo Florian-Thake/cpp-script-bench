@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// sqrt and floor come from the math module of ChaiScript_Extras, which the runner loads. They take
+// a float, double or long double; ChaiScript doesn't convert an int argument for them, so 'i + 0.0'
+// makes it a double (the fastest of the usual forms, see README.md).
+def bench(n) {
+    var total = 0.0;
+    for (var i = 1; i <= n; ++i) {
+        total = total + floor(sqrt(i + 0.0));
+    }
+    to_int(total);
+}

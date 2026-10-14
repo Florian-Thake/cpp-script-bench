@@ -14,7 +14,7 @@ endif()
 if( CSB_WITH_CHAISCRIPT )
     add_subdirectory( chaiscript )
 else()
-    message( STATUS "ChaiScript runners: disabled (set CSB_WITH_CHAISCRIPT=ON and CSB_CHAISCRIPT_DIR)" )
+    message( STATUS "ChaiScript runners: disabled (set CSB_WITH_CHAISCRIPT=ON, CSB_CHAISCRIPT_DIR and CSB_CHAISCRIPT_EXTRAS_DIR)" )
 endif()
 
 if( CSB_WITH_LUA )

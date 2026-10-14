@@ -3,16 +3,18 @@
  * SPDX-License-Identifier: MIT
  */
 
-// The ChaiScript runner. This file is built twice:
+// The ChaiScript runner, with the math module of ChaiScript_Extras. This file is built twice:
 //   csb_chaiscript            ChaiScript in its default configuration, which is thread-safe (variant "default").
 //   csb_chaiscript_nothreads  with CHAISCRIPT_NO_THREADS: no locking for multi-threaded use (variant "no-threads").
 
+#include "csb_chaiscript_extras_git_version.h"
 #include "csb_chaiscript_git_version.h"
 #include "registry.hpp"
 
 #include <csb/runner.hpp>
 
 #include <chaiscript/chaiscript.hpp>
+#include <chaiscript/extras/math.hpp>
 
 #include <chrono>
 #include <climits>
@@ -64,7 +66,7 @@ public:
 
     std::string version() const override
     {
-        return chaiscript::Build_Info::version() + " (" CSB_CHAISCRIPT_GIT_VERSION ")";
+        return chaiscript::Build_Info::version() + " (" CSB_CHAISCRIPT_GIT_VERSION "); ChaiScript_Extras (" CSB_CHAISCRIPT_EXTRAS_GIT_VERSION ")";
     }
 
     std::string script_extension() const override { return ".chai"; }
@@ -76,6 +78,9 @@ public:
         mChai = std::make_unique<chaiscript::ChaiScript>( std::vector<std::string>{}, std::vector<std::string>{},
                                                           std::vector<chaiscript::Options>{ chaiscript::Options::No_Load_Modules,
                                                                                             chaiscript::Options::No_External_Scripts } );
+        // The standard library has no math functions. The math module of ChaiScript_Extras is ChaiScript's official
+        // module for <cmath>, the counterpart of AngelScript's math add-on, so it belongs to the standard library here.
+        mChai->add( chaiscript::extras::math::bootstrap() );
     }
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &, std::string const &source ) override

@@ -7,7 +7,7 @@ through the language's own C++ embedding API and does all the measuring. Only CP
 measured, no IO.
 
 > **Status:** early development. The harness and the runners for all languages work, with the
-> first core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
 
 ## Languages
 
@@ -15,8 +15,8 @@ measured, no IO.
 |-------------|----------------------------|-----------|
 | C++         | native reference           | available |
 | TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval; headline: O1) |
-| ChaiScript  | native C++ API             | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
-| AngelScript | native C++ API + add-ons (string, array, dictionary, math) | available (two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues) |
+| ChaiScript  | native C++ API + ChaiScript_Extras (math module) | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
+| AngelScript | native C++ API + add-ons (string, array, dictionary, math in double precision) | available (two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues) |
 | Lua         | Lua C API; LuaBridge3 for the bindings (later) | available |
 | Python      | pybind11 (embedded)        | available (the installed Python, see below) |
 
@@ -79,6 +79,7 @@ On Linux, inherit from the `gcc` preset instead (Ninja, Release).
 | `CSB_FMT_DIR`                   | optional: root of the fmt library, used by TeaScript (needed for GCC < 13, which has no `std::format`) |
 | `CSB_WITH_CHAISCRIPT`           | build the ChaiScript runners `csb_chaiscript` and `csb_chaiscript_nothreads` |
 | `CSB_CHAISCRIPT_DIR`            | root of ChaiScript (contains `include/chaiscript`); use the `develop` branch |
+| `CSB_CHAISCRIPT_EXTRAS_DIR`     | root of ChaiScript_Extras (contains `include/chaiscript/extras`), for its math module; required for the ChaiScript runners |
 | `CSB_WITH_ANGELSCRIPT`          | build the AngelScript runners `csb_angelscript` and `csb_angelscript_nothreads` |
 | `CSB_ANGELSCRIPT_DIR`           | the `sdk` directory of the AngelScript SDK (contains `angelscript/include` and `add_on`) |
 | `CSB_WITH_LUA`                  | build the Lua runner `csb_lua` |

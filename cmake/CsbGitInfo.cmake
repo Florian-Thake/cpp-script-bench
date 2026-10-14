@@ -31,11 +31,12 @@ endfunction()
 function( csb_target_git_version target macro dir )
     string( TOLOWER "${macro}" name )
     set( header "${CMAKE_CURRENT_BINARY_DIR}/${target}_git/${name}.h" )
-    add_custom_target( ${target}_git_version
+    # One custom target per header, so a target can have several (e.g. a language library and an add-on library).
+    add_custom_target( ${target}_${name}
         COMMAND "${CMAKE_COMMAND}" "-DGIT_EXECUTABLE=${GIT_EXECUTABLE}" "-DCSB_GIT_DIR=${dir}" "-DCSB_GIT_MACRO=${macro}"
                 "-DCSB_GIT_HEADER=${header}" -P "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/CsbGitVersionHeader.cmake"
         BYPRODUCTS "${header}"  # Ninja: dependent sources are recompiled in the same build if the header changed
         VERBATIM )
-    add_dependencies( ${target} ${target}_git_version )
+    add_dependencies( ${target} ${target}_${name} )
     target_include_directories( ${target} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/${target}_git" )
 endfunction()

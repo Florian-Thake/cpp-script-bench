@@ -35,8 +35,9 @@ set( CSB_TEASCRIPT_DIR "" CACHE PATH "Root of the TeaScript C++ Library (the dir
 set( CSB_TEASCRIPT_DEFAULT_VARIANT "vm-O1" CACHE STRING "TeaScript variant used when no --variant is given" )
 set_property( CACHE CSB_TEASCRIPT_DEFAULT_VARIANT PROPERTY STRINGS vm-O0 vm-O1 vm-O2 ast )
 
-option( CSB_WITH_CHAISCRIPT "Build the ChaiScript runners (needs CSB_CHAISCRIPT_DIR)" OFF )
+option( CSB_WITH_CHAISCRIPT "Build the ChaiScript runners (needs CSB_CHAISCRIPT_DIR and CSB_CHAISCRIPT_EXTRAS_DIR)" OFF )
 set( CSB_CHAISCRIPT_DIR "" CACHE PATH "Root of ChaiScript (the directory containing include/chaiscript); use the develop branch" )
+set( CSB_CHAISCRIPT_EXTRAS_DIR "" CACHE PATH "Root of ChaiScript_Extras (the directory containing include/chaiscript/extras), for its math module" )
 
 option( CSB_WITH_LUA "Build the Lua runner (needs CSB_LUA_DIR)" OFF )
 set( CSB_LUA_DIR "" CACHE PATH "Root of the Lua source distribution (the directory containing src/lua.h)" )

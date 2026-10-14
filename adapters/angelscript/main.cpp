@@ -128,7 +128,7 @@ public:
         RegisterScriptArray( mEngine, true );  // true: 'int[]' is the syntax for arrays
         RegisterStdStringUtils( mEngine );
         RegisterScriptDictionary( mEngine );
-        RegisterScriptMath( mEngine );
+        RegisterScriptMath( mEngine );  // the double versions of the functions (built with AS_USE_FLOAT=0)
 
         mContext = mEngine->CreateContext();
         if( mContext == nullptr ) {

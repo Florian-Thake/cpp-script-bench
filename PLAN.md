@@ -152,8 +152,8 @@ community can review them.
 | Language    | Version                                   | Embedded via                       | Notes |
 |-------------|-------------------------------------------|------------------------------------|-------|
 | TeaScript   | HEAD (0.18.0 pre-release); pinned to 0.18.0 after its release | native API | header-only |
-| ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API; ChaiScript_Extras `math.hpp` (from 4a) | the last release (6.1.0) is from 2018; headline build: `no-threads` |
-| AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons | compiled library; headline: `AS_NO_THREADS`, without line cues |
+| ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API; ChaiScript_Extras `math.hpp` (`master` at `dd116d7`, 2026-04-17) | the last release (6.1.0) is from 2018; headline build: `no-threads` |
+| AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons (math with `AS_USE_FLOAT=0`: double) | compiled library; headline: `AS_NO_THREADS`, without line cues |
 | Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings (Phase 4) | compiled library, as C |
 | Python      | the installed system Python (any version pybind11 supports, 3.9+) | pybind11 3.1.0 (embedded interpreter) | prebuilt; exact version and build recorded |
 | C++         | n/a                                       | reference                          | |
@@ -189,7 +189,7 @@ Status: ✅ implemented, ⬜ planned.
 | loop           | counting loop, body `sum = sum + (i & 7)`         | ✅ |
 | int_arith      | Collatz step counts for 1..n: `%` and integer division | ✅ |
 | mandelbrot     | float arithmetic: Mandelbrot grid, checksum = integer iteration count | ✅ |
-| math_builtins  | sum of `floor( sqrt( i ) )`, an exact integer checksum | ⬜ |
+| math_builtins  | sum of `floor( sqrt( i ) )`, an exact integer checksum | ✅ |
 | calls          | tiny functions with 0, 1 and 3 arguments, called in one loop | ✅ |
 | tak            | Tak function: recursion with 3 arguments and calls as arguments; series n = 4 / 5 / 6 | ✅ |
 | branching      | if/else dispatch, short-circuit logic             | ✅ |
@@ -252,9 +252,9 @@ Costs the host application pays for embedding, measured by the harness:
 - [x] **Phase 3:** Python (pybind11) runner.
 - [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
       all languages at once (one commit each).
-  - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The design
-        round is done (decision log 2026-10-09); one discipline per commit. Done: `int_arith`, `calls`, `tak`, `branching`.
-  - [ ] **4b Data:** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
+  - [x] **4a Core:** `int_arith`, `calls`, `tak`, `branching`, `math_builtins` (design round
+        2026-10-09, implemented 2026-10-14).
+  - [ ] **4b Data (next):** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
         round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
@@ -430,6 +430,18 @@ Costs the host application pays for embedding, measured by the harness:
 - Python's chained comparison (`2 < k < 6`) is not used: the spec's `and` form evaluates the same
   comparisons as in the other languages, and it is the faster form in CPython (the chained one
   was ~9% slower in this loop with Python 3.14).
+- `math_builtins`: n = 100,000 as planned (checksum 21,032,170).
+  - ChaiScript does not convert an `int` argument for the math module's functions (overloads for
+    `float`, `double` and `long double`): `sqrt(i)` fails. The script converts with `i + 0.0`, the
+    fastest usual form (MSVC, per call: `to_double(i)` 161 ms, `double(i)` 155 ms, `i + 0.0`
+    122 ms). TeaScript's `sqrt` does the same `+ 0.0` internally.
+  - Loading the math module raises ChaiScript's startup by ~0.6 ms (MSVC: ~3.2 to ~3.8 ms).
+  - Lua's `math.floor` and Python's `math.floor` return integers, so their sums are integers; the
+    other languages sum doubles and convert once at the end.
+  - Python's `math` is a built-in module in the tested builds, so `from math import ...` in the
+    script's top level reads nothing from disk.
+- `csb_target_git_version()` creates one custom target per header, so a runner can record several
+  git versions (ChaiScript and ChaiScript_Extras).
 
 ## 10. Open questions
 

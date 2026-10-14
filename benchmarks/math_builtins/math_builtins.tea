@@ -1,0 +1,10 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func bench( n ) {
+    def total := 0.0
+    forall( i in _seq( 1, n, 1 ) ) {
+        total := total + floor( sqrt( i ) )
+    }
+    total as i64
+}

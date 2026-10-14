@@ -41,6 +41,10 @@ function( csb_add_angelscript_runner target no_threads )
     if( no_threads )
         target_compile_definitions( ${target}_lib PUBLIC AS_NO_THREADS )
     endif()
+    # The math add-on registers its functions for float by default (e.g. 'float sqrt(float)'). AS_USE_FLOAT=0 registers
+    # the double versions instead (documented in the add-on's manual page), so AngelScript computes in double precision
+    # like the other languages.
+    target_compile_definitions( ${target}_lib PRIVATE AS_USE_FLOAT=0 )
     target_link_libraries( ${target}_lib PUBLIC Threads::Threads )
     csb_apply_compiler_options( ${target}_lib )
     if( MSVC )

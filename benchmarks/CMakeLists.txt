@@ -9,6 +9,7 @@ add_library( csb_benchmarks STATIC
     loop/reference.cpp
     int_arith/reference.cpp
     mandelbrot/reference.cpp
+    math_builtins/reference.cpp
     calls/reference.cpp
     tak/reference.cpp
     branching/reference.cpp )
