@@ -198,12 +198,19 @@ Status: ✅ implemented, ⬜ planned.
 
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
-| var_access     | local vs global vs nested-scope lookup           | ⬜ |
-| var_lifecycle  | create, assign and destroy; explicit delete where the language has it | ⬜ |
-| strings        | concatenation, comparison, substrings, number <-> string | ⬜ |
-| arrays         | sieve of Eratosthenes, sorting by hand, push/index | ⬜ |
-| maps           | insert, lookup and remove with int and string keys | ⬜ |
-| objects        | records with fields; binary-trees (allocation-heavy) | ⬜ |
+| var_global     | the loop of `loop` with a script-level (global) accumulator | ⬜ |
+| var_nested     | four nested loops; the body reads variables of four enclosing scopes | ⬜ |
+| var_lifecycle  | new block-local variables in every loop iteration | ⬜ |
+| sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ⬜ |
+| sort           | insertion sort by hand of generated values       | ⬜ |
+| byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ⬜ |
+| maps           | string keys: insert, lookup, remove, membership  | ⬜ |
+| strings        | number -> string, concatenation, comparison, substring, string -> number | ⬜ |
+| records        | field reads and writes of one record (no allocation) | ⬜ |
+| binary_trees   | allocation-heavy: build and check binary trees of records; series over the depth | ⬜ |
+
+The catalogue entries `var_access`, `arrays` and `objects` were split into several benchmarks, and
+`byte_buffer` was added (decision log 2026-10-14).
 
 ### Interop (script <-> C++)
 
@@ -213,7 +220,7 @@ Status: ✅ implemented, ⬜ planned.
 | script_to_host | the script calls a registered C++ function N times | ⬜ |
 | data_exchange  | the host sets and reads script variables, strings and arrays | ⬜ |
 | cpp_objects    | a bound C++ type (`Vec3`/`Entity`) used from the script. TeaScript has no class binding: its version (callbacks + passthrough data) is off by default and shown as "n/a" | ⬜ |
-| buffer         | fill an RGBA image buffer (from the old BufferOverhead test) | ⬜ |
+| buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ⬜ |
 
 ### Host API (C++ level)
 
@@ -254,8 +261,9 @@ Costs the host application pays for embedding, measured by the harness:
       all languages at once (one commit each).
   - [x] **4a Core:** `int_arith`, `calls`, `tak`, `branching`, `math_builtins` (design round
         2026-10-09, implemented 2026-10-14).
-  - [ ] **4b Data (next):** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
-        round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
+  - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
+        `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
+        2026-10-14); next: implement one discipline per commit, in this order.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -442,6 +450,77 @@ Costs the host application pays for embedding, measured by the harness:
     script's top level reads nothing from disk.
 - `csb_target_git_version()` creates one custom target per header, so a runner can record several
   git versions (ChaiScript and ChaiScript_Extras).
+- 4b design round. The six catalogue entries become ten benchmarks: `var_access` is split into
+  `var_global` and `var_nested`, `arrays` into `sieve` and `sort`, `objects` into `records` and
+  `binary_trees`, and `byte_buffer` is new. One combined number would hide which part is slow. The
+  sizes are starting points, tuned during the implementation as in 4a.
+- Common rules of the Data benchmarks:
+  - The natural container per language. Arrays: TeaScript Tuple, ChaiScript Vector, AngelScript
+    `array<T>`, Lua table as a sequence, Python list. Maps: TeaScript Map, ChaiScript Map,
+    AngelScript `dictionary`, Lua table, Python dict. Records: TeaScript named Tuple, ChaiScript
+    `class`, AngelScript script class, Lua table with named fields, Python class with `__init__`.
+  - Maps use string keys only. ChaiScript's Map and AngelScript's dictionary have no int keys, and
+    Lua stores dense int keys in the array part of a table, so an int-key test would measure arrays
+    there.
+  - Containers grow by appending in a loop. No native fill or preallocation (`[x] * n`, Lua 5.5's
+    `table.create`, `array<T>(n, v)`, `resize`), see rule 4. In Lua, `t[i] = v` with the next index
+    counts as appending. Exception: `byte_buffer` (below).
+  - Lua indexes from 1; the index ranges of the specs shift accordingly.
+  - Number -> string in each language's natural form: TeaScript `"item" % i`, ChaiScript
+    `"item" + to_string(i)`, AngelScript `"item" + i`, Lua `"item" .. i`, Python `f"item{i}"`.
+    String -> number: TeaScript `d as i64` (the cast operator; `_strtonum( d )` ends in the same
+    conversion, unary `+d` is a workaround), ChaiScript `to_int(d)`, AngelScript `parseInt(d)`, Lua
+    `tonumber(d)`, Python `int(d)`.
+  - Library functions are cached in locals where that is the idiomatic fast form (e.g. Lua
+    `local sub = string.sub`), like in `math_builtins`.
+  - Explicit delete (TeaScript `undef`, Python `del`) is dropped from `var_lifecycle`: only these
+    two languages have it, and deleting locals is unusual in both.
+  - Methods are out of scope: TeaScript has no classes and no automatic `this` (functions in named
+    Tuple elements could only emulate them). An OOP discipline may follow when TeaScript gets class
+    support.
+- The specs (checksums computed with a Python model of each spec):
+  - `var_global`: the loop of `loop`, but `sum` is a script-level variable, read and written in
+    `bench`: TeaScript top-level `def`, ChaiScript `global` (a top-level `var` is not visible in
+    functions), AngelScript global `int`, Lua global (no `local`), Python module variable with
+    `global`. n = 1,000,000 (checksum 3,500,000).
+  - `var_nested`: four nested counting loops over a, b, c, d = 0..n-1 with the body
+    `sum = sum + ((a + b + c + d) & 7)`, which reads variables of four enclosing scopes. Shows
+    whether the cost of a lookup grows with the scope depth (TeaScript and ChaiScript resolve names
+    at runtime, the others at compile time). n = 30 (810,000 iterations, checksum 2,834,976).
+  - `var_lifecycle`: per iteration `a = i & 7; b = a + 1; b = b * a; sum = sum + b`, with new
+    block-local variables (`const`/`def`, `var`, `local`, `int`; Python has no block scope).
+    n = 1,000,000 (checksum 21,000,000).
+  - `sieve`: append n + 1 flags `true`; for i = 2 while i * i <= n: if `flags[i]`, clear the
+    multiples from i * i; then count the primes <= n. The bound i * i <= n keeps all values below
+    2^31. n = 300,000 (checksum 25,997).
+  - `sort`: append n values of the generator `x = (x * 75 + 74) % 65537` (x = 1 at the start),
+    sort them with insertion sort, checksum the sum of a[i] * (i & 7) (fits 32 bit for n <= 4,681).
+    n = 1,000 (255,665 shifts, checksum 116,225,934).
+  - `byte_buffer`: a byte buffer of n zero bytes, filled with the low bytes of the generator of
+    `sort`, then an Adler-32 style checksum over it (`a = (a + buf[i]) % 65521`,
+    `b = (b + a) % 65521`, a = 1 and b = 0 at the start); returns a + b. n = 300,000
+    (checksum 101,572).
+    - The buffer is created at its full size, the natural form of a fixed-size buffer (TeaScript's
+      Buffer cannot grow past its capacity): TeaScript `_buf( n )` and `_buf_resize`, Python
+      `bytearray(n)`, AngelScript `array<uint8>(n)`. Lua and ChaiScript have no byte type: they use
+      their array, built by appending in the write loop, with the values masked to 0..255. They are
+      included (documented), not "n/a".
+    - Multi-byte access (`_buf_get_u32` etc.) is left out: only TeaScript and Python can do it in
+      place. It would fit the idiomatic track.
+    - Not the same as 4c's `buffer`, which is owned by the host.
+  - `maps`: build the keys "k0" .. "k{n-1}" once into an array; insert key -> i, look up all keys,
+    remove every second key, count which keys are still members. n = 10,000 (checksum 50,000,000;
+    fits 32 bit for n < 65,536).
+  - `strings`: per i: `s = "item" + i`; count `s < prev`; add the length of `s`; `d` = substring of
+    `s` from index 4 (the digits); add `int(d) & 7`; `prev = s`. n = 100,000 (checksum 1,238,894).
+  - `records`: one record with the fields x, y, z (all 0), created once; per iteration
+    `p.x = p.x + (i & 7); p.y = p.y + (p.x & 3); p.z = p.z + (p.y & 1)`; returns x + y + z. Field
+    access only, no allocation in the loop. n = 1,000,000 (checksum 5,250,000).
+  - `binary_trees`: the Benchmarks Game algorithm with record nodes (left, right): `make( d )`
+    builds a full tree of depth d, `check` counts its nodes. `bench( n )` builds and checks
+    2^(16 - n) trees of depth n, ~131k nodes per call for every n. Series n = 4 / 8 / 12 (checksums
+    126,976 / 130,816 / 131,056). Measures allocation and garbage collection; the series shows the
+    effect of the tree size at the same volume (and ChaiScript's cost of a recursion).
 
 ## 10. Open questions
 
@@ -449,3 +528,7 @@ Costs the host application pays for embedding, measured by the harness:
   already has one entry per n.
 - Process priority and CPU pinning for less noise? Phase 5, before the published runs.
 - Format of the published results: Markdown tables, charts, a web page? Phase 5.
+- Script alternatives: a second script per benchmark and language (e.g. TeaScript `_strtonum` or
+  `_strtonumex` instead of `as i64`, Python `"item" + str(i)` instead of an f-string), selectable
+  on the command line and reported outside the headline? Until then, alternatives are compared
+  with a scratch copy of the script and `--scripts`. Phase 5.
