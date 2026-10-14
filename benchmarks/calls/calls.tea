@@ -1,0 +1,22 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func f0() {
+    1
+}
+
+func f1( a ) {
+    a bit_and 7
+}
+
+func f3( a, b, c ) {
+    (a + b + c) bit_and 7
+}
+
+func bench( n ) {
+    def sum := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        sum := sum + f0() + f1( i ) + f3( i, 1, 2 )
+    }
+    sum
+}

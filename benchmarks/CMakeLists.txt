@@ -8,7 +8,8 @@ add_library( csb_benchmarks STATIC
     fib_recursive/reference.cpp
     loop/reference.cpp
     int_arith/reference.cpp
-    mandelbrot/reference.cpp )
+    mandelbrot/reference.cpp
+    calls/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
 target_link_libraries( csb_benchmarks PUBLIC csb_harness )
