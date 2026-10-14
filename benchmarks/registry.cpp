@@ -13,6 +13,7 @@ std::int64_t loop( std::int64_t n );
 std::int64_t int_arith( std::int64_t n );
 std::int64_t mandelbrot( std::int64_t n );
 std::int64_t calls( std::int64_t n );
+std::int64_t tak( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -27,6 +28,7 @@ constexpr std::int64_t loop_n[]          = { 1'000'000 };
 constexpr std::int64_t int_arith_n[]     = { 5'000 };
 constexpr std::int64_t mandelbrot_n[]    = { 100 };
 constexpr std::int64_t calls_n[]         = { 100'000 };
+constexpr std::int64_t tak_n[]           = { 4, 5, 6 };
 
 } // namespace
 
@@ -38,6 +40,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "int_arith",     "core", "Collatz step counts: integer modulo and division", int_arith_n, &reference::int_arith },
         { "mandelbrot",    "core", "Mandelbrot set: floating point arithmetic in nested loops", mandelbrot_n, &reference::mandelbrot },
         { "calls",         "core", "Calls of tiny script functions with 0, 1 and 3 arguments", calls_n, &reference::calls },
+        { "tak",           "core", "Tak function: recursion with 3 arguments and calls as arguments", tak_n, &reference::tak },
     };
     return list;
 }

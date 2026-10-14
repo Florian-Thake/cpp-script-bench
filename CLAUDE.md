@@ -42,6 +42,7 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
   the CPU with its host.
 - ChaiScript's `fib_recursive` with n = 25 takes ~18 s per call, ~72 s per run even with the time
   budget. Use `--n 20` (and `--bench`, `--runs`, `--warmup`) when you only verify results.
+  Its `tak` with n = 6 takes ~3.6 s per call.
 - Verify every change with both toolchains (MSVC and GCC). Every result must be "ok", i.e. match
   the C++ reference checksum.
 

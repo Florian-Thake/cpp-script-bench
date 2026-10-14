@@ -191,7 +191,7 @@ Status: ✅ implemented, ⬜ planned.
 | mandelbrot     | float arithmetic: Mandelbrot grid, checksum = integer iteration count | ✅ |
 | math_builtins  | sum of `floor( sqrt( i ) )`, an exact integer checksum | ⬜ |
 | calls          | tiny functions with 0, 1 and 3 arguments, called in one loop | ✅ |
-| tak            | Tak function: recursion with 3 arguments and calls as arguments; series n = 4 / 5 / 6 | ⬜ |
+| tak            | Tak function: recursion with 3 arguments and calls as arguments; series n = 4 / 5 / 6 | ✅ |
 | branching      | if/else dispatch, short-circuit logic             | ⬜ |
 
 ### Data
@@ -253,7 +253,7 @@ Costs the host application pays for embedding, measured by the harness:
 - [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
       all languages at once (one commit each).
   - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The design
-        round is done (decision log 2026-10-09); one discipline per commit. Done: `int_arith`, `calls`.
+        round is done (decision log 2026-10-09); one discipline per commit. Done: `int_arith`, `calls`, `tak`.
   - [ ] **4b Data:** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
         round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
@@ -421,6 +421,10 @@ Costs the host application pays for embedding, measured by the harness:
   in `create_engine()` for every benchmark, like AngelScript's math add-on, so its cost is part of
   ChaiScript's startup. It is required for the ChaiScript runners (`CSB_CHAISCRIPT_EXTRAS_DIR`), so
   the startup numbers don't depend on the build.
+- `tak`: ChaiScript needs 3.6 s per call for n = 6 (MSVC), not ~11 s as estimated in the design
+  round. n = 7 (395,757 calls) would still take minutes per call, so the series stays 4 / 5 / 6.
+  The other languages need at most ~50 ms for n = 6, below the usual target; the series is limited
+  by ChaiScript's cost of a recursion.
 
 ## 10. Open questions
 
