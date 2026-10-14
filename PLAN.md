@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-09.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-14.
 
 ## 1. Goal
 
@@ -187,7 +187,7 @@ Status: ✅ implemented, ⬜ planned.
 |----------------|--------------------------------------------------|--------|
 | fib_recursive  | recursive `fib( n )`: call and recursion overhead; series n = 15 / 20 / 25 | ✅ |
 | loop           | counting loop, body `sum = sum + (i & 7)`         | ✅ |
-| int_arith      | Collatz step counts for 1..n: `%` and integer division | ⬜ |
+| int_arith      | Collatz step counts for 1..n: `%` and integer division | ✅ |
 | mandelbrot     | float arithmetic: Mandelbrot grid, checksum = integer iteration count | ✅ |
 | math_builtins  | sum of `floor( sqrt( i ) )`, an exact integer checksum | ⬜ |
 | calls          | tiny functions with 0, 1 and 3 arguments, called in one loop | ⬜ |
@@ -253,7 +253,7 @@ Costs the host application pays for embedding, measured by the harness:
 - [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
       all languages at once (one commit each).
   - [ ] **4a Core (next):** `int_arith`, `calls`, `tak`, `branching`, `math_builtins`. The design
-        round is done (decision log 2026-10-09); next: implement one discipline per commit.
+        round is done (decision log 2026-10-09); one discipline per commit. Done: `int_arith`.
   - [ ] **4b Data:** `var_access`, `var_lifecycle`, `arrays`, `maps`, `strings`, `objects`. One design
         round for all six specs first. May be split into 4b-1 and 4b-2 (`strings`, `objects`).
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
@@ -408,6 +408,19 @@ Costs the host application pays for embedding, measured by the harness:
   whenever the script call depth returns to 0, and the host calls `bench` through a function
   handle, so calls made directly from `bench` stay linear (measured: 10k / 20k / 40k calls of a
   1-argument function in 7.5 / 15 / 31 ms). The note in `fib_recursive/README.md` is corrected.
+
+**2026-10-14**
+- `int_arith`: n = 5,000 instead of 10,000 (checksum 387,968). With 10,000 the slowest headline
+  (ChaiScript `no-threads`, MSVC) needed ~600 ms per call, above the target of 0.1-0.5 s.
+- AngelScript's math add-on (scriptmath) registers only float versions of its functions by default
+  (`AS_USE_FLOAT` is 1 unless defined, e.g. only `float sqrt(float)`). The add-on is compiled with
+  `AS_USE_FLOAT=0`, its own switch for the double versions, so AngelScript computes in double
+  precision like the other languages. A float sum could not even hold the `math_builtins` checksum
+  exactly (it is above 2^24).
+- ChaiScript_Extras is pinned to `master` at `dd116d7` (2026-04-17). Its `math.hpp` module is loaded
+  in `create_engine()` for every benchmark, like AngelScript's math add-on, so its cost is part of
+  ChaiScript's startup. It is required for the ChaiScript runners (`CSB_CHAISCRIPT_EXTRAS_DIR`), so
+  the startup numbers don't depend on the build.
 
 ## 10. Open questions
 

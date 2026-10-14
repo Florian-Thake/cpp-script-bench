@@ -1,0 +1,19 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func bench( n ) {
+    def total := 0
+    forall( s in _seq( 1, n, 1 ) ) {
+        def x := s
+        repeat {
+            if( x == 1 ) { stop }
+            if( x mod 2 == 0 ) {
+                x := x / 2
+            } else {
+                x := 3 * x + 1
+            }
+            total := total + 1
+        }
+    }
+    total
+}

@@ -7,6 +7,7 @@ add_library( csb_benchmarks STATIC
     registry.cpp
     fib_recursive/reference.cpp
     loop/reference.cpp
+    int_arith/reference.cpp
     mandelbrot/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
