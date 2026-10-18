@@ -1,0 +1,33 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// A node is a named Tuple with the elements left and right. false stands for no child.
+func make( d ) {
+    def node := _tuple_create()
+    if( d == 0 ) {
+        def node.left := false
+        def node.right := false
+    } else {
+        def node.left @= make( d - 1 )
+        def node.right @= make( d - 1 )
+    }
+    node
+}
+
+func check( t ) {
+    if( t.left ) {  // a node (a non-empty Tuple), not false
+        1 + check( t.left ) + check( t.right )
+    } else {
+        1
+    }
+}
+
+func bench( n ) {
+    def sum := 0
+    const count := 1 bit_lsh (16 - n)
+    forall( k in _seq( 1, count, 1 ) ) {
+        const t := make( n )
+        sum := sum + check( t )
+    }
+    sum
+}

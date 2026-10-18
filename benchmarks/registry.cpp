@@ -25,6 +25,7 @@ std::int64_t byte_buffer( std::int64_t n );
 std::int64_t maps( std::int64_t n );
 std::int64_t strings( std::int64_t n );
 std::int64_t records( std::int64_t n );
+std::int64_t binary_trees( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -51,6 +52,7 @@ constexpr std::int64_t byte_buffer_n[]   = { 100'000 };
 constexpr std::int64_t maps_n[]          = { 50'000 };
 constexpr std::int64_t strings_n[]       = { 70'000 };
 constexpr std::int64_t records_n[]       = { 150'000 };
+constexpr std::int64_t binary_trees_n[]  = { 4, 8, 12 };
 
 } // namespace
 
@@ -74,6 +76,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "maps",          "data", "Maps with string keys: insert, lookup, remove, membership", maps_n, &reference::maps },
         { "strings",       "data", "Number -> string, comparison, length, substring, string -> number", strings_n, &reference::strings },
         { "records",       "data", "Field reads and writes of one record", records_n, &reference::records },
+        { "binary_trees",  "data", "Build and check binary trees of records: allocation and garbage collection", binary_trees_n, &reference::binary_trees },
     };
     return list;
 }

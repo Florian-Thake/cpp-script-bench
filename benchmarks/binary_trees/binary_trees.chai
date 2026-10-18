@@ -1,0 +1,36 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The node type. A leaf is created with Node(): its attributes stay undefined.
+class Node {
+    var left;
+    var right;
+    def Node() { }
+    def Node(l, r) { this.left = l; this.right = r; }
+}
+
+def make(d) {
+    if (d == 0) {
+        Node();
+    } else {
+        Node(make(d - 1), make(d - 1));
+    }
+}
+
+def check(t) {
+    if (t.left.is_var_undef()) {
+        1;
+    } else {
+        1 + check(t.left) + check(t.right);
+    }
+}
+
+def bench(n) {
+    var sum = 0;
+    var count = 1 << (16 - n);
+    for (var k = 0; k < count; ++k) {
+        var t = make(n);
+        sum = sum + check(t);
+    }
+    sum;
+}
