@@ -20,7 +20,8 @@ add_library( csb_benchmarks STATIC
     sort/reference.cpp
     byte_buffer/reference.cpp
     maps/reference.cpp
-    strings/reference.cpp )
+    strings/reference.cpp
+    records/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
 target_link_libraries( csb_benchmarks PUBLIC csb_harness )

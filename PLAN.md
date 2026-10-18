@@ -206,7 +206,7 @@ Status: ✅ implemented, ⬜ planned.
 | byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ✅ |
 | maps           | string keys: insert, lookup, remove, membership  | ✅ |
 | strings        | number -> string, concatenation, comparison, substring, string -> number | ✅ |
-| records        | field reads and writes of one record (no allocation) | ⬜ |
+| records        | field reads and writes of one record (no allocation) | ✅ |
 | binary_trees   | allocation-heavy: build and check binary trees of records; series over the depth | ⬜ |
 
 The catalogue entries `var_access`, `arrays` and `objects` were split into several benchmarks, and
@@ -265,7 +265,7 @@ Costs the host application pays for embedding, measured by the harness:
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
         2026-10-14); next: implement one discipline per commit, in this order.
         Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`, `maps`,
-        `strings`.
+        `strings`, `records`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -577,6 +577,10 @@ Costs the host application pays for embedding, measured by the harness:
   `"item" + to_string(i)` (interpolation was ~7% slower). AngelScript keeps `"item" + i`:
   `formatInt` was ~30% faster with MSVC but ~12% slower with GCC. Python's `"item" + str(i)` is as
   fast as the f-string.
+- `records`: n = 150,000 instead of 1,000,000 (checksum 787,500). With 1,000,000 the slowest
+  headlines (MSVC) needed ~2.9 s (ChaiScript `no-threads`) and ~1.0 s (TeaScript `vm-O1`) per call;
+  with 150,000 ~0.43 s and ~0.15 s. Python keeps the plain class: `__slots__` was 0-5% faster, close
+  to the noise.
 
 ## 10. Open questions
 
