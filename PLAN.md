@@ -202,7 +202,7 @@ Status: ✅ implemented, ⬜ planned.
 | var_nested     | four nested loops; the body reads variables of four enclosing scopes | ✅ |
 | var_lifecycle  | new block-local variables in every loop iteration | ✅ |
 | sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ✅ |
-| sort           | insertion sort by hand of generated values       | ⬜ |
+| sort           | insertion sort by hand of generated values       | ✅ |
 | byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ⬜ |
 | maps           | string keys: insert, lookup, remove, membership  | ⬜ |
 | strings        | number -> string, concatenation, comparison, substring, string -> number | ⬜ |
@@ -264,7 +264,7 @@ Costs the host application pays for embedding, measured by the harness:
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
         2026-10-14); next: implement one discipline per commit, in this order.
-        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`.
+        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -555,6 +555,10 @@ Costs the host application pays for embedding, measured by the harness:
   headline needed ~3.6 s per call with 300,000; with 40,000 ~0.47 s (GCC ~0.3 s).
   Python's `flags.append(True)` stays: a cached bound method made no measurable difference with
   Python 3.14.
+- `sort`: n = 1,000 as planned (checksum 116,225,934); the slowest headline, ChaiScript
+  `no-threads` with MSVC, needs ~0.41 s per call. TeaScript's `_tuple_append` shares the value
+  object of its argument, so the script appends a copy of `x` (`def v := x`); appending `x` itself
+  would make every element the same variable. The other forms of a copy have the same speed.
 
 ## 10. Open questions
 

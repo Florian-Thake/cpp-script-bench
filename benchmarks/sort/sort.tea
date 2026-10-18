@@ -1,0 +1,29 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func bench( n ) {
+    def a := _tuple_create()
+    def x := 1
+    forall( k in _seq( 0, n - 1, 1 ) ) {
+        x := (x * 75 + 74) mod 65537
+        // _tuple_append shares the value object it gets, so the copy v is appended, not x itself
+        // (otherwise every element would be the variable x).
+        def v := x
+        _tuple_append( a, v )
+    }
+    forall( i in _seq( 1, n - 1, 1 ) ) {
+        const v := a[i]
+        def j := i - 1
+        repeat {
+            if( j < 0 or a[j] <= v ) { stop }
+            a[j + 1] := a[j]
+            j := j - 1
+        }
+        a[j + 1] := v
+    }
+    def sum := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        sum := sum + a[i] * (i bit_and 7)
+    }
+    sum
+}
