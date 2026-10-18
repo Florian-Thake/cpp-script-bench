@@ -87,6 +87,14 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 - AngelScript: statically typed; the entry point is exactly `int bench( int n )`.
 - Python: module-level functions, hot variables are locals; don't shadow built-ins (e.g. `total`
   instead of `sum`).
+- Containers (PLAN.md, decision log 2026-10-14 and 2026-10-18): the natural container per language;
+  grow by appending in a loop, with a capacity reserved where the language can (AngelScript and
+  ChaiScript `reserve`, Lua `table.create`); no native fill. Lua indexes from 1: shift the loop
+  ranges, not every access.
+- TeaScript: `_tuple_append` shares the value object it gets; append a copy of a variable
+  (`def v := x`), not the variable itself.
+- Measure plausible alternatives of a competitor's script; use the faster form if it is idiomatic
+  and faster with both toolchains, and document the numbers in the benchmark's README.
 
 ## Code style
 

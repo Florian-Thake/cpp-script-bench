@@ -7,7 +7,7 @@ through the language's own C++ embedding API and does all the measuring. Only CP
 measured, no IO.
 
 > **Status:** early development. The harness and the runners for all languages work, with the
-> core benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> core and data benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
 
 ## Languages
 
