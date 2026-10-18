@@ -1,0 +1,26 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func bench( n ) {
+    def keys := _tuple_create()
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        _tuple_append( keys, "k" % i )
+    }
+    def m := _map_create()
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        m[keys[i]] := i
+    }
+    def sum := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        sum := sum + m[keys[i]]
+    }
+    forall( i in _seq( 0, n - 1, 2 ) ) {
+        _map_remove( m, keys[i] )
+    }
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        if( _map_contains( m, keys[i] ) ) {
+            sum := sum + 1
+        }
+    }
+    sum
+}

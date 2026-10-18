@@ -204,7 +204,7 @@ Status: ✅ implemented, ⬜ planned.
 | sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ✅ |
 | sort           | insertion sort by hand of generated values       | ✅ |
 | byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ✅ |
-| maps           | string keys: insert, lookup, remove, membership  | ⬜ |
+| maps           | string keys: insert, lookup, remove, membership  | ✅ |
 | strings        | number -> string, concatenation, comparison, substring, string -> number | ⬜ |
 | records        | field reads and writes of one record (no allocation) | ⬜ |
 | binary_trees   | allocation-heavy: build and check binary trees of records; series over the depth | ⬜ |
@@ -264,7 +264,7 @@ Costs the host application pays for embedding, measured by the harness:
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
         2026-10-14); next: implement one discipline per commit, in this order.
-        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`.
+        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`, `maps`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -564,6 +564,11 @@ Costs the host application pays for embedding, measured by the harness:
   ~0.25 s). Lua and ChaiScript reserve the capacity of their arrays (`table.create`, `reserve`).
   The read loop uses index reads in every language; Python's idiomatic `for byte in buf:` would be
   ~9% faster, but measures element iteration instead (documented in the README).
+- `maps`: n = 50,000 instead of 10,000 (checksum 1,250,000,000). With 10,000 the slowest headline
+  (ChaiScript `no-threads`, MSVC) needed only ~75 ms per call; with 50,000 ~0.39 s (GCC ~0.25 s).
+  The checksum limits n to 65,535. The capacity rule also applies to the map: Lua creates it with
+  `table.create( 0, n )`; the other maps have no reserve. The keys are read by index in every
+  language, like in `byte_buffer` (Python's `for key in keys` would be ~5% faster).
 
 ## 10. Open questions
 
