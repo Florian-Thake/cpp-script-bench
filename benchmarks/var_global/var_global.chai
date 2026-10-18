@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The script-level variable. A top-level 'var' would not be visible in functions, 'global' is.
+global sum = 0;
+
+def bench(n) {
+    sum = 0;
+    for (var i = 0; i < n; ++i) {
+        sum = sum + (i & 7);
+    }
+    sum;
+}

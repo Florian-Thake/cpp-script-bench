@@ -16,6 +16,7 @@ std::int64_t math_builtins( std::int64_t n );
 std::int64_t calls( std::int64_t n );
 std::int64_t tak( std::int64_t n );
 std::int64_t branching( std::int64_t n );
+std::int64_t var_global( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -33,6 +34,7 @@ constexpr std::int64_t math_builtins_n[] = { 100'000 };
 constexpr std::int64_t calls_n[]         = { 100'000 };
 constexpr std::int64_t tak_n[]           = { 4, 5, 6 };
 constexpr std::int64_t branching_n[]     = { 300'000 };
+constexpr std::int64_t var_global_n[]    = { 1'000'000 };
 
 } // namespace
 
@@ -47,6 +49,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "calls",         "core", "Calls of tiny script functions with 0, 1 and 3 arguments", calls_n, &reference::calls },
         { "tak",           "core", "Tak function: recursion with 3 arguments and calls as arguments", tak_n, &reference::tak },
         { "branching",     "core", "If/else chain and short-circuit logic in a loop", branching_n, &reference::branching },
+        { "var_global",    "data", "The loop of 'loop' with a script-level (global) accumulator", var_global_n, &reference::var_global },
     };
     return list;
 }

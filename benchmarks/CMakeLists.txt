@@ -12,7 +12,8 @@ add_library( csb_benchmarks STATIC
     math_builtins/reference.cpp
     calls/reference.cpp
     tak/reference.cpp
-    branching/reference.cpp )
+    branching/reference.cpp
+    var_global/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
 target_link_libraries( csb_benchmarks PUBLIC csb_harness )

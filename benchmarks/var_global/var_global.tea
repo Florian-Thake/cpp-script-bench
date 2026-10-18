@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The script-level variable. bench finds it in the top-level scope.
+def sum := 0
+
+func bench( n ) {
+    sum := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        sum := sum + (i bit_and 7)
+    }
+    sum
+}

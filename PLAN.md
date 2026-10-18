@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-14.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-18.
 
 ## 1. Goal
 
@@ -198,7 +198,7 @@ Status: ✅ implemented, ⬜ planned.
 
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
-| var_global     | the loop of `loop` with a script-level (global) accumulator | ⬜ |
+| var_global     | the loop of `loop` with a script-level (global) accumulator | ✅ |
 | var_nested     | four nested loops; the body reads variables of four enclosing scopes | ⬜ |
 | var_lifecycle  | new block-local variables in every loop iteration | ⬜ |
 | sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ⬜ |
@@ -263,7 +263,7 @@ Costs the host application pays for embedding, measured by the harness:
         2026-10-09, implemented 2026-10-14).
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
-        2026-10-14); next: implement one discipline per commit, in this order.
+        2026-10-14); next: implement one discipline per commit, in this order. Done: `var_global`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -521,6 +521,16 @@ Costs the host application pays for embedding, measured by the harness:
     2^(16 - n) trees of depth n, ~131k nodes per call for every n. Series n = 4 / 8 / 12 (checksums
     126,976 / 130,816 / 131,056). Measures allocation and garbage collection; the series shows the
     effect of the tree size at the same volume (and ChaiScript's cost of a recursion).
+
+**2026-10-18**
+- TeaScript: 4b is implemented and tuned with `v0.17.0-24-gb758046` (one commit after the one used
+  for 4a; it adds the `breakpoint` statement).
+- `var_global`: n = 1,000,000 as planned, the same n as `loop`, so the two results compare directly
+  (the difference is the cost of the global variable). The slowest headline, ChaiScript
+  `no-threads` with MSVC, needs ~0.51 s per call (GCC: ~0.2 s), just above the target of 0.1-0.5 s;
+  the direct comparison is worth more.
+- Lua's global is a field of `_ENV`, as planned. A top-level `local` would be an upvalue of `bench`,
+  the usual form of module-level state in Lua, but not a global (documented in the README).
 
 ## 10. Open questions
 
