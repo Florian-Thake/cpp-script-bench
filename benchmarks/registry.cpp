@@ -19,6 +19,7 @@ std::int64_t branching( std::int64_t n );
 std::int64_t var_global( std::int64_t n );
 std::int64_t var_nested( std::int64_t n );
 std::int64_t var_lifecycle( std::int64_t n );
+std::int64_t sieve( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -39,6 +40,7 @@ constexpr std::int64_t branching_n[]     = { 300'000 };
 constexpr std::int64_t var_global_n[]    = { 1'000'000 };
 constexpr std::int64_t var_nested_n[]    = { 25 };
 constexpr std::int64_t var_lifecycle_n[] = { 300'000 };
+constexpr std::int64_t sieve_n[]         = { 40'000 };
 
 } // namespace
 
@@ -56,6 +58,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "var_global",    "data", "The loop of 'loop' with a script-level (global) accumulator", var_global_n, &reference::var_global },
         { "var_nested",    "data", "Four nested loops: reads of variables of four enclosing scopes", var_nested_n, &reference::var_nested },
         { "var_lifecycle", "data", "New block-local variables in every loop iteration", var_lifecycle_n, &reference::var_lifecycle },
+        { "sieve",         "data", "Sieve of Eratosthenes on an array built by appending", sieve_n, &reference::sieve },
     };
     return list;
 }

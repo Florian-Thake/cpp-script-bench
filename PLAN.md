@@ -201,7 +201,7 @@ Status: ✅ implemented, ⬜ planned.
 | var_global     | the loop of `loop` with a script-level (global) accumulator | ✅ |
 | var_nested     | four nested loops; the body reads variables of four enclosing scopes | ✅ |
 | var_lifecycle  | new block-local variables in every loop iteration | ✅ |
-| sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ⬜ |
+| sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ✅ |
 | sort           | insertion sort by hand of generated values       | ⬜ |
 | byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ⬜ |
 | maps           | string keys: insert, lookup, remove, membership  | ⬜ |
@@ -263,7 +263,8 @@ Costs the host application pays for embedding, measured by the harness:
         2026-10-09, implemented 2026-10-14).
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
-        2026-10-14); next: implement one discipline per commit, in this order. Done: `var_global`, `var_nested`, `var_lifecycle`.
+        2026-10-14); next: implement one discipline per commit, in this order.
+        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -464,7 +465,8 @@ Costs the host application pays for embedding, measured by the harness:
     there.
   - Containers grow by appending in a loop. No native fill or preallocation (`[x] * n`, Lua 5.5's
     `table.create`, `array<T>(n, v)`, `resize`), see rule 4. In Lua, `t[i] = v` with the next index
-    counts as appending. Exception: `byte_buffer` (below).
+    counts as appending. Exception: `byte_buffer` (below). Changed on 2026-10-18: a capacity is
+    reserved where the language can.
   - Lua indexes from 1; the index ranges of the specs shift accordingly.
   - Number -> string in each language's natural form: TeaScript `"item" % i`, ChaiScript
     `"item" + to_string(i)`, AngelScript `"item" + i`, Lua `"item" .. i`, Python `f"item{i}"`.
@@ -538,6 +540,21 @@ Costs the host application pays for embedding, measured by the harness:
   slowest headlines (MSVC) needed ~1.2 s (ChaiScript `no-threads`) and ~0.74 s (TeaScript `vm-O1`)
   per call; with 300,000 ~0.36 s and ~0.22 s. TeaScript defines `a` with `const`, like `k` in
   `branching`.
+- Capacity reserve (changes the rule of 2026-10-14 on growing containers): where the language can
+  reserve the capacity of a container without changing its size, the script does so before the
+  appends: AngelScript `reserve`, ChaiScript `reserve`, Lua `table.create`. It is the natural form
+  when the final size is known, and the appends are still made one by one. TeaScript (Tuple) and
+  Python (list) have no such function; when TeaScript gets one, its scripts use it. Native fill and
+  preallocated sizes stay excluded (`[x] * n`, `array<T>(n, v)`, `resize`).
+  Found with `sieve`: AngelScript's array add-on grows the buffer by exactly one element per
+  `insertLast` (a new allocation and a copy of the whole array), so appending is quadratic: 1.5 s
+  for 300,001 appends (MSVC), ~22 ms for the whole sieve with `reserve`. The others grow
+  geometrically.
+- `sieve`: n = 40,000 instead of 300,000 (checksum 4,203). ChaiScript's `push_back` for a Vector is
+  a ChaiScript function (clone, then the native `push_back_ref`), ~9 us per call with MSVC, so the
+  headline needed ~3.6 s per call with 300,000; with 40,000 ~0.47 s (GCC ~0.3 s).
+  Python's `flags.append(True)` stays: a cached bound method made no measurable difference with
+  Python 3.14.
 
 ## 10. Open questions
 

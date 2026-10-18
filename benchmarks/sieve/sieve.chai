@@ -1,0 +1,24 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+def bench(n) {
+    var flags = [];
+    flags.reserve(n + 1);
+    for (var k = 0; k <= n; ++k) {
+        flags.push_back(true);
+    }
+    for (var i = 2; i * i <= n; ++i) {
+        if (flags[i]) {
+            for (var j = i * i; j <= n; j = j + i) {
+                flags[j] = false;
+            }
+        }
+    }
+    var count = 0;
+    for (var k = 2; k <= n; ++k) {
+        if (flags[k]) {
+            count = count + 1;
+        }
+    }
+    count;
+}
