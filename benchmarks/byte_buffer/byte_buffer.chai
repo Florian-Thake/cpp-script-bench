@@ -1,0 +1,20 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// ChaiScript has no byte type: the buffer is a Vector of ints in 0..255, built by appending.
+def bench(n) {
+    var buf = [];
+    buf.reserve(n);
+    var x = 1;
+    for (var i = 0; i < n; ++i) {
+        x = (x * 75 + 74) % 65537;
+        buf.push_back(x & 255);
+    }
+    var a = 1;
+    var b = 0;
+    for (var i = 0; i < n; ++i) {
+        a = (a + buf[i]) % 65521;
+        b = (b + a) % 65521;
+    }
+    a + b;
+}

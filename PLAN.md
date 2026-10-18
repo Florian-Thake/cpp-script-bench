@@ -203,7 +203,7 @@ Status: ✅ implemented, ⬜ planned.
 | var_lifecycle  | new block-local variables in every loop iteration | ✅ |
 | sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ✅ |
 | sort           | insertion sort by hand of generated values       | ✅ |
-| byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ⬜ |
+| byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ✅ |
 | maps           | string keys: insert, lookup, remove, membership  | ⬜ |
 | strings        | number -> string, concatenation, comparison, substring, string -> number | ⬜ |
 | records        | field reads and writes of one record (no allocation) | ⬜ |
@@ -264,7 +264,7 @@ Costs the host application pays for embedding, measured by the harness:
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
         2026-10-14); next: implement one discipline per commit, in this order.
-        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`.
+        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -559,6 +559,11 @@ Costs the host application pays for embedding, measured by the harness:
   `no-threads` with MSVC, needs ~0.41 s per call. TeaScript's `_tuple_append` shares the value
   object of its argument, so the script appends a copy of `x` (`def v := x`); appending `x` itself
   would make every element the same variable. The other forms of a copy have the same speed.
+- `byte_buffer`: n = 100,000 instead of 300,000 (checksum 106,756). With 300,000 the slowest
+  headline (ChaiScript `no-threads`, MSVC) needed ~1.4 s per call; with 100,000 ~0.47 s (GCC
+  ~0.25 s). Lua and ChaiScript reserve the capacity of their arrays (`table.create`, `reserve`).
+  The read loop uses index reads in every language; Python's idiomatic `for byte in buf:` would be
+  ~9% faster, but measures element iteration instead (documented in the README).
 
 ## 10. Open questions
 

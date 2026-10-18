@@ -21,6 +21,7 @@ std::int64_t var_nested( std::int64_t n );
 std::int64_t var_lifecycle( std::int64_t n );
 std::int64_t sieve( std::int64_t n );
 std::int64_t sort( std::int64_t n );
+std::int64_t byte_buffer( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -43,6 +44,7 @@ constexpr std::int64_t var_nested_n[]    = { 25 };
 constexpr std::int64_t var_lifecycle_n[] = { 300'000 };
 constexpr std::int64_t sieve_n[]         = { 40'000 };
 constexpr std::int64_t sort_n[]          = { 1'000 };
+constexpr std::int64_t byte_buffer_n[]   = { 100'000 };
 
 } // namespace
 
@@ -62,6 +64,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "var_lifecycle", "data", "New block-local variables in every loop iteration", var_lifecycle_n, &reference::var_lifecycle },
         { "sieve",         "data", "Sieve of Eratosthenes on an array built by appending", sieve_n, &reference::sieve },
         { "sort",          "data", "Insertion sort by hand of generated values", sort_n, &reference::sort },
+        { "byte_buffer",   "data", "Fill a byte buffer, then an Adler-32 style checksum over it", byte_buffer_n, &reference::byte_buffer },
     };
     return list;
 }

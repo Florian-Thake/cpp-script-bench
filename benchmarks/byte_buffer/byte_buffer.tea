@@ -1,0 +1,20 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func bench( n ) {
+    // _buf creates an empty Buffer with the capacity n, _buf_resize makes it n zero bytes.
+    def buf := _buf( n )
+    _buf_resize( buf, n )
+    def x := 1
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        x := (x * 75 + 74) mod 65537
+        buf[i] := (x bit_and 255) as u8
+    }
+    def a := 1
+    def b := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        a := (a + buf[i]) mod 65521
+        b := (b + a) mod 65521
+    }
+    a + b
+}
