@@ -205,7 +205,7 @@ Status: ✅ implemented, ⬜ planned.
 | sort           | insertion sort by hand of generated values       | ✅ |
 | byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ✅ |
 | maps           | string keys: insert, lookup, remove, membership  | ✅ |
-| strings        | number -> string, concatenation, comparison, substring, string -> number | ⬜ |
+| strings        | number -> string, concatenation, comparison, substring, string -> number | ✅ |
 | records        | field reads and writes of one record (no allocation) | ⬜ |
 | binary_trees   | allocation-heavy: build and check binary trees of records; series over the depth | ⬜ |
 
@@ -264,7 +264,8 @@ Costs the host application pays for embedding, measured by the harness:
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
         2026-10-14); next: implement one discipline per commit, in this order.
-        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`, `maps`.
+        Done: `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`, `maps`,
+        `strings`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -569,6 +570,13 @@ Costs the host application pays for embedding, measured by the harness:
   The checksum limits n to 65,535. The capacity rule also applies to the map: Lua creates it with
   `table.create( 0, n )`; the other maps have no reserve. The keys are read by index in every
   language, like in `byte_buffer` (Python's `for key in keys` would be ~5% faster).
+- `strings`: n = 70,000 instead of 100,000 (checksum 863,894). With 100,000 the slowest headline
+  (ChaiScript `no-threads`, MSVC) needed ~0.6 s per call; with 70,000 ~0.43 s (GCC ~0.22 s).
+  Alternatives measured for the competitors (details in the README): ChaiScript keeps the length
+  of `s` in a local for `substr` (~4% faster than a second `s.size()`), and keeps
+  `"item" + to_string(i)` (interpolation was ~7% slower). AngelScript keeps `"item" + i`:
+  `formatInt` was ~30% faster with MSVC but ~12% slower with GCC. Python's `"item" + str(i)` is as
+  fast as the f-string.
 
 ## 10. Open questions
 
