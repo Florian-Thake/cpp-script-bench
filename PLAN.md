@@ -200,7 +200,7 @@ Status: ✅ implemented, ⬜ planned.
 |----------------|--------------------------------------------------|--------|
 | var_global     | the loop of `loop` with a script-level (global) accumulator | ✅ |
 | var_nested     | four nested loops; the body reads variables of four enclosing scopes | ✅ |
-| var_lifecycle  | new block-local variables in every loop iteration | ⬜ |
+| var_lifecycle  | new block-local variables in every loop iteration | ✅ |
 | sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ⬜ |
 | sort           | insertion sort by hand of generated values       | ⬜ |
 | byte_buffer    | fill a byte buffer, then an Adler-32 style checksum over it | ⬜ |
@@ -263,7 +263,7 @@ Costs the host application pays for embedding, measured by the harness:
         2026-10-09, implemented 2026-10-14).
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
-        2026-10-14); next: implement one discipline per commit, in this order. Done: `var_global`, `var_nested`.
+        2026-10-14); next: implement one discipline per commit, in this order. Done: `var_global`, `var_nested`, `var_lifecycle`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -534,6 +534,10 @@ Costs the host application pays for embedding, measured by the harness:
 - `var_nested`: n = 25 instead of 30 (390,625 iterations, checksum 1,367,184). With 30 the slowest
   headline (ChaiScript `no-threads`, MSVC) needed ~0.74 s per call; with 25 it needs ~0.35 s (GCC:
   TeaScript `vm-O1` ~0.16 s, the slowest there).
+- `var_lifecycle`: n = 300,000 instead of 1,000,000 (checksum 6,300,000). With 1,000,000 the
+  slowest headlines (MSVC) needed ~1.2 s (ChaiScript `no-threads`) and ~0.74 s (TeaScript `vm-O1`)
+  per call; with 300,000 ~0.36 s and ~0.22 s. TeaScript defines `a` with `const`, like `k` in
+  `branching`.
 
 ## 10. Open questions
 

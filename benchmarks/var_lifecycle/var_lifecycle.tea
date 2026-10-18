@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+func bench( n ) {
+    def sum := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        const a := i bit_and 7
+        def b := a + 1
+        b := b * a
+        sum := sum + b
+    }
+    sum
+}
