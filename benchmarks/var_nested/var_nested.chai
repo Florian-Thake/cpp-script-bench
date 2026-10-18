@@ -1,0 +1,16 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+def bench(n) {
+    var sum = 0;
+    for (var a = 0; a < n; ++a) {
+        for (var b = 0; b < n; ++b) {
+            for (var c = 0; c < n; ++c) {
+                for (var d = 0; d < n; ++d) {
+                    sum = sum + ((a + b + c + d) & 7);
+                }
+            }
+        }
+    }
+    sum;
+}

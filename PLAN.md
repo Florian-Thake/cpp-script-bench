@@ -199,7 +199,7 @@ Status: ✅ implemented, ⬜ planned.
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
 | var_global     | the loop of `loop` with a script-level (global) accumulator | ✅ |
-| var_nested     | four nested loops; the body reads variables of four enclosing scopes | ⬜ |
+| var_nested     | four nested loops; the body reads variables of four enclosing scopes | ✅ |
 | var_lifecycle  | new block-local variables in every loop iteration | ⬜ |
 | sieve          | sieve of Eratosthenes on an array built by appending: push, index read/write | ⬜ |
 | sort           | insertion sort by hand of generated values       | ⬜ |
@@ -263,7 +263,7 @@ Costs the host application pays for embedding, measured by the harness:
         2026-10-09, implemented 2026-10-14).
   - [ ] **4b Data (next):** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees`. The design round is done (decision log
-        2026-10-14); next: implement one discipline per commit, in this order. Done: `var_global`.
+        2026-10-14); next: implement one discipline per commit, in this order. Done: `var_global`, `var_nested`.
   - [ ] **4c Interop:** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
         Extends `csb::Language`; brings in LuaBridge3.
   - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
@@ -531,6 +531,9 @@ Costs the host application pays for embedding, measured by the harness:
   the direct comparison is worth more.
 - Lua's global is a field of `_ENV`, as planned. A top-level `local` would be an upvalue of `bench`,
   the usual form of module-level state in Lua, but not a global (documented in the README).
+- `var_nested`: n = 25 instead of 30 (390,625 iterations, checksum 1,367,184). With 30 the slowest
+  headline (ChaiScript `no-threads`, MSVC) needed ~0.74 s per call; with 25 it needs ~0.35 s (GCC:
+  TeaScript `vm-O1` ~0.16 s, the slowest there).
 
 ## 10. Open questions
 
