@@ -11,6 +11,7 @@
 // without line cues for performance when they are not needed (section "Fine tuning").
 
 #include "registry.hpp"
+#include "script_to_host/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -133,6 +134,19 @@ public:
         mContext = mEngine->CreateContext();
         if( mContext == nullptr ) {
             throw std::runtime_error( "CreateContext() failed" );
+        }
+    }
+
+    void bind( csb::BenchmarkInfo const &info ) override
+    {
+        // The native calling convention, AngelScript's default on the supported platforms: the engine calls the C++
+        // functions directly. (The generic convention asCALL_GENERIC is the fallback for the others.)
+        if( info.name == "script_to_host" ) {
+            namespace host = csb::host::script_to_host;
+            check( mEngine->RegisterGlobalFunction( "int f0()", asFUNCTION( host::f0 ), asCALL_CDECL ), "RegisterGlobalFunction()" );
+            check( mEngine->RegisterGlobalFunction( "int f1( int a )", asFUNCTION( host::f1 ), asCALL_CDECL ), "RegisterGlobalFunction()" );
+            check( mEngine->RegisterGlobalFunction( "int f3( int a, int b, int c )", asFUNCTION( host::f3 ), asCALL_CDECL ),
+                   "RegisterGlobalFunction()" );
         }
     }
 

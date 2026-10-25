@@ -7,7 +7,7 @@ through the language's own C++ embedding API and does all the measuring. Only CP
 measured, no IO.
 
 > **Status:** early development. The harness and the runners for all languages work, with the
-> core and data benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> core and data benchmarks; the interop benchmarks are in progress. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
 
 ## Languages
 
@@ -17,8 +17,8 @@ measured, no IO.
 | TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval; headline: O1) |
 | ChaiScript  | native C++ API + ChaiScript_Extras (math module) | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
 | AngelScript | native C++ API + add-ons (string, array, dictionary, math in double precision) | available (two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues) |
-| Lua         | Lua C API; LuaBridge3 for the bindings (later) | available |
-| Python      | pybind11 (embedded)        | available (the installed Python, see below) |
+| Lua         | Lua C API; LuaBridge3 for binding C++ | available (variant `c-api`: binding C++ with the plain C API, interop benchmarks only) |
+| Python      | pybind11 (embedded)        | available (the installed Python, see below; variant `c-api`: binding C++ with the plain C API, interop benchmarks only) |
 
 ## Fairness
 
@@ -84,6 +84,7 @@ On Linux, inherit from the `gcc` preset instead (Ninja, Release).
 | `CSB_ANGELSCRIPT_DIR`           | the `sdk` directory of the AngelScript SDK (contains `angelscript/include` and `add_on`) |
 | `CSB_WITH_LUA`                  | build the Lua runner `csb_lua` |
 | `CSB_LUA_DIR`                   | root of the Lua source distribution (contains `src/lua.h`) |
+| `CSB_LUABRIDGE3_DIR`            | root of LuaBridge3 (contains `Source/LuaBridge`); required for the Lua runner |
 | `CSB_WITH_PYTHON`               | build the Python runner `csb_python` |
 | `CSB_PYBIND11_DIR`              | root of pybind11 (contains `include/pybind11`) |
 | `Python_ROOT_DIR`, `Python_EXECUTABLE` | optional: another installed Python than the one CMake finds by default (standard hints of CMake's FindPython) |
@@ -120,6 +121,7 @@ Columns in the output:
 | Column  | Meaning |
 |---------|---------|
 | startup | creating the engine including its standard library |
+| bind    | registering the C++ functions, types and data the script needs (interop benchmarks only, "-" for the others) |
 | load    | making the script runnable: parse, compile, run its top-level code |
 | first   | the very first call of `bench( n )` |
 | runs    | the number of measured calls; fewer than `--runs` if the time budget ended the run early, marked with "(time budget)" |

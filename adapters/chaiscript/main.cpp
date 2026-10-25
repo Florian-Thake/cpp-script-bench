@@ -10,6 +10,7 @@
 #include "csb_chaiscript_extras_git_version.h"
 #include "csb_chaiscript_git_version.h"
 #include "registry.hpp"
+#include "script_to_host/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -81,6 +82,16 @@ public:
         // The standard library has no math functions. The math module of ChaiScript_Extras is ChaiScript's official
         // module for <cmath>, the counterpart of AngelScript's math add-on, so it belongs to the standard library here.
         mChai->add( chaiscript::extras::math::bootstrap() );
+    }
+
+    void bind( csb::BenchmarkInfo const &info ) override
+    {
+        if( info.name == "script_to_host" ) {
+            namespace host = csb::host::script_to_host;
+            mChai->add( chaiscript::fun( &host::f0 ), "f0" );
+            mChai->add( chaiscript::fun( &host::f1 ), "f1" );
+            mChai->add( chaiscript::fun( &host::f3 ), "f3" );
+        }
     }
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &, std::string const &source ) override

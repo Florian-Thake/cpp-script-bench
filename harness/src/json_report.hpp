@@ -25,6 +25,7 @@ struct BenchResult
     std::int64_t         checksum = 0;
     std::string          status;          ///< "ok", "n/a", "wrong result" or "error: <message>"
     double               startup  = 0.0;  ///< create_engine()
+    double               bind     = 0.0;  ///< bind()
     double               load     = 0.0;  ///< load() in total
     std::vector<Phase>   load_phases;     ///< sub-phases of load(), if available
     double               first    = 0.0;  ///< the very first call of bench( n )

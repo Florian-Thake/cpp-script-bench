@@ -55,6 +55,7 @@ void write_benchmark( BenchResult const &b, std::ostream &out )
     if( b.ok() ) {
         out << ",\n" << ind << "\"checksum\": " << b.checksum << ",\n";
         out << ind << "\"startup_s\": " << num( b.startup ) << ",\n";
+        out << ind << "\"bind_s\": " << num( b.bind ) << ",\n";
         out << ind << "\"load_s\": " << num( b.load ) << ",\n";
         out << ind << "\"load_phases_s\": {";
         for( size_t i = 0; i < b.load_phases.size(); ++i ) {

@@ -203,7 +203,7 @@ void print_list( LanguageEntry const &language, Options const &opt, std::span<Be
         if( variant == language.headline_variant ) {
             tags += (tags.empty() ? "" : ", ") + std::string( "headline" );
         }
-        std::printf( "  %s%s\n", variant.empty() ? "(only one)" : variant.c_str(), tags.empty() ? "" : (" (" + tags + ")").c_str() );
+        std::printf( "  %s%s\n", variant.empty() ? "(no name)" : variant.c_str(), tags.empty() ? "" : (" (" + tags + ")").c_str() );
     }
 }
 
@@ -234,6 +234,9 @@ bool warm_up( LanguageEntry const &language, std::string const &variant, Benchma
 
     try {
         auto lang = language.make( variant );
+        if( not lang->supports( info ) ) {
+            return false;
+        }
         std::string source;
         auto const  extension = lang->script_extension();
         if( not extension.empty() ) {
@@ -246,6 +249,7 @@ bool warm_up( LanguageEntry const &language, std::string const &variant, Benchma
 
         lang->create_engine();
         try {
+            lang->bind( info );
             (void)lang->load( info, source );
             (void)lang->call_bench( n );
         } catch( std::exception const & ) {
@@ -269,6 +273,10 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
 
     try {
         auto lang = language.make( variant );
+        if( not lang->supports( info ) ) {
+            r.status = "n/a";
+            return r;
+        }
 
         // All file IO happens here, before anything is measured.
         std::string source;
@@ -287,10 +295,13 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
         auto const t0 = Clock::now();
         lang->create_engine();
         auto const t1 = Clock::now();
-        r.load_phases = lang->load( info, source );
+        lang->bind( info );
         auto const t2 = Clock::now();
+        r.load_phases = lang->load( info, source );
+        auto const t3 = Clock::now();
         r.startup = seconds_between( t0, t1 );
-        r.load    = seconds_between( t1, t2 );
+        r.bind    = seconds_between( t1, t2 );
+        r.load    = seconds_between( t2, t3 );
 
         double last = 0.0;  // the duration of the latest call
         auto const measure = [&]() -> double {
@@ -324,9 +335,9 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
         }
         r.budget_limited = r.warmup < opt.warmup || std::ssize( r.samples ) < opt.runs;
 
-        auto const t3 = Clock::now();
+        auto const t4 = Clock::now();
         lang->destroy_engine();
-        r.teardown = seconds_between( t3, Clock::now() );
+        r.teardown = seconds_between( t4, Clock::now() );
 
         r.status = "ok";
     } catch( WrongResult const & ) {
@@ -357,9 +368,12 @@ void print_result( BenchResult const &r )
         auto const s = compute_stats( r.samples );
         char spread[16];
         std::snprintf( spread, sizeof( spread ), "%.1f%%", s.median > 0.0 ? s.stddev / s.median * 100.0 : 0.0 );
-        std::printf( "%-20s %8lld %11s %11s %11s %5zu %11s %11s %7s  ok%s\n", r.benchmark.c_str(), static_cast<long long>(r.n),
-                     format_time( r.startup ).c_str(), format_time( r.load ).c_str(), format_time( r.first ).c_str(), r.samples.size(),
-                     format_time( s.median ).c_str(), format_time( s.min ).c_str(), spread, r.budget_limited ? " (time budget)" : "" );
+        // Only the interop benchmarks bind something.
+        std::string const bind = r.group == "interop" ? format_time( r.bind ) : "-";
+        std::printf( "%-20s %8lld %11s %11s %11s %11s %5zu %11s %11s %7s  ok%s\n", r.benchmark.c_str(), static_cast<long long>(r.n),
+                     format_time( r.startup ).c_str(), bind.c_str(), format_time( r.load ).c_str(), format_time( r.first ).c_str(),
+                     r.samples.size(), format_time( s.median ).c_str(), format_time( s.min ).c_str(), spread,
+                     r.budget_limited ? " (time budget)" : "" );
     } else if( r.status == "wrong result" ) {
         std::printf( "%-20s %8lld  WRONG RESULT: got %lld, expected %lld\n", r.benchmark.c_str(), static_cast<long long>(r.n),
                      static_cast<long long>(r.checksum), static_cast<long long>(r.expected) );
@@ -441,8 +455,8 @@ int run_main( int const argc, char *argv[], LanguageEntry const &language, std::
         vr.headline = variant == language.headline_variant;
 
         std::printf( "\n== %s%s%s%s ==\n", report.language_name.c_str(), variant.empty() ? "" : " ", variant.c_str(), vr.headline ? " (headline)" : "" );
-        std::printf( "%-20s %8s %11s %11s %11s %5s %11s %11s %7s  %s\n", "benchmark", "n", "startup", "load", "first", "runs", "median", "min", "stddev",
-                     "status" );
+        std::printf( "%-20s %8s %11s %11s %11s %11s %5s %11s %11s %7s  %s\n", "benchmark", "n", "startup", "bind", "load", "first", "runs", "median",
+                     "min", "stddev", "status" );
 
         // One throw-away run per variant, with the first selected benchmark which has a script.
         for( auto const &info : benchmarks ) {

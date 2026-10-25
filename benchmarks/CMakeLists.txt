@@ -22,7 +22,8 @@ add_library( csb_benchmarks STATIC
     maps/reference.cpp
     strings/reference.cpp
     records/reference.cpp
-    binary_trees/reference.cpp )
+    binary_trees/reference.cpp
+    script_to_host/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
 target_link_libraries( csb_benchmarks PUBLIC csb_harness )

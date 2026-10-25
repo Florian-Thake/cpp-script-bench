@@ -50,6 +50,7 @@ Every benchmark run goes through these phases, each measured separately:
 | Phase    | What                                                      |
 |----------|-----------------------------------------------------------|
 | startup  | create the engine including its standard library          |
+| bind     | register what the script needs from the host: C++ functions, types and data (only the interop benchmarks) |
 | load     | make the script runnable; sub-phases where the language can separate them: `parse`, `compile`, `top_level`; `parse_compile` where parsing and compiling is one step (AngelScript, Lua) |
 | first    | the very first call of `bench( n )`                       |
 | execute  | R measured calls of `bench( n )` after W warm-up calls: **the headline numbers** |
@@ -126,9 +127,11 @@ runner/       (later) orchestrates all runners, collects JSON, produces tables a
 - No header or symbol clashes (e.g. `Python.h`).
 - Each user only builds the languages they have.
 
-**Adapter interface** (`harness/include/csb/language.hpp`): `create_engine()`, `load()`,
-`call_bench( n )`, `collect_garbage()`, `destroy_engine()`. Every runner's `main()` provides a
-`LanguageEntry` with its variants, and calls `csb::run_main()`.
+**Adapter interface** (`harness/include/csb/language.hpp`): `create_engine()`, `bind()`, `load()`,
+`call_bench( n )`, `collect_garbage()`, `destroy_engine()`, and `supports()`, which lets a variant
+report a benchmark as "n/a". Every runner's `main()` provides a `LanguageEntry` with its variants, and
+calls `csb::run_main()`. The interop benchmarks share their host side (C++ functions, types, data) in
+`benchmarks/<name>/host.hpp`, which the C++ reference and the runners use.
 
 **Variants.** One language can have several ways of running code. They are selected with
 `--variant <name>` or `--variant all`, without rebuilding. TeaScript: `vm-O0`, `vm-O1` (default),
@@ -138,11 +141,14 @@ Variants which need a different build become separate executables: ChaiScript is
 `no-threads`, with `CHAISCRIPT_NO_THREADS`). AngelScript likewise: `csb_angelscript` (variants
 `default` and `no-line-cues`, thread-safe) and `csb_angelscript_nothreads` (variants `no-threads` and
 `no-threads-no-line-cues`, with `AS_NO_THREADS`). Without line cues means compiled with
-`asEP_BUILD_WITHOUT_LINE_CUES`.
+`asEP_BUILD_WITHOUT_LINE_CUES`. Lua and Python bind C++ with their binding libraries (LuaBridge3,
+pybind11) in the variant without a name, and with the plain C API in the variant `c-api`, which runs
+only the interop benchmarks (a free-threaded Python: `free-threaded` and `free-threaded-c-api`).
 
 **Headline variant.** Each language has one variant for the main comparison: TeaScript `vm-O1`,
-ChaiScript `no-threads`, AngelScript `no-threads-no-line-cues`; Lua has only one. It is independent
-of the default variant. The runners mark it in their output and in the JSON (`"headline": true`).
+ChaiScript `no-threads`, AngelScript `no-threads-no-line-cues`, Lua and Python the variant without a
+name. It is independent of the default variant. The runners mark it in their output and in the JSON
+(`"headline": true`).
 
 **Scripts are separate files** (not strings in C++ code), so they get syntax highlighting and each
 community can review them.
@@ -154,8 +160,8 @@ community can review them.
 | TeaScript   | HEAD (0.18.0 pre-release); pinned to 0.18.0 after its release | native API | header-only |
 | ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API; ChaiScript_Extras `math.hpp` (`master` at `dd116d7`, 2026-04-17) | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons (math with `AS_USE_FLOAT=0`: double) | compiled library; headline: `AS_NO_THREADS`, without line cues |
-| Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings (Phase 4) | compiled library, as C |
-| Python      | the installed system Python (any version pybind11 supports, 3.9+) | pybind11 3.1.0 (embedded interpreter) | prebuilt; exact version and build recorded |
+| Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings of C++ (the C API in the variant `c-api`) | compiled library, as C |
+| Python      | the installed system Python (any version pybind11 supports, 3.9+) | pybind11 3.1.0 (embedded interpreter, bindings of C++; the C API in the variant `c-api`) | prebuilt; exact version and build recorded |
 | C++         | n/a                                       | reference                          | |
 
 Deferred: Jinx (limited core library, dormant). It may be added later if it can run most disciplines.
@@ -216,7 +222,7 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
-| script_to_host | the loop of `calls`, but the functions are registered C++ functions | ⬜ |
+| script_to_host | the loop of `calls`, but the functions are registered C++ functions | ✅ |
 | host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ⬜ |
 | cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ⬜ |
 | buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ⬜ |
@@ -674,6 +680,20 @@ Costs the host application pays for embedding, measured by the harness:
   `as u64`. The loop counters stay `i64`, `_seq` takes only `i64`.
 - Order: the interface and `script_to_host` first (with LuaBridge3), then `host_to_script`,
   `cpp_objects`, `buffer`, `string_exchange`, `array_exchange`.
+- The interface is implemented as planned. The console shows `bind` as a column ("-" outside the
+  interop group), the JSON as `bind_s`. Lua and Python keep the variant without a name as their
+  headline and get the variant `c-api` (a free-threaded Python: `free-threaded-c-api`), which reports
+  the other benchmarks as "n/a". LuaBridge3 is required for the Lua runner (`CSB_LUABRIDGE3_DIR`), so
+  the headline always exists.
+- Python: the module `host` is pybind11's embedded module, to which `bind()` adds the functions of the
+  benchmark; the `c-api` variant creates a module with `PyMethodDef`s and puts it into `sys.modules`.
+  Both are imported in `bind()`, so the import in the script's top level only finds them.
+- `script_to_host`: n = 100,000 as planned (checksum 800,000). The slowest headline, ChaiScript
+  `no-threads`, needs ~147 ms per call with MSVC (GCC: ~64 ms), within the target. The binding layer
+  costs Lua ~2x (MSVC: 9.9 ms with LuaBridge3, 5.1 ms with the C API) and Python ~6x (48.7 ms with
+  pybind11, 8.4 ms with the C API); numbers in the README.
+- AngelScript keeps the native calling convention. The generic one (`asCALL_GENERIC`) was ~37% faster
+  with GCC 11, but ~15% slower with MSVC, so it is not faster with both toolchains (README).
 
 ## 10. Open questions
 

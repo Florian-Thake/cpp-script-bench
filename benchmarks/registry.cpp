@@ -26,6 +26,7 @@ std::int64_t maps( std::int64_t n );
 std::int64_t strings( std::int64_t n );
 std::int64_t records( std::int64_t n );
 std::int64_t binary_trees( std::int64_t n );
+std::int64_t script_to_host( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -53,6 +54,7 @@ constexpr std::int64_t maps_n[]          = { 50'000 };
 constexpr std::int64_t strings_n[]       = { 70'000 };
 constexpr std::int64_t records_n[]       = { 150'000 };
 constexpr std::int64_t binary_trees_n[]  = { 4, 8, 12 };
+constexpr std::int64_t script_to_host_n[] = { 100'000 };
 
 } // namespace
 
@@ -77,6 +79,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "strings",       "data", "Number -> string, comparison, length, substring, string -> number", strings_n, &reference::strings },
         { "records",       "data", "Field reads and writes of one record", records_n, &reference::records },
         { "binary_trees",  "data", "Build and check binary trees of records: allocation and garbage collection", binary_trees_n, &reference::binary_trees },
+        { "script_to_host", "interop", "The loop of 'calls', but the functions are registered C++ functions", script_to_host_n, &reference::script_to_host },
     };
     return list;
 }

@@ -5,31 +5,55 @@
 
 // The Python runner: CPython embedded with pybind11. It uses the Python installation found by CMake (the system's
 // Python, see PLAN.md); its exact version and build are part of the version string.
-// CPython has one way of running code, so there is one variant. A free-threaded build (without the GIL) is
-// reported as the variant "free-threaded", which is not part of the main comparison.
+// CPython has one way of running code; the variants differ in how the interop benchmarks bind C++:
+//   (no name) : with pybind11, the C++ binding library (the headline).
+//   c-api     : with the plain Python C API. Runs only the interop benchmarks, the others are the same in both.
+// A free-threaded build (without the GIL) reports them as "free-threaded" and "free-threaded-c-api", which are not
+// part of the main comparison.
 
 #include "csb_pybind11_git_version.h"
 #include "registry.hpp"
+#include "script_to_host/host.hpp"
 
 #include <csb/runner.hpp>
 
 #include <pybind11/embed.h>
 
 #include <chrono>
+#include <climits>
 #include <optional>
 #include <stdexcept>
 
 
 namespace py = pybind11;
 
+// The module 'host', which the scripts of the interop benchmarks import. With pybind11 it is an embedded module;
+// bind() adds what the benchmark needs, so every benchmark binds only its own functions.
+PYBIND11_EMBEDDED_MODULE( host, m, py::mod_gil_not_used() )
+{
+    m.doc() = "C++ functions, types and data of the host for the interop benchmarks";
+}
+
 namespace {
 
+struct Variant
+{
+    std::string_view  name;
+    bool              c_api;  ///< true: the interop benchmarks bind C++ with the plain C API instead of pybind11
+};
+
 #if defined( Py_GIL_DISABLED )
-constexpr char const variant_name[] = "free-threaded";
-constexpr bool       is_headline    = false;
+constexpr Variant variants[] = {
+    { "free-threaded",       false },
+    { "free-threaded-c-api", true },
+};
+std::optional<std::string> const headline_variant = std::nullopt;
 #else
-constexpr char const variant_name[] = "";
-constexpr bool       is_headline    = true;
+constexpr Variant variants[] = {
+    { "",      false },
+    { "c-api", true },
+};
+std::optional<std::string> const headline_variant = "";
 #endif
 
 
@@ -51,6 +75,89 @@ auto translate_errors( F &&func ) -> decltype(func())
     }
 }
 
+/// Converts \param obj to an int for a C API function. \return false with a Python exception set on errors.
+bool to_int( PyObject *const obj, int &rValue )
+{
+    long const value = PyLong_AsLong( obj );
+    if( value == -1 && PyErr_Occurred() ) {
+        return false;
+    }
+    if( value < INT_MIN || value > INT_MAX ) {
+        PyErr_SetString( PyExc_OverflowError, "the value does not fit into an int" );
+        return false;
+    }
+    rValue = static_cast<int>(value);
+    return true;
+}
+
+/// Creates the module 'host' with \param methods for the C API variant and puts it into sys.modules, where the
+/// import of the script finds it.
+void add_c_api_host_module( PyMethodDef *const methods )
+{
+    auto const module = py::reinterpret_steal<py::object>( PyModule_New( "host" ) );
+    if( not module ) {
+        throw py::error_already_set();
+    }
+#if defined( Py_GIL_DISABLED )
+    PyUnstable_Module_SetGIL( module.ptr(), Py_MOD_GIL_NOT_USED );
+#endif
+    if( PyModule_AddFunctions( module.ptr(), methods ) < 0 || PyDict_SetItemString( PyImport_GetModuleDict(), "host", module.ptr() ) < 0 ) {
+        throw py::error_already_set();
+    }
+}
+
+
+// script_to_host with the plain C API: the calling conventions with the least overhead for 0, 1 and 3 arguments.
+namespace c_api_script_to_host {
+
+namespace host = csb::host::script_to_host;
+
+PyObject *f0( PyObject *, PyObject * )
+{
+    return PyLong_FromLong( host::f0() );
+}
+
+PyObject *f1( PyObject *, PyObject *const arg )
+{
+    int a = 0;
+    if( not to_int( arg, a ) ) {
+        return nullptr;
+    }
+    return PyLong_FromLong( host::f1( a ) );
+}
+
+PyObject *f3( PyObject *, PyObject *const *const args, Py_ssize_t const nargs )
+{
+    if( nargs != 3 ) {
+        PyErr_SetString( PyExc_TypeError, "f3() takes exactly 3 arguments" );
+        return nullptr;
+    }
+    int a = 0, b = 0, c = 0;
+    if( not to_int( args[0], a ) || not to_int( args[1], b ) || not to_int( args[2], c ) ) {
+        return nullptr;
+    }
+    return PyLong_FromLong( host::f3( a, b, c ) );
+}
+
+PyMethodDef methods[] = {
+    { "f0", &f0, METH_NOARGS, nullptr },
+    { "f1", &f1, METH_O, nullptr },
+    { "f3", reinterpret_cast<PyCFunction>(reinterpret_cast<void (*)()>(&f3)), METH_FASTCALL, nullptr },
+    { nullptr, nullptr, 0, nullptr },
+};
+
+} // namespace c_api_script_to_host
+
+/// Adds the C++ functions of script_to_host to the module \param m with pybind11.
+void bind_script_to_host( py::module_ &m )
+{
+    namespace host = csb::host::script_to_host;
+    m.def( "f0", &host::f0 );
+    m.def( "f1", &host::f1 );
+    m.def( "f3", &host::f3 );
+}
+
+
 /// Throws if the experimental JIT of CPython is enabled. It must be off for the main comparison (PLAN.md, rule 8).
 void check_jit_is_off()
 {
@@ -64,11 +171,17 @@ void check_jit_is_off()
 
 class PythonLanguage final : public csb::Language
 {
+    Variant                                mVariant;
     std::optional<py::scoped_interpreter>  mInterpreter;
     py::object                             mGlobals;  // the namespace of the script, like the one of a module
     py::object                             mBench;    // the script function bench, looked up once after loading
 
 public:
+    explicit PythonLanguage( Variant const &rVariant )
+        : mVariant( rVariant )
+    {
+    }
+
     std::string name() const override { return "Python"; }
 
     std::string version() const override
@@ -85,6 +198,11 @@ public:
     }
 
     std::string script_extension() const override { return ".py"; }
+
+    bool supports( csb::BenchmarkInfo const &info ) const override
+    {
+        return not mVariant.c_api || info.group == "interop";
+    }
 
     void create_engine() override
     {
@@ -105,6 +223,25 @@ public:
         mInterpreter.emplace( &config, 0, nullptr, false );
 
         translate_errors( check_jit_is_off );
+    }
+
+    void bind( csb::BenchmarkInfo const &info ) override
+    {
+        if( info.group != "interop" ) {
+            return;
+        }
+        translate_errors( [&]() {
+            if( mVariant.c_api ) {
+                if( info.name == "script_to_host" ) {
+                    add_c_api_host_module( c_api_script_to_host::methods );
+                }
+            } else {
+                auto m = py::module_::import( "host" );
+                if( info.name == "script_to_host" ) {
+                    bind_script_to_host( m );
+                }
+            }
+        } );
     }
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
@@ -179,12 +316,21 @@ public:
 
 int main( int argc, char *argv[] )
 {
-    csb::LanguageEntry const entry{
-        "python",
-        { variant_name },
-        variant_name,
-        []( std::string const & ) -> std::unique_ptr<csb::Language> { return std::make_unique<PythonLanguage>(); },
-        is_headline ? std::optional<std::string>( variant_name ) : std::nullopt
+    csb::LanguageEntry entry;
+    entry.id               = "python";
+    entry.default_variant  = std::string( variants[0].name );
+    entry.headline_variant = headline_variant;
+    for( auto const &variant : variants ) {
+        entry.variants.emplace_back( variant.name );
+    }
+    entry.make = []( std::string const &name ) -> std::unique_ptr<csb::Language> {
+        for( auto const &variant : variants ) {
+            if( variant.name == name ) {
+                return std::make_unique<PythonLanguage>( variant );
+            }
+        }
+        throw std::invalid_argument( "unknown Python variant: " + name );
     };
+
     return csb::run_main( argc, argv, entry, csb::all_benchmarks() );
 }

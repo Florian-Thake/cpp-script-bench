@@ -4,20 +4,37 @@
  */
 
 // The Lua runner: Lua (compiled as C, like the official distribution) used through its C API, the canonical way
-// to call Lua functions from C and C++. LuaBridge3 will be used for binding C++ functions and classes (interop).
-// Lua has one way of running code, so there is one variant.
+// to call Lua functions from C and C++. Lua has one way of running code; the variants differ in how the interop
+// benchmarks bind C++:
+//   (no name) : with LuaBridge3, the C++ binding library (the headline).
+//   c-api     : with the plain Lua C API. Runs only the interop benchmarks, the others are the same in both.
 
+#include "csb_luabridge3_git_version.h"
 #include "registry.hpp"
+#include "script_to_host/host.hpp"
 
 #include <csb/runner.hpp>
 
 #include <lua.hpp>
+#include <LuaBridge/LuaBridge.h>
 
 #include <chrono>
 #include <stdexcept>
 
 
 namespace {
+
+struct Variant
+{
+    std::string_view  name;
+    bool              c_api;  ///< true: the interop benchmarks bind C++ with the plain C API instead of LuaBridge3
+};
+
+constexpr Variant variants[] = {
+    { "",      false },
+    { "c-api", true },
+};
+
 
 using Clock = std::chrono::steady_clock;
 
@@ -35,19 +52,81 @@ std::string pop_error( lua_State *const L )
 }
 
 
+// script_to_host with the plain C API: lua_CFunctions, which take their arguments from the stack.
+namespace c_api_script_to_host {
+
+namespace host = csb::host::script_to_host;
+
+int f0( lua_State *const L )
+{
+    lua_pushinteger( L, host::f0() );
+    return 1;
+}
+
+int f1( lua_State *const L )
+{
+    lua_pushinteger( L, host::f1( static_cast<int>(luaL_checkinteger( L, 1 )) ) );
+    return 1;
+}
+
+int f3( lua_State *const L )
+{
+    lua_pushinteger( L, host::f3( static_cast<int>(luaL_checkinteger( L, 1 )), static_cast<int>(luaL_checkinteger( L, 2 )),
+                                  static_cast<int>(luaL_checkinteger( L, 3 )) ) );
+    return 1;
+}
+
+constexpr luaL_Reg functions[] = {
+    { "f0", &f0 },
+    { "f1", &f1 },
+    { "f3", &f3 },
+    { nullptr, nullptr },
+};
+
+} // namespace c_api_script_to_host
+
+/// Registers the C++ functions of script_to_host in the global table 'host'.
+void bind_script_to_host( lua_State *const L, bool const c_api )
+{
+    if( c_api ) {
+        luaL_newlib( L, c_api_script_to_host::functions );
+        lua_setglobal( L, "host" );
+    } else {
+        namespace host = csb::host::script_to_host;
+        luabridge::getGlobalNamespace( L )
+            .beginNamespace( "host" )
+                .addFunction( "f0", &host::f0 )
+                .addFunction( "f1", &host::f1 )
+                .addFunction( "f3", &host::f3 )
+            .endNamespace();
+    }
+}
+
+
 class LuaLanguage final : public csb::Language
 {
+    Variant     mVariant;
     lua_State  *mL = nullptr;
 
 public:
+    explicit LuaLanguage( Variant const &rVariant )
+        : mVariant( rVariant )
+    {
+    }
+
     std::string name() const override { return "Lua"; }
 
     std::string version() const override
     {
-        return LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "." LUA_VERSION_RELEASE;
+        return LUA_VERSION_MAJOR "." LUA_VERSION_MINOR "." LUA_VERSION_RELEASE "; LuaBridge3 (" CSB_LUABRIDGE3_GIT_VERSION ")";
     }
 
     std::string script_extension() const override { return ".lua"; }
+
+    bool supports( csb::BenchmarkInfo const &info ) const override
+    {
+        return not mVariant.c_api || info.group == "interop";
+    }
 
     void create_engine() override
     {
@@ -63,6 +142,13 @@ public:
         lua_setglobal( mL, "dofile" );
         lua_pushnil( mL );
         lua_setglobal( mL, "loadfile" );
+    }
+
+    void bind( csb::BenchmarkInfo const &info ) override
+    {
+        if( info.name == "script_to_host" ) {
+            bind_script_to_host( mL, mVariant.c_api );
+        }
     }
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
@@ -129,12 +215,21 @@ public:
 
 int main( int argc, char *argv[] )
 {
-    csb::LanguageEntry const entry{
-        "lua",
-        { "" },
-        "",
-        []( std::string const & ) -> std::unique_ptr<csb::Language> { return std::make_unique<LuaLanguage>(); },
-        ""
+    csb::LanguageEntry entry;
+    entry.id               = "lua";
+    entry.default_variant  = "";
+    entry.headline_variant = "";
+    for( auto const &variant : variants ) {
+        entry.variants.emplace_back( variant.name );
+    }
+    entry.make = []( std::string const &name ) -> std::unique_ptr<csb::Language> {
+        for( auto const &variant : variants ) {
+            if( variant.name == name ) {
+                return std::make_unique<LuaLanguage>( variant );
+            }
+        }
+        throw std::invalid_argument( "unknown Lua variant: " + name );
     };
+
     return csb::run_main( argc, argv, entry, csb::all_benchmarks() );
 }

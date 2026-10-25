@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// f0, f1 and f3 are C++ functions, which the host registers.
+// No 'return': ChaiScript implements it with a C++ exception, unless it is the last statement
+// of a function. The value of the last expression is the return value.
+def bench(n) {
+    var sum = 0;
+    for (var i = 0; i < n; ++i) {
+        sum = sum + f0() + f1(i) + f3(i, 1, 2);
+    }
+    sum;
+}

@@ -39,8 +39,9 @@ option( CSB_WITH_CHAISCRIPT "Build the ChaiScript runners (needs CSB_CHAISCRIPT_
 set( CSB_CHAISCRIPT_DIR "" CACHE PATH "Root of ChaiScript (the directory containing include/chaiscript); use the develop branch" )
 set( CSB_CHAISCRIPT_EXTRAS_DIR "" CACHE PATH "Root of ChaiScript_Extras (the directory containing include/chaiscript/extras), for its math module" )
 
-option( CSB_WITH_LUA "Build the Lua runner (needs CSB_LUA_DIR)" OFF )
+option( CSB_WITH_LUA "Build the Lua runner (needs CSB_LUA_DIR and CSB_LUABRIDGE3_DIR)" OFF )
 set( CSB_LUA_DIR "" CACHE PATH "Root of the Lua source distribution (the directory containing src/lua.h)" )
+set( CSB_LUABRIDGE3_DIR "" CACHE PATH "Root of LuaBridge3 (the directory containing Source/LuaBridge), for binding C++ to Lua" )
 
 option( CSB_WITH_ANGELSCRIPT "Build the AngelScript runners (needs CSB_ANGELSCRIPT_DIR)" OFF )
 set( CSB_ANGELSCRIPT_DIR "" CACHE PATH "Root of the AngelScript SDK (the directory containing angelscript/include and add_on)" )

@@ -1,0 +1,11 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// f0, f1 and f3 are C++ functions, which the host registers as user callbacks.
+func bench( n ) {
+    def sum := 0
+    forall( i in _seq( 0, n - 1, 1 ) ) {
+        sum := sum + f0() + f1( i ) + f3( i, 1, 2 )
+    }
+    sum
+}

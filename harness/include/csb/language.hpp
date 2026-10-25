@@ -28,7 +28,7 @@ struct Phase
 /// The interface every language adapter implements.
 /// One instance represents one variant of one language, e.g. TeaScript in the TeaStackVM with O1.
 /// The runner calls the phases in this order:
-///   create_engine(), load(), call_bench() repeatedly, destroy_engine().
+///   create_engine(), bind(), load(), call_bench() repeatedly, destroy_engine().
 /// Every phase may throw a std::exception on errors.
 class Language
 {
@@ -39,8 +39,16 @@ public:
     virtual std::string version() const = 0;           ///< version of the language library, incl. git info if known
     virtual std::string script_extension() const = 0;  ///< e.g. ".tea"; empty if no script is used (C++ reference)
 
+    /// \return false if this variant does not run \param info, which is then reported as "n/a". E.g. a variant
+    /// which only differs in how C++ is bound runs only the interop benchmarks.
+    virtual bool supports( BenchmarkInfo const &info ) const { (void)info; return true; }
+
     /// Creates a fresh engine including its standard library. Measured as "startup".
     virtual void create_engine() = 0;
+
+    /// Registers what the script of \param info needs from the host: C++ functions, types and data (see
+    /// benchmarks/<name>/host.hpp). Only the interop benchmarks need something. Measured as "bind".
+    virtual void bind( BenchmarkInfo const &info ) { (void)info; }
 
     /// Makes \param source runnable: parse/compile it and run its top level code, which defines bench( n ).
     /// \param source stays valid until destroy_engine() was called. Measured as "load" in total.

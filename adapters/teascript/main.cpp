@@ -9,6 +9,7 @@
 
 #include "csb_teascript_git_version.h"
 #include "registry.hpp"
+#include "script_to_host/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -75,6 +76,39 @@ std::string error_message( teascript::exception::runtime_error const &ex )
     return msg + ": " + ex.ErrorStr_or_What();
 }
 
+/// Throws an eval_error if a user callback was called with another number of parameters than \param expected.
+void check_param_count( teascript::Context const &rContext, size_t const expected, char const *const name )
+{
+    if( rContext.CurrentParamCount() != expected ) {
+        throw teascript::exception::eval_error( rContext.GetCurrentSourceLocation(),
+                                                std::string( name ) + ": expected " + std::to_string( expected ) + " parameters" );
+    }
+}
+
+/// Registers the C++ functions of script_to_host as user callbacks, TeaScript's way to call C++ from a script.
+void bind_script_to_host( teascript::Engine &rEngine )
+{
+    namespace host = csb::host::script_to_host;
+
+    rEngine.RegisterUserCallback( "f0", []( teascript::Context &rContext ) -> teascript::ValueObject {
+        check_param_count( rContext, 0, "f0" );
+        return teascript::ValueObject( static_cast<teascript::Integer>(host::f0()) );
+    } );
+    rEngine.RegisterUserCallback( "f1", []( teascript::Context &rContext ) -> teascript::ValueObject {
+        check_param_count( rContext, 1, "f1" );
+        auto const a = rContext.ConsumeParam();
+        return teascript::ValueObject( static_cast<teascript::Integer>(host::f1( static_cast<int>(a.GetAsInteger()) )) );
+    } );
+    rEngine.RegisterUserCallback( "f3", []( teascript::Context &rContext ) -> teascript::ValueObject {
+        check_param_count( rContext, 3, "f3" );
+        auto const a = rContext.ConsumeParam();
+        auto const b = rContext.ConsumeParam();
+        auto const c = rContext.ConsumeParam();
+        return teascript::ValueObject( static_cast<teascript::Integer>(
+            host::f3( static_cast<int>(a.GetAsInteger()), static_cast<int>(b.GetAsInteger()), static_cast<int>(c.GetAsInteger()) )) );
+    } );
+}
+
 /// Runs \param func and converts TeaScript errors into std::runtime_error with a helpful message.
 template< typename F >
 auto translate_errors( F &&func ) -> decltype(func())
@@ -119,6 +153,15 @@ public:
         teascript::Settings settings( teascript::config::full(), mVariant.opt_level );
         mEngine = std::make_unique<BenchEngine>( std::move( settings ), mVariant.compile ? teascript::Engine::eMode::Compile
                                                                                          : teascript::Engine::eMode::Eval );
+    }
+
+    void bind( csb::BenchmarkInfo const &info ) override
+    {
+        translate_errors( [&]() {
+            if( info.name == "script_to_host" ) {
+                bind_script_to_host( *mEngine );
+            }
+        } );
     }
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
