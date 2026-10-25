@@ -223,7 +223,7 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
 | script_to_host | the loop of `calls`, but the functions are registered C++ functions | ✅ |
-| host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ⬜ |
+| host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ✅ |
 | cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ⬜ |
 | buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ⬜ |
 | string_exchange | strings from the host to a script function and back | ⬜ |
@@ -621,10 +621,9 @@ Costs the host application pays for embedding, measured by the harness:
     `RegisterUserCallback` (a script function: ~510 ns).
   - A bound C++ struct in the loop of `records` (n = 150,000): Lua with LuaBridge3 ~108 ms (a Lua
     table: ~5 ms), Python with pybind11 ~258 ms (a Python class: ~13.5 ms).
-  - TeaScript: a call of a script function from C++ takes ~636 ns with `CallFuncEx`, ~570 ns through a
-    cached `FunctionPtr`. `_buf_set_u32` on a Buffer created by the host works, and the host reads the
-    result from it; the value must be a `u64`. Python: a `memoryview` (format `I`) over host memory
-    works, the script writes directly into the C++ buffer.
+  - TeaScript: `_buf_set_u32` on a Buffer created by the host works, and the host reads the result
+    from it; the value must be a `u64`. Python: a `memoryview` (format `I`) over host memory works,
+    the script writes directly into the C++ buffer.
 - Interface: `Language::bind( info )` registers what an interop benchmark needs from the host
   (functions, types, data). The runner calls it after `create_engine()` and before `load()`, and
   measures it as its own phase `bind`. The benchmarks of the other groups register nothing, so their
@@ -643,13 +642,13 @@ Costs the host application pays for embedding, measured by the harness:
 - `script_to_host`: the loop of `calls`, `sum = sum + f0() + f1( i ) + f3( i, 1, 2 )`, but `f0`, `f1`
   and `f3` are C++ functions registered by the host. n = 100,000 (checksum 800,000), like `calls`,
   so script and host functions compare directly. Python imports them in the script's top level
-  (`from csb_host import f0, f1, f3`), Lua caches them in locals (like the math functions in
+  (`from host import f0, f1, f3`), Lua caches them in locals (like the math functions in
   `math_builtins`); in the other languages they are global functions.
 - `host_to_script`: the mirror of `script_to_host`: a C++ loop computes
   `sum = sum + f0() + f1( i ) + f3( i, 1, 2 )` with the script functions of `calls`. n = 100,000
   (checksum 800,000). Each language looks up the function handle once where its API has one.
-  TeaScript calls by name with `CallFuncEx` (the user's choice, like `bench` since 2026-10-09; a
-  cached `FunctionPtr` is ~10% faster, but needs the Context, which the public API doesn't expose).
+  TeaScript calls by name with `CallFuncEx` (the user's choice, like `bench` since 2026-10-09; its
+  public API has no function handle).
 - `string_exchange`: per i, the host passes the C++ string `"item" + i` to the script function
   `f( s )`, which returns `s`; the host converts the result back to a `std::string` and adds its
   length. n = 100,000 (checksum 888,890).
@@ -694,6 +693,14 @@ Costs the host application pays for embedding, measured by the harness:
   pybind11, 8.4 ms with the C API); numbers in the README.
 - AngelScript keeps the native calling convention. The generic one (`asCALL_GENERIC`) was ~37% faster
   with GCC 11, but ~15% slower with MSVC, so it is not faster with both toolchains (README).
+- `host_to_script`: n = 100,000 as planned (checksum 800,000). The host's loop is a template in
+  `host.hpp`, so every runner and the C++ reference run the same C++ code; the script defines only
+  `f0`, `f1` and `f3`. The slowest headlines need ~215 ms (TeaScript `vm-O1`) and ~180 ms
+  (ChaiScript `no-threads`) per call with MSVC (GCC: ~152 and ~72 ms), within the target.
+  - Lua: the `c-api` variant calls through registry references (`luaL_ref`), the C API's function
+    handle, following the rule of the design round; `lua_getglobal` on every call was ~17% slower.
+  - Python imports the module `host` only for the benchmarks which bind something (before: for the
+    whole interop group, which showed up as `bind` time of `host_to_script`).
 
 ## 10. Open questions
 

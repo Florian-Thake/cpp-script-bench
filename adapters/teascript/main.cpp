@@ -8,6 +8,7 @@
 //   ast                 : the parsed AST is evaluated directly (no compilation).
 
 #include "csb_teascript_git_version.h"
+#include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 
@@ -129,6 +130,7 @@ class TeaScriptLanguage final : public csb::Language
     Variant                       mVariant;
     std::unique_ptr<BenchEngine>  mEngine;
     teascript::ASTNodePtr         mAst;  // kept alive as long as the engine, the defined functions may refer to it.
+    std::string_view              mBenchmark;  // the name of the loaded benchmark
 
 public:
     explicit TeaScriptLanguage( Variant const &rVariant )
@@ -166,6 +168,7 @@ public:
 
     std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
     {
+        mBenchmark = info.name;
         return translate_errors( [&]() {
             std::vector<csb::Phase> phases;
 
@@ -195,6 +198,9 @@ public:
 
     std::int64_t call_bench( std::int64_t const n ) override
     {
+        if( mBenchmark == "host_to_script" ) {
+            return translate_errors( [&]() { return call_host_to_script( n ); } );
+        }
         return translate_errors( [&]() {
             auto const res = mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) );
             // Only an Integer is accepted. GetAsInteger() would also convert e.g. a f64 or a String silently.
@@ -210,6 +216,21 @@ public:
     {
         mEngine.reset();
         mAst.reset();
+    }
+
+private:
+    /// The host's loop of host_to_script: calls the script functions by name with CallFuncEx, TeaScript's way to call
+    /// a script function from C++.
+    std::int64_t call_host_to_script( std::int64_t const n )
+    {
+        return csb::host::host_to_script::run(
+            n,
+            [&]() { return mEngine->CallFuncEx( "f0" ).GetAsInteger(); },
+            [&]( int const a ) { return mEngine->CallFuncEx( "f1", static_cast<teascript::Integer>(a) ).GetAsInteger(); },
+            [&]( int const a, int const b, int const c ) {
+                return mEngine->CallFuncEx( "f3", static_cast<teascript::Integer>(a), static_cast<teascript::Integer>(b),
+                                            static_cast<teascript::Integer>(c) ).GetAsInteger();
+            } );
     }
 };
 

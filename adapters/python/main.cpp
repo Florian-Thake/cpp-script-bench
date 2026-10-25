@@ -12,6 +12,7 @@
 // part of the main comparison.
 
 #include "csb_pybind11_git_version.h"
+#include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 
@@ -21,6 +22,7 @@
 
 #include <chrono>
 #include <climits>
+#include <initializer_list>
 #include <optional>
 #include <stdexcept>
 
@@ -158,6 +160,57 @@ void bind_script_to_host( py::module_ &m )
 }
 
 
+/// \return the function \param name of the script namespace \param globals.
+py::object find_function( py::dict const &globals, char const *const name )
+{
+    if( not globals.contains( name ) || not PyCallable_Check( globals[name].ptr() ) ) {
+        throw std::runtime_error( "the script does not define the function " + std::string( name ) );
+    }
+    return globals[name];
+}
+
+/// \return the int value of \param result, a new reference returned by a C API call, which this function releases.
+/// \param result is nullptr if the call failed.
+long take_long( PyObject *const result )
+{
+    if( result == nullptr ) {
+        throw py::error_already_set();
+    }
+    long const value = PyLong_AsLong( result );
+    Py_DECREF( result );
+    if( value == -1 && PyErr_Occurred() ) {
+        throw py::error_already_set();
+    }
+    return value;
+}
+
+/// Calls \param func with up to 3 int arguments \param args through the C API: the call functions with the least
+/// overhead for 0, 1 and more arguments. \return its int result.
+long call_c_api( PyObject *const func, std::initializer_list<long> const args )
+{
+    if( args.size() == 0 ) {
+        return take_long( PyObject_CallNoArgs( func ) );
+    }
+    PyObject *objects[3] = {};
+    size_t count = 0;
+    for( long const arg : args ) {
+        objects[count] = PyLong_FromLong( arg );
+        if( objects[count] == nullptr ) {
+            break;
+        }
+        ++count;
+    }
+    PyObject *result = nullptr;
+    if( count == args.size() ) {
+        result = count == 1 ? PyObject_CallOneArg( func, objects[0] ) : PyObject_Vectorcall( func, objects, count, nullptr );
+    }
+    for( size_t i = 0; i < count; ++i ) {
+        Py_DECREF( objects[i] );
+    }
+    return take_long( result );
+}
+
+
 /// Throws if the experimental JIT of CPython is enabled. It must be off for the main comparison (PLAN.md, rule 8).
 void check_jit_is_off()
 {
@@ -175,6 +228,10 @@ class PythonLanguage final : public csb::Language
     std::optional<py::scoped_interpreter>  mInterpreter;
     py::object                             mGlobals;  // the namespace of the script, like the one of a module
     py::object                             mBench;    // the script function bench, looked up once after loading
+    std::string_view                       mBenchmark;  // the name of the loaded benchmark
+    py::object                             mF0;       // the script functions of host_to_script, looked up once like bench
+    py::object                             mF1;
+    py::object                             mF3;
 
 public:
     explicit PythonLanguage( Variant const &rVariant )
@@ -227,17 +284,12 @@ public:
 
     void bind( csb::BenchmarkInfo const &info ) override
     {
-        if( info.group != "interop" ) {
-            return;
-        }
         translate_errors( [&]() {
-            if( mVariant.c_api ) {
-                if( info.name == "script_to_host" ) {
+            if( info.name == "script_to_host" ) {
+                if( mVariant.c_api ) {
                     add_c_api_host_module( c_api_script_to_host::methods );
-                }
-            } else {
-                auto m = py::module_::import( "host" );
-                if( info.name == "script_to_host" ) {
+                } else {
+                    auto m = py::module_::import( "host" );
                     bind_script_to_host( m );
                 }
             }
@@ -270,10 +322,14 @@ public:
             }
             phases.push_back( { "top_level", seconds_since( start ) } );
 
-            if( not globals.contains( "bench" ) || not PyCallable_Check( globals["bench"].ptr() ) ) {
-                throw std::runtime_error( "the script does not define the function bench( n )" );
+            mBenchmark = info.name;
+            if( mBenchmark == "host_to_script" ) {
+                mF0 = find_function( globals, "f0" );
+                mF1 = find_function( globals, "f1" );
+                mF3 = find_function( globals, "f3" );
+            } else {
+                mBench = find_function( globals, "bench" );
             }
-            mBench   = globals["bench"];
             mGlobals = std::move( globals );
             return phases;
         } );
@@ -281,6 +337,9 @@ public:
 
     std::int64_t call_bench( std::int64_t const n ) override
     {
+        if( mBenchmark == "host_to_script" ) {
+            return translate_errors( [&]() { return call_host_to_script( n ); } );
+        }
         return translate_errors( [&]() -> std::int64_t {
             py::object const res = mBench( static_cast<long long>(n) );
             // Only an int is accepted, not a subclass like bool. A conversion to an integer type would also accept
@@ -306,8 +365,31 @@ public:
     {
         // The references must be released while the interpreter still exists.
         mBench   = py::object();
+        mF0      = py::object();
+        mF1      = py::object();
+        mF3      = py::object();
         mGlobals = py::object();
         mInterpreter.reset();
+    }
+
+private:
+    /// The host's loop of host_to_script. pybind11: calls of the function objects with conversions by pybind11.
+    /// C API: PyObject_CallNoArgs(), PyObject_CallOneArg() and PyObject_Vectorcall().
+    std::int64_t call_host_to_script( std::int64_t const n )
+    {
+        namespace host = csb::host::host_to_script;
+        if( mVariant.c_api ) {
+            return host::run(
+                n,
+                [&]() { return call_c_api( mF0.ptr(), {} ); },
+                [&]( int const a ) { return call_c_api( mF1.ptr(), { a } ); },
+                [&]( int const a, int const b, int const c ) { return call_c_api( mF3.ptr(), { a, b, c } ); } );
+        }
+        return host::run(
+            n,
+            [&]() { return mF0().cast<int>(); },
+            [&]( int const a ) { return mF1( a ).cast<int>(); },
+            [&]( int const a, int const b, int const c ) { return mF3( a, b, c ).cast<int>(); } );
     }
 };
 

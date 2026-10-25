@@ -1,0 +1,16 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The functions of 'calls', which the host calls in its loop (there is no bench).
+
+func f0() {
+    1
+}
+
+func f1( a ) {
+    a bit_and 7
+}
+
+func f3( a, b, c ) {
+    (a + b + c) bit_and 7
+}

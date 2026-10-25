@@ -9,6 +9,7 @@
 
 #include "csb_chaiscript_extras_git_version.h"
 #include "csb_chaiscript_git_version.h"
+#include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 
@@ -61,6 +62,11 @@ class ChaiScriptLanguage final : public csb::Language
     std::unique_ptr<chaiscript::ChaiScript>        mChai;
     chaiscript::AST_NodePtr                        mAst;  // kept alive as long as the engine, the defined functions may refer to it.
     std::function<chaiscript::Boxed_Value( int )>  mBench;
+    std::string_view                               mBenchmark;  // the name of the loaded benchmark
+    // The script functions of host_to_script, looked up once like bench.
+    std::function<int()>                           mF0;
+    std::function<int( int )>                      mF1;
+    std::function<int( int, int, int )>            mF3;
 
 public:
     std::string name() const override { return "ChaiScript"; }
@@ -94,8 +100,9 @@ public:
         }
     }
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &, std::string const &source ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
     {
+        mBenchmark = info.name;
         return translate_errors( [&]() {
             std::vector<csb::Phase> phases;
 
@@ -107,7 +114,13 @@ public:
             (void)mChai->eval( *mAst );
             phases.push_back( { "top_level", seconds_since( start ) } );
 
-            mBench = mChai->eval<std::function<chaiscript::Boxed_Value( int )>>( "bench" );
+            if( mBenchmark == "host_to_script" ) {
+                mF0 = mChai->eval<std::function<int()>>( "f0" );
+                mF1 = mChai->eval<std::function<int( int )>>( "f1" );
+                mF3 = mChai->eval<std::function<int( int, int, int )>>( "f3" );
+            } else {
+                mBench = mChai->eval<std::function<chaiscript::Boxed_Value( int )>>( "bench" );
+            }
             return phases;
         } );
     }
@@ -117,6 +130,9 @@ public:
         // int is the natural integer type of ChaiScript (the type of its integer literals).
         if( n > INT_MAX ) {
             throw std::out_of_range( "n does not fit into a ChaiScript int" );
+        }
+        if( mBenchmark == "host_to_script" ) {
+            return translate_errors( [&]() { return csb::host::host_to_script::run( n, mF0, mF1, mF3 ); } );
         }
         return translate_errors( [&]() -> std::int64_t {
             auto const res = mBench( static_cast<int>(n) );
@@ -131,6 +147,9 @@ public:
     void destroy_engine() override
     {
         mBench = nullptr;
+        mF0    = nullptr;
+        mF1    = nullptr;
+        mF3    = nullptr;
         mChai.reset();
         mAst.reset();
     }

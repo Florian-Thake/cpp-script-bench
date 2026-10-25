@@ -10,6 +10,7 @@
 // (asEP_BUILD_WITHOUT_LINE_CUES). The AngelScript manual recommends both AS_NO_THREADS and building
 // without line cues for performance when they are not needed (section "Fine tuning").
 
+#include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 
@@ -23,6 +24,7 @@
 
 #include <chrono>
 #include <climits>
+#include <initializer_list>
 #include <stdexcept>
 
 
@@ -97,6 +99,10 @@ class AngelScriptLanguage final : public csb::Language
     asIScriptEngine     *mEngine  = nullptr;
     asIScriptContext    *mContext = nullptr;  // reused for all calls, as the AngelScript manual recommends
     asIScriptFunction   *mBench   = nullptr;  // looked up once after loading
+    std::string_view     mBenchmark;          // the name of the loaded benchmark
+    asIScriptFunction   *mF0      = nullptr;  // the script functions of host_to_script, looked up once like bench
+    asIScriptFunction   *mF1      = nullptr;
+    asIScriptFunction   *mF3      = nullptr;
     std::string          mMessages;           // compiler messages of the last build
 
 public:
@@ -166,9 +172,13 @@ public:
         }
         phases.push_back( { "parse_compile", seconds_since( start ) } );
 
-        mBench = mod->GetFunctionByDecl( "int bench( int )" );
-        if( mBench == nullptr ) {
-            throw std::runtime_error( "the script does not define the function int bench( int n )" );
+        mBenchmark = info.name;
+        if( mBenchmark == "host_to_script" ) {
+            mF0 = find_function( mod, "int f0()" );
+            mF1 = find_function( mod, "int f1( int )" );
+            mF3 = find_function( mod, "int f3( int, int, int )" );
+        } else {
+            mBench = find_function( mod, "int bench( int )" );
         }
         return phases;
     }
@@ -180,18 +190,14 @@ public:
         if( n > INT_MAX ) {
             throw std::out_of_range( "n does not fit into an AngelScript int" );
         }
-        check( mContext->Prepare( mBench ), "Prepare()" );
-        check( mContext->SetArgDWord( 0, static_cast<asDWORD>(static_cast<int>(n)) ), "SetArgDWord()" );
-        int const r = mContext->Execute();
-        if( r != asEXECUTION_FINISHED ) {
-            if( r == asEXECUTION_EXCEPTION ) {
-                throw std::runtime_error( "AngelScript exception in " + std::string( mContext->GetExceptionFunction()->GetDeclaration() )
-                                        + " at line " + std::to_string( mContext->GetExceptionLineNumber() ) + ": "
-                                        + mContext->GetExceptionString() );
-            }
-            throw std::runtime_error( "the execution of bench() did not finish, state " + std::to_string( r ) );
+        if( mBenchmark == "host_to_script" ) {
+            return csb::host::host_to_script::run(
+                n,
+                [&]() { return execute( mF0, {} ); },
+                [&]( int const a ) { return execute( mF1, { a } ); },
+                [&]( int const a, int const b, int const c ) { return execute( mF3, { a, b, c } ); } );
         }
-        return static_cast<int>(mContext->GetReturnDWord());
+        return execute( mBench, { static_cast<int>(n) } );
     }
 
     void collect_garbage() override
@@ -202,6 +208,9 @@ public:
     void destroy_engine() override
     {
         mBench = nullptr;
+        mF0    = nullptr;
+        mF1    = nullptr;
+        mF3    = nullptr;
         if( mContext != nullptr ) {
             mContext->Release();
             mContext = nullptr;
@@ -210,6 +219,38 @@ public:
             mEngine->ShutDownAndRelease();
             mEngine = nullptr;
         }
+    }
+
+private:
+    /// \return the function with the declaration \param decl of \param mod.
+    static asIScriptFunction *find_function( asIScriptModule *const mod, char const *const decl )
+    {
+        asIScriptFunction *const func = mod->GetFunctionByDecl( decl );
+        if( func == nullptr ) {
+            throw std::runtime_error( std::string( "the script does not define the function " ) + decl );
+        }
+        return func;
+    }
+
+    /// Calls the script function \param func with the int arguments \param args in the reused context.
+    /// \return its int result.
+    int execute( asIScriptFunction *const func, std::initializer_list<int> const args )
+    {
+        check( mContext->Prepare( func ), "Prepare()" );
+        asUINT index = 0;
+        for( int const arg : args ) {
+            check( mContext->SetArgDWord( index++, static_cast<asDWORD>(arg) ), "SetArgDWord()" );
+        }
+        int const r = mContext->Execute();
+        if( r != asEXECUTION_FINISHED ) {
+            if( r == asEXECUTION_EXCEPTION ) {
+                throw std::runtime_error( "AngelScript exception in " + std::string( mContext->GetExceptionFunction()->GetDeclaration() )
+                                        + " at line " + std::to_string( mContext->GetExceptionLineNumber() ) + ": "
+                                        + mContext->GetExceptionString() );
+            }
+            throw std::runtime_error( "the execution of " + std::string( func->GetName() ) + "() did not finish, state " + std::to_string( r ) );
+        }
+        return static_cast<int>(mContext->GetReturnDWord());
     }
 };
 

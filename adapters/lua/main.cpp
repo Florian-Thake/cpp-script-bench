@@ -10,6 +10,7 @@
 //   c-api     : with the plain Lua C API. Runs only the interop benchmarks, the others are the same in both.
 
 #include "csb_luabridge3_git_version.h"
+#include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 
@@ -19,6 +20,8 @@
 #include <LuaBridge/LuaBridge.h>
 
 #include <chrono>
+#include <initializer_list>
+#include <optional>
 #include <stdexcept>
 
 
@@ -103,10 +106,66 @@ void bind_script_to_host( lua_State *const L, bool const c_api )
 }
 
 
+/// Throws if \param name is not a global function of \param L.
+void check_global_function( lua_State *const L, char const *const name )
+{
+    int const type = lua_getglobal( L, name );
+    lua_pop( L, 1 );
+    if( type != LUA_TFUNCTION ) {
+        throw std::runtime_error( "the script does not define the global function " + std::string( name ) );
+    }
+}
+
+/// \return a reference in the registry to the global function \param name: the C API's handle for repeated calls.
+int ref_global_function( lua_State *const L, char const *const name )
+{
+    check_global_function( L, name );
+    lua_getglobal( L, name );
+    return luaL_ref( L, LUA_REGISTRYINDEX );
+}
+
+/// Calls the function with the registry reference \param ref with the integer arguments \param args through the
+/// C API. \return its integer result.
+lua_Integer call_ref( lua_State *const L, int const ref, std::initializer_list<lua_Integer> const args )
+{
+    lua_rawgeti( L, LUA_REGISTRYINDEX, ref );
+    for( auto const arg : args ) {
+        lua_pushinteger( L, arg );
+    }
+    if( lua_pcall( L, static_cast<int>(args.size()), 1, 0 ) != LUA_OK ) {
+        throw std::runtime_error( "Lua error: " + pop_error( L ) );
+    }
+    int is_number = 0;
+    lua_Integer const result = lua_tointegerx( L, -1, &is_number );
+    lua_pop( L, 1 );
+    if( not is_number ) {
+        throw std::runtime_error( "a script function must return an integer" );
+    }
+    return result;
+}
+
+/// \return the result of a call with LuaBridge3, or throws its error.
+int result_of( luabridge::TypeResult<int> const &result )
+{
+    if( not result ) {
+        throw std::runtime_error( "Lua error: " + result.message() );
+    }
+    return *result;
+}
+
+
 class LuaLanguage final : public csb::Language
 {
-    Variant     mVariant;
-    lua_State  *mL = nullptr;
+    Variant           mVariant;
+    lua_State        *mL = nullptr;
+    std::string_view  mBenchmark;  // the name of the loaded benchmark
+    // The script functions of host_to_script, looked up once: LuaRefs, or the registry references of the C API.
+    std::optional<luabridge::LuaRef>  mF0;
+    std::optional<luabridge::LuaRef>  mF1;
+    std::optional<luabridge::LuaRef>  mF3;
+    int                               mRef0 = LUA_NOREF;
+    int                               mRef1 = LUA_NOREF;
+    int                               mRef3 = LUA_NOREF;
 
 public:
     explicit LuaLanguage( Variant const &rVariant )
@@ -169,16 +228,31 @@ public:
         }
         phases.push_back( { "top_level", seconds_since( start ) } );
 
-        if( lua_getglobal( mL, "bench" ) != LUA_TFUNCTION ) {
-            lua_pop( mL, 1 );
-            throw std::runtime_error( "the script does not define the global function bench( n )" );
+        mBenchmark = info.name;
+        if( mBenchmark == "host_to_script" ) {
+            if( mVariant.c_api ) {
+                mRef0 = ref_global_function( mL, "f0" );
+                mRef1 = ref_global_function( mL, "f1" );
+                mRef3 = ref_global_function( mL, "f3" );
+            } else {
+                for( char const *const name : { "f0", "f1", "f3" } ) {
+                    check_global_function( mL, name );
+                }
+                mF0 = luabridge::getGlobal( mL, "f0" );
+                mF1 = luabridge::getGlobal( mL, "f1" );
+                mF3 = luabridge::getGlobal( mL, "f3" );
+            }
+        } else {
+            check_global_function( mL, "bench" );
         }
-        lua_pop( mL, 1 );
         return phases;
     }
 
     std::int64_t call_bench( std::int64_t const n ) override
     {
+        if( mBenchmark == "host_to_script" ) {
+            return call_host_to_script( n );
+        }
         lua_getglobal( mL, "bench" );
         lua_pushinteger( mL, static_cast<lua_Integer>(n) );
         if( lua_pcall( mL, 1, 1, 0 ) != LUA_OK ) {
@@ -203,10 +277,35 @@ public:
 
     void destroy_engine() override
     {
+        // The LuaRefs must be released while the state still exists. The registry references end with the state.
+        mF0.reset();
+        mF1.reset();
+        mF3.reset();
+        mRef0 = mRef1 = mRef3 = LUA_NOREF;
         if( mL != nullptr ) {
             lua_close( mL );
             mL = nullptr;
         }
+    }
+
+private:
+    /// The host's loop of host_to_script. LuaBridge3: calls through LuaRefs, looked up once.
+    /// C API: lua_pcall() of the functions from their registry references (luaL_ref), looked up once.
+    std::int64_t call_host_to_script( std::int64_t const n )
+    {
+        namespace host = csb::host::host_to_script;
+        if( mVariant.c_api ) {
+            return host::run(
+                n,
+                [&]() { return call_ref( mL, mRef0, {} ); },
+                [&]( int const a ) { return call_ref( mL, mRef1, { a } ); },
+                [&]( int const a, int const b, int const c ) { return call_ref( mL, mRef3, { a, b, c } ); } );
+        }
+        return host::run(
+            n,
+            [&]() { return result_of( mF0->call<int>() ); },
+            [&]( int const a ) { return result_of( mF1->call<int>( a ) ); },
+            [&]( int const a, int const b, int const c ) { return result_of( mF3->call<int>( a, b, c ) ); } );
     }
 };
 
