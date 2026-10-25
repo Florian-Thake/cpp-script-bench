@@ -216,11 +216,15 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 
 | Discipline     | Workload                                         | Status |
 |----------------|--------------------------------------------------|--------|
-| host_to_script | the host calls a script function N times         | ⬜ |
-| script_to_host | the script calls a registered C++ function N times | ⬜ |
-| data_exchange  | the host sets and reads script variables, strings and arrays | ⬜ |
-| cpp_objects    | a bound C++ type (`Vec3`/`Entity`) used from the script. TeaScript has no class binding: its version (callbacks + passthrough data) is off by default and shown as "n/a" | ⬜ |
+| script_to_host | the loop of `calls`, but the functions are registered C++ functions | ⬜ |
+| host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ⬜ |
+| cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ⬜ |
 | buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ⬜ |
+| string_exchange | strings from the host to a script function and back | ⬜ |
+| array_exchange | arrays from the host to a script function and back (converted both ways); series over the size | ⬜ |
+
+The catalogue entry `data_exchange` was split into `string_exchange` and `array_exchange` (decision
+log 2026-10-25).
 
 ### Host API (C++ level)
 
@@ -231,7 +235,6 @@ Costs the host application pays for embedding, measured by the harness:
 | engine_lifecycle | create and destroy an engine, empty and with the standard library | ⬜ |
 | parse_compile   | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript and Lua: one combined step; Python: `ast.parse` + `compile()`) | ⬜ |
 | registration    | register N C++ functions and variables          | ⬜ |
-| value_conversion | C++ <-> script values: int, double, string, array | ⬜ |
 | function_lookup | call by name vs through a cached handle         | ⬜ |
 | engine_reset    | reset/reuse an engine                           | ⬜ |
 | memory          | peak working set and allocation counts per engine and per workload | ⬜ |
@@ -264,11 +267,12 @@ Costs the host application pays for embedding, measured by the harness:
   - [x] **4b Data:** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees` (design round 2026-10-14, implemented
         2026-10-18).
-  - [ ] **4c Interop (next):** `host_to_script`, `script_to_host`, `data_exchange`, `cpp_objects`, `buffer`.
-        Extends `csb::Language`; brings in LuaBridge3.
-  - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `value_conversion`,
-        `function_lookup`, `engine_reset`, `memory`. A new kind of benchmark: the runner times C++
-        operations. `memory` may move to Phase 5.
+  - [ ] **4c Interop (next):** `script_to_host`, `host_to_script`, `cpp_objects`, `buffer`,
+        `string_exchange`, `array_exchange` (design round 2026-10-25). Extends `csb::Language`; brings
+        in LuaBridge3.
+  - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `function_lookup`,
+        `engine_reset`, `memory`. A new kind of benchmark: the runner times C++ operations. `memory` may
+        move to Phase 5.
 - [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish.
@@ -601,6 +605,75 @@ Costs the host application pays for embedding, measured by the harness:
   which the previously appended element shares.
 - `records` and `binary_trees` (reviewed): Python keeps plain classes, the natural form for the average
   Python user; `__slots__` is an optimization.
+- 4c design round. The catalogue entry `data_exchange` becomes `string_exchange` and `array_exchange`.
+  The sizes are starting points, tuned during the implementation as in 4a and 4b. Feature checks with
+  small scratch programs (MSVC):
+  - LuaBridge3 `3.0-rc12` compiles and works with Lua 5.5.1 (functions, a class with a constructor,
+    fields and a method). A read-write field needs `addProperty( "x", &T::x, &T::x )`.
+  - Per call of a host function from the script: Lua ~30 ns with LuaBridge3, ~15 ns with the C API;
+    Python ~160 ns with pybind11, ~36 ns with the C API (`METH_FASTCALL`); TeaScript ~380 ns with
+    `RegisterUserCallback` (a script function: ~510 ns).
+  - A bound C++ struct in the loop of `records` (n = 150,000): Lua with LuaBridge3 ~108 ms (a Lua
+    table: ~5 ms), Python with pybind11 ~258 ms (a Python class: ~13.5 ms).
+  - TeaScript: a call of a script function from C++ takes ~636 ns with `CallFuncEx`, ~570 ns through a
+    cached `FunctionPtr`. `_buf_set_u32` on a Buffer created by the host works, and the host reads the
+    result from it; the value must be a `u64`. Python: a `memoryview` (format `I`) over host memory
+    works, the script writes directly into the C++ buffer.
+- Interface: `Language::bind( info )` registers what an interop benchmark needs from the host
+  (functions, types, data). The runner calls it after `create_engine()` and before `load()`, and
+  measures it as its own phase `bind`. The benchmarks of the other groups register nothing, so their
+  startup numbers don't change. `call_bench( n )` stays the measured unit: the script-driven
+  benchmarks (`script_to_host`, `cpp_objects`, `buffer`) call `bench( n )` as before, in the
+  host-driven ones (`host_to_script`, `string_exchange`, `array_exchange`) it runs the host's C++
+  loop, which calls script functions. The host side (the C++ functions, the type, the image buffer,
+  the checksum) is shared by the C++ reference and all runners (`benchmarks/<name>/host.hpp`).
+  `Language::supports( info )` lets a variant report a benchmark as "n/a".
+- Binding layer (the user's choice): the headline of Lua and Python uses their C++ binding libraries,
+  LuaBridge3 and pybind11. The average C++ user prefers the higher abstraction to programming against
+  a C API. The plain C APIs become variants (n/a outside the interop group), so the cost of the
+  abstraction stays visible: it is 2x (Lua) and 4.5x (Python) per host call, see the feature checks.
+  TeaScript (`RegisterUserCallback`), ChaiScript (`chaiscript::fun`) and AngelScript (the native
+  calling convention, its default on x64) have one API each.
+- `script_to_host`: the loop of `calls`, `sum = sum + f0() + f1( i ) + f3( i, 1, 2 )`, but `f0`, `f1`
+  and `f3` are C++ functions registered by the host. n = 100,000 (checksum 800,000), like `calls`,
+  so script and host functions compare directly. Python imports them in the script's top level
+  (`from csb_host import f0, f1, f3`), Lua caches them in locals (like the math functions in
+  `math_builtins`); in the other languages they are global functions.
+- `host_to_script`: the mirror of `script_to_host`: a C++ loop computes
+  `sum = sum + f0() + f1( i ) + f3( i, 1, 2 )` with the script functions of `calls`. n = 100,000
+  (checksum 800,000). Each language looks up the function handle once where its API has one.
+  TeaScript calls by name with `CallFuncEx` (the user's choice, like `bench` since 2026-10-09; a
+  cached `FunctionPtr` is ~10% faster, but needs the Context, which the public API doesn't expose).
+- `string_exchange`: per i, the host passes the C++ string `"item" + i` to the script function
+  `f( s )`, which returns `s`; the host converts the result back to a `std::string` and adds its
+  length. n = 100,000 (checksum 888,890).
+- `array_exchange`: the host converts a `std::vector<int>` of n elements (`i & 7`) into the script's
+  natural array (the containers of 4b) and passes it to `f( a )`, which returns a new array with every
+  element + 1, built by appending; the host converts it back and sums it. Every call moves the same
+  volume: 100,000 / n round trips. Series n = 10 / 1,000 / 100,000 (checksums 390,000 / 450,000 /
+  450,000).
+- Dropped: script variables set and read by the host (part of the catalogue entry `data_exchange`).
+  ChaiScript and AngelScript bind host variables by reference, so the host side is plain memory and
+  the benchmark would measure `var_global` again. Also dropped: 4d's `value_conversion`, which would
+  measure the conversions of `string_exchange` and `array_exchange` without a call.
+- `cpp_objects`: a C++ struct `Vec3i` (int fields x, y, z), bound with a default constructor and
+  read-write fields; the script creates one and runs the loop of `records`. n = 150,000 (checksum
+  787,500), like `records`, so a script record and a bound C++ object compare directly. Fields only,
+  no methods. TeaScript is "n/a", without the emulation with callbacks and passthrough data (changes
+  the decision of 2026-10-04): it would measure `script_to_host` again. A real implementation may
+  follow when TeaScript can bind C++ types.
+- `buffer`: the host owns an image of n x n `uint32` pixels. `bench( n )` writes every pixel with
+  `(x & 255) + (y & 255) * 256 + ((x + y) & 255) * 65536` (below 2^24); the host checks a weighted
+  sum over the image. n = 256 to start (Full HD is too slow for ChaiScript). Each language writes in
+  its natural form for host memory: TeaScript `_buf_set_u32( buf, pos, v )` on a Buffer created by the
+  host (a Buffer cannot wrap host memory); ChaiScript `buf[i] = v` on the host's `std::vector` bound by
+  reference; AngelScript `image[i] = v` on a registered type with `opIndex`; Lua `buf[i] = v` on a
+  userdata with `__newindex`; Python `buf[i] = v` on a `memoryview` over the host memory.
+  TeaScript computes `v` as a `u64` with `u64` literals (`x bit_and 255u64`; an operation with a
+  `u64` operand gives a `u64`), so no cast per pixel is needed (the user's choice): ~8% faster than
+  `as u64`. The loop counters stay `i64`, `_seq` takes only `i64`.
+- Order: the interface and `script_to_host` first (with LuaBridge3), then `host_to_script`,
+  `cpp_objects`, `buffer`, `string_exchange`, `array_exchange`.
 
 ## 10. Open questions
 
