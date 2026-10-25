@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The host calls f( a ) in its loop with a Tuple of integers and converts the result back (there
+// is no bench). f returns a new Tuple with every element + 1, built by appending.
+func f( a ) {
+    def b := _tuple_create()
+    const size := _tuple_size( a )
+    forall( i in _seq( 0, size - 1, 1 ) ) {
+        _tuple_append( b, a[i] + 1 )
+    }
+    b
+}

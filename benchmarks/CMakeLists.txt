@@ -27,7 +27,8 @@ add_library( csb_benchmarks STATIC
     host_to_script/reference.cpp
     cpp_objects/reference.cpp
     buffer/reference.cpp
-    string_exchange/reference.cpp )
+    string_exchange/reference.cpp
+    array_exchange/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
 target_link_libraries( csb_benchmarks PUBLIC csb_harness )

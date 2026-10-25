@@ -227,7 +227,7 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 | cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ✅ |
 | buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ✅ |
 | string_exchange | strings from the host to a script function and back | ✅ |
-| array_exchange | arrays from the host to a script function and back (converted both ways); series over the size | ⬜ |
+| array_exchange | arrays from the host to a script function and back (converted both ways); series over the size | ✅ |
 
 The catalogue entry `data_exchange` was split into `string_exchange` and `array_exchange` (decision
 log 2026-10-25).
@@ -273,10 +273,10 @@ Costs the host application pays for embedding, measured by the harness:
   - [x] **4b Data:** `var_global`, `var_nested`, `var_lifecycle`, `sieve`, `sort`, `byte_buffer`,
         `maps`, `strings`, `records`, `binary_trees` (design round 2026-10-14, implemented
         2026-10-18).
-  - [ ] **4c Interop (next):** `script_to_host`, `host_to_script`, `cpp_objects`, `buffer`,
-        `string_exchange`, `array_exchange` (design round 2026-10-25). Extends `csb::Language`; brings
-        in LuaBridge3.
-  - [ ] **4d Host API:** `engine_lifecycle`, `parse_compile`, `registration`, `function_lookup`,
+  - [x] **4c Interop:** `script_to_host`, `host_to_script`, `cpp_objects`, `buffer`,
+        `string_exchange`, `array_exchange` (design round and implementation 2026-10-25). Extends
+        `csb::Language`; brings in LuaBridge3.
+  - [ ] **4d Host API (next):** `engine_lifecycle`, `parse_compile`, `registration`, `function_lookup`,
         `engine_reset`, `memory`. A new kind of benchmark: the runner times C++ operations. `memory` may
         move to Phase 5.
 - [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
@@ -731,6 +731,15 @@ Costs the host application pays for embedding, measured by the harness:
   checksum adds the last digit of every result to its length, so a result with the same length but
   another content is detected (checksum 3,513,890). Each language passes the string in its normal way
   (AngelScript: `const string &in`, the result from `GetReturnObject()`); numbers in the README.
+- `array_exchange`: every call moves 40,000 elements instead of 100,000 in each direction, series
+  n = 10 / 1,000 / 40,000 instead of 10 / 1,000 / 100,000 (4,000 / 40 / 1 round trips, checksums
+  156,000 / 180,000 / 180,000). With 100,000 the slowest headline, ChaiScript `no-threads`, needed
+  ~0.9-1.0 s per call with MSVC (its `push_back` is a ChaiScript function, see `sieve`); with 40,000
+  ~0.35-0.4 s (GCC ~0.2 s). TeaScript `vm-O1` needs ~25-37 ms (GCC ~16-23 ms). The host converts with
+  each language's normal API; AngelScript's `array<int>` stores its elements contiguously, so the host
+  copies them as a block (`GetBuffer()`). Lua and Python use the converters of their binding
+  libraries (LuaBridge3 `Vector.h`, pybind11 `stl.h`) for the headline.
+- Phase 4c is done.
 
 ## 10. Open questions
 

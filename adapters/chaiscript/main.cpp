@@ -9,6 +9,7 @@
 
 #include "csb_chaiscript_extras_git_version.h"
 #include "csb_chaiscript_git_version.h"
+#include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "host_to_script/host.hpp"
@@ -78,6 +79,8 @@ class ChaiScriptLanguage final : public csb::Language
     std::function<int( int )>                      mF1;
     std::function<int( int, int, int )>            mF3;
     std::function<std::string( std::string const & )>  mStringF;  // the script function f of string_exchange
+    // The script function f of array_exchange: takes and returns a Vector, ChaiScript's array (std::vector<Boxed_Value>).
+    std::function<chaiscript::Boxed_Value( std::vector<chaiscript::Boxed_Value> const & )>  mArrayF;
     csb::host::buffer::Image                       mImage;  // buffer: the image of the host, bound by reference
 
 public:
@@ -146,6 +149,8 @@ public:
                 mF3 = mChai->eval<std::function<int( int, int, int )>>( "f3" );
             } else if( mBenchmark == "string_exchange" ) {
                 mStringF = mChai->eval<std::function<std::string( std::string const & )>>( "f" );
+            } else if( mBenchmark == "array_exchange" ) {
+                mArrayF = mChai->eval<std::function<chaiscript::Boxed_Value( std::vector<chaiscript::Boxed_Value> const & )>>( "f" );
             } else {
                 mBench = mChai->eval<std::function<chaiscript::Boxed_Value( int )>>( "bench" );
             }
@@ -166,6 +171,9 @@ public:
             if( mBenchmark == "string_exchange" ) {
                 return csb::host::string_exchange::run( n, mStringF );
             }
+            if( mBenchmark == "array_exchange" ) {
+                return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return call_array_function( a ); } );
+            }
             if( mBenchmark == "buffer" ) {
                 // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
                 mImage.reset( n );
@@ -182,11 +190,30 @@ public:
         mF1    = nullptr;
         mF3    = nullptr;
         mStringF = nullptr;
+        mArrayF  = nullptr;
         mChai.reset();
         mAst.reset();
     }
 
 private:
+    /// array_exchange: converts \param a into a Vector, calls f with it and converts the result back.
+    std::vector<int> call_array_function( std::vector<int> const &a )
+    {
+        std::vector<chaiscript::Boxed_Value> vector;
+        vector.reserve( a.size() );
+        for( int const value : a ) {
+            vector.push_back( chaiscript::Boxed_Value( value ) );
+        }
+        auto const res     = mArrayF( vector );
+        auto const &result = chaiscript::boxed_cast<std::vector<chaiscript::Boxed_Value> const &>( res );
+        std::vector<int> b;
+        b.reserve( result.size() );
+        for( auto const &element : result ) {
+            b.push_back( chaiscript::boxed_cast<int>( element ) );
+        }
+        return b;
+    }
+
     /// Calls bench( n ) of the script. \return its result.
     std::int64_t call_script_bench( std::int64_t const n )
     {

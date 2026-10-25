@@ -31,6 +31,7 @@ std::int64_t host_to_script( std::int64_t n );
 std::int64_t cpp_objects( std::int64_t n );
 std::int64_t buffer( std::int64_t n );
 std::int64_t string_exchange( std::int64_t n );
+std::int64_t array_exchange( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -63,6 +64,7 @@ constexpr std::int64_t host_to_script_n[] = { 100'000 };
 constexpr std::int64_t cpp_objects_n[]    = { 150'000 };
 constexpr std::int64_t buffer_n[]         = { 400 };
 constexpr std::int64_t string_exchange_n[] = { 250'000 };
+constexpr std::int64_t array_exchange_n[]  = { 10, 1'000, 40'000 };
 
 } // namespace
 
@@ -92,6 +94,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "cpp_objects",   "interop", "The loop of 'records' on a bound C++ type", cpp_objects_n, &reference::cpp_objects },
         { "buffer",        "interop", "Fill an n x n image of 32 bit pixels owned by the host", buffer_n, &reference::buffer },
         { "string_exchange", "interop", "Strings from the host to a script function and back", string_exchange_n, &reference::string_exchange },
+        { "array_exchange", "interop", "Arrays from the host to a script function and back, converted both ways", array_exchange_n, &reference::array_exchange },
     };
     return list;
 }

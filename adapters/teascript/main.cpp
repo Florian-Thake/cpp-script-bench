@@ -7,6 +7,7 @@
 //   vm-O0, vm-O1, vm-O2 : compiled and executed in the TeaStackVM with the given optimization level.
 //   ast                 : the parsed AST is evaluated directly (no compilation).
 
+#include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "csb_teascript_git_version.h"
 #include "host_to_script/host.hpp"
@@ -210,6 +211,9 @@ public:
             if( mBenchmark == "host_to_script" ) {
                 return call_host_to_script( n );
             }
+            if( mBenchmark == "array_exchange" ) {
+                return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return call_array_function( a ); } );
+            }
             if( mBenchmark == "string_exchange" ) {
                 // The string goes in as a String, the result comes back with GetAsString().
                 return csb::host::string_exchange::run(
@@ -243,6 +247,26 @@ private:
             throw std::runtime_error( "bench() must return an Integer, but returned: " + res.GetTypeInfo()->GetName() );
         }
         return static_cast<std::int64_t>(*p);
+    }
+
+    /// array_exchange: converts \param a into a Tuple, calls f with it and converts the result back.
+    std::vector<int> call_array_function( std::vector<int> const &a )
+    {
+        // The elements are shared mutable values, like the ones _tuple_append creates.
+        teascript::Tuple tuple;
+        tuple.Reserve( a.size() );
+        for( int const value : a ) {
+            tuple.AppendValue( teascript::ValueObject( static_cast<teascript::Integer>(value),
+                                                       teascript::ValueConfig( teascript::ValueShared, teascript::ValueMutable ) ) );
+        }
+        auto const res = mEngine->CallFuncEx( "f", std::move( tuple ) );
+        auto const &result = res.GetValue<teascript::Tuple>();
+        std::vector<int> b;
+        b.reserve( result.Size() );
+        for( std::size_t i = 0; i < result.Size(); ++i ) {
+            b.push_back( static_cast<int>(result.GetValueByIdx( i ).GetAsInteger()) );
+        }
+        return b;
     }
 
     /// The host's loop of host_to_script: calls the script functions by name with CallFuncEx, TeaScript's way to call

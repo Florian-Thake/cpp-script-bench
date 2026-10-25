@@ -10,6 +10,7 @@
 // (asEP_BUILD_WITHOUT_LINE_CUES). The AngelScript manual recommends both AS_NO_THREADS and building
 // without line cues for performance when they are not needed (section "Fine tuning").
 
+#include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "host_to_script/host.hpp"
@@ -27,7 +28,9 @@
 
 #include <chrono>
 #include <climits>
+#include <cstring>
 #include <initializer_list>
+#include <memory>
 #include <new>
 #include <stdexcept>
 
@@ -126,6 +129,8 @@ class AngelScriptLanguage final : public csb::Language
     asIScriptFunction   *mF1      = nullptr;
     asIScriptFunction   *mF3      = nullptr;
     asIScriptFunction   *mStringF = nullptr;  // the script function f of string_exchange
+    asIScriptFunction   *mArrayF  = nullptr;  // the script function f of array_exchange
+    asITypeInfo         *mIntArrayType = nullptr;  // array<int>, looked up once
     csb::host::buffer::Image  mImage;         // buffer: the image of the host, the script's global property 'image'
     std::string          mMessages;           // compiler messages of the last build
 
@@ -221,6 +226,9 @@ public:
             mF3 = find_function( mod, "int f3( int, int, int )" );
         } else if( mBenchmark == "string_exchange" ) {
             mStringF = find_function( mod, "string f( const string &in )" );
+        } else if( mBenchmark == "array_exchange" ) {
+            mArrayF       = find_function( mod, "array<int>@ f( const array<int>@ )" );
+            mIntArrayType = mEngine->GetTypeInfoByDecl( "array<int>" );
         } else {
             mBench = find_function( mod, "int bench( int )" );
         }
@@ -240,6 +248,9 @@ public:
                 [&]() { return execute( mF0, {} ); },
                 [&]( int const a ) { return execute( mF1, { a } ); },
                 [&]( int const a, int const b, int const c ) { return execute( mF3, { a, b, c } ); } );
+        }
+        if( mBenchmark == "array_exchange" ) {
+            return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return execute( mArrayF, a ); } );
         }
         if( mBenchmark == "string_exchange" ) {
             return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return execute( mStringF, s ); } );
@@ -264,6 +275,8 @@ public:
         mF1    = nullptr;
         mF3    = nullptr;
         mStringF = nullptr;
+        mArrayF  = nullptr;
+        mIntArrayType = nullptr;
         if( mContext != nullptr ) {
             mContext->Release();
             mContext = nullptr;
@@ -306,6 +319,25 @@ private:
         check( mContext->SetArgObject( 0, const_cast<std::string *>(&s) ), "SetArgObject()" );
         execute_prepared( func );
         return *static_cast<std::string const *>(mContext->GetReturnObject());
+    }
+
+    /// Calls the script function \param func, declared array<int>@ f( const array<int>@ ), with \param a in the reused
+    /// context. \return its result. The elements of array<int> are stored contiguously, so they are copied as a block.
+    std::vector<int> execute( asIScriptFunction *const func, std::vector<int> const &a )
+    {
+        auto const release = []( CScriptArray *const array ) { array->Release(); };
+        std::unique_ptr<CScriptArray, decltype(release)> array( CScriptArray::Create( mIntArrayType, static_cast<asUINT>(a.size()) ), release );
+        if( array == nullptr ) {
+            throw std::runtime_error( "CScriptArray::Create() failed" );
+        }
+        std::memcpy( array->GetBuffer(), a.data(), a.size() * sizeof( int ) );
+        check( mContext->Prepare( func ), "Prepare()" );
+        check( mContext->SetArgObject( 0, array.get() ), "SetArgObject()" );
+        execute_prepared( func );
+        auto *const result = static_cast<CScriptArray *>(mContext->GetReturnObject());
+        std::vector<int> b( result->GetSize() );
+        std::memcpy( b.data(), result->GetBuffer(), b.size() * sizeof( int ) );
+        return b;
     }
 
     /// Executes the prepared script function \param func and throws if it did not finish.

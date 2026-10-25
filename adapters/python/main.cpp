@@ -11,6 +11,7 @@
 // A free-threaded build (without the GIL) reports them as "free-threaded" and "free-threaded-c-api", which are not
 // part of the main comparison.
 
+#include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_pybind11_git_version.h"
@@ -22,6 +23,7 @@
 #include <csb/runner.hpp>
 
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>  // std::vector <-> list, for array_exchange
 #if PY_VERSION_HEX < 0x030C0000
 # include <structmember.h>  // T_INT, which Python 3.12 renamed to Py_T_INT
 #endif
@@ -33,6 +35,7 @@
 #include <new>
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 
 namespace py = pybind11;
@@ -384,6 +387,47 @@ std::string call_c_api( PyObject *const func, std::string const &s )
 }
 
 
+/// Calls \param func with a list of the elements of \param a through the C API: PyList_New(), PyLong_FromLong(),
+/// PyObject_CallOneArg(). \return the elements of the list it returns.
+std::vector<int> call_c_api( PyObject *const func, std::vector<int> const &a )
+{
+    PyObject *const list = PyList_New( static_cast<Py_ssize_t>(a.size()) );
+    if( list == nullptr ) {
+        throw py::error_already_set();
+    }
+    for( std::size_t i = 0; i < a.size(); ++i ) {
+        PyObject *const item = PyLong_FromLong( a[i] );
+        if( item == nullptr ) {
+            Py_DECREF( list );
+            throw py::error_already_set();
+        }
+        PyList_SET_ITEM( list, static_cast<Py_ssize_t>(i), item );  // steals the reference
+    }
+    PyObject *const result = PyObject_CallOneArg( func, list );
+    Py_DECREF( list );
+    if( result == nullptr ) {
+        throw py::error_already_set();
+    }
+    if( not PyList_Check( result ) ) {
+        Py_DECREF( result );
+        throw std::runtime_error( "f() must return a list" );
+    }
+    Py_ssize_t const size = PyList_GET_SIZE( result );
+    std::vector<int> b;
+    b.reserve( static_cast<std::size_t>(size) );
+    for( Py_ssize_t i = 0; i < size; ++i ) {
+        long const value = PyLong_AsLong( PyList_GET_ITEM( result, i ) );
+        if( value == -1 && PyErr_Occurred() ) {
+            Py_DECREF( result );
+            throw py::error_already_set();
+        }
+        b.push_back( static_cast<int>(value) );
+    }
+    Py_DECREF( result );
+    return b;
+}
+
+
 /// Throws if the experimental JIT of CPython is enabled. It must be off for the main comparison (PLAN.md, rule 8).
 void check_jit_is_off()
 {
@@ -405,7 +449,7 @@ class PythonLanguage final : public csb::Language
     py::object                             mF0;       // the script functions of host_to_script, looked up once like bench
     py::object                             mF1;
     py::object                             mF3;
-    py::object                             mF;        // the script function f of string_exchange
+    py::object                             mF;        // the script function f of string_exchange and array_exchange
     csb::host::buffer::Image               mImage;    // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -516,7 +560,7 @@ public:
                 mF0 = find_function( globals, "f0" );
                 mF1 = find_function( globals, "f1" );
                 mF3 = find_function( globals, "f3" );
-            } else if( mBenchmark == "string_exchange" ) {
+            } else if( mBenchmark == "string_exchange" || mBenchmark == "array_exchange" ) {
                 mF = find_function( globals, "f" );
             } else {
                 mBench = find_function( globals, "bench" );
@@ -531,6 +575,14 @@ public:
         return translate_errors( [&]() -> std::int64_t {
             if( mBenchmark == "host_to_script" ) {
                 return call_host_to_script( n );
+            }
+            if( mBenchmark == "array_exchange" ) {
+                // pybind11: the call of the function object with the std::vector, cast<std::vector<int>>() of the result
+                // (pybind11/stl.h converts to and from a list). C API: see call_c_api().
+                if( mVariant.c_api ) {
+                    return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return call_c_api( mF.ptr(), a ); } );
+                }
+                return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return mF( a ).cast<std::vector<int>>(); } );
             }
             if( mBenchmark == "string_exchange" ) {
                 // pybind11: the call of the function object, cast<std::string>() of the result. C API: see call_c_api().

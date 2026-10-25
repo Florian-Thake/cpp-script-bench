@@ -9,6 +9,7 @@
 //   (no name) : with LuaBridge3, the C++ binding library (the headline).
 //   c-api     : with the plain Lua C API. Runs only the interop benchmarks, the others are the same in both.
 
+#include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_luabridge3_git_version.h"
@@ -21,6 +22,7 @@
 
 #include <lua.hpp>
 #include <LuaBridge/LuaBridge.h>
+#include <LuaBridge/Vector.h>
 
 #include <chrono>
 #include <initializer_list>
@@ -28,6 +30,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 
 namespace {
@@ -297,6 +300,35 @@ std::string call_ref( lua_State *const L, int const ref, std::string const &s )
     return result;
 }
 
+/// Calls the function with the registry reference \param ref with a sequence (a table) of the elements of \param a
+/// through the C API. \return the elements of the sequence it returns.
+std::vector<int> call_ref( lua_State *const L, int const ref, std::vector<int> const &a )
+{
+    lua_rawgeti( L, LUA_REGISTRYINDEX, ref );
+    lua_createtable( L, static_cast<int>(a.size()), 0 );
+    for( std::size_t i = 0; i < a.size(); ++i ) {
+        lua_pushinteger( L, a[i] );
+        lua_rawseti( L, -2, static_cast<lua_Integer>(i + 1) );
+    }
+    if( lua_pcall( L, 1, 1, 0 ) != LUA_OK ) {
+        throw std::runtime_error( "Lua error: " + pop_error( L ) );
+    }
+    if( not lua_istable( L, -1 ) ) {
+        lua_pop( L, 1 );
+        throw std::runtime_error( "a script function must return a table" );
+    }
+    auto const size = static_cast<lua_Integer>(lua_rawlen( L, -1 ));
+    std::vector<int> b;
+    b.reserve( static_cast<std::size_t>(size) );
+    for( lua_Integer i = 1; i <= size; ++i ) {
+        lua_rawgeti( L, -1, i );
+        b.push_back( static_cast<int>(lua_tointeger( L, -1 )) );
+        lua_pop( L, 1 );
+    }
+    lua_pop( L, 1 );
+    return b;
+}
+
 /// \return the result of a call with LuaBridge3, or throws its error.
 template< typename T >
 T result_of( luabridge::TypeResult<T> const &result )
@@ -320,7 +352,7 @@ class LuaLanguage final : public csb::Language
     int                               mRef0 = LUA_NOREF;
     int                               mRef1 = LUA_NOREF;
     int                               mRef3 = LUA_NOREF;
-    // The script function f of string_exchange, the same way.
+    // The script function f of string_exchange and array_exchange, the same way.
     std::optional<luabridge::LuaRef>  mF;
     int                               mRefF = LUA_NOREF;
     csb::host::buffer::Image          mImage;  // buffer: the image of the host, 'host.image' in the script
@@ -404,7 +436,7 @@ public:
                 mF1 = luabridge::getGlobal( mL, "f1" );
                 mF3 = luabridge::getGlobal( mL, "f3" );
             }
-        } else if( mBenchmark == "string_exchange" ) {
+        } else if( mBenchmark == "string_exchange" || mBenchmark == "array_exchange" ) {
             if( mVariant.c_api ) {
                 mRefF = ref_global_function( mL, "f" );
             } else {
@@ -421,6 +453,14 @@ public:
     {
         if( mBenchmark == "host_to_script" ) {
             return call_host_to_script( n );
+        }
+        if( mBenchmark == "array_exchange" ) {
+            // LuaBridge3: call<std::vector<int>>() through the LuaRef, which converts both ways (LuaBridge/Vector.h).
+            // C API: lua_createtable() and lua_rawseti(), lua_pcall(), lua_rawlen() and lua_rawgeti().
+            if( mVariant.c_api ) {
+                return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return call_ref( mL, mRefF, a ); } );
+            }
+            return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return result_of( mF->call<std::vector<int>>( a ) ); } );
         }
         if( mBenchmark == "string_exchange" ) {
             // LuaBridge3: call<std::string>() through the LuaRef. C API: lua_pushlstring(), lua_pcall(), lua_tolstring().

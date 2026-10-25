@@ -1,0 +1,16 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The host calls f(a) in its loop with a Vector of integers and converts the result back (there
+// is no bench). f returns a new Vector with every element + 1, built by appending.
+// No 'return': ChaiScript implements it with a C++ exception, unless it is the last statement
+// of a function. The value of the last expression is the return value.
+def f(a) {
+    var size = a.size();
+    var b = [];
+    b.reserve(size);
+    for (var i = 0; i < size; ++i) {
+        b.push_back(a[i] + 1);
+    }
+    b;
+}
