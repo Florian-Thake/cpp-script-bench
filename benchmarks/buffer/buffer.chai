@@ -1,0 +1,15 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// image is the image of the host with n * n pixels (32 bit), all 0, bound by reference;
+// image.set(index, value) is a C++ function, which writes a pixel.
+// No 'return': ChaiScript implements it with a C++ exception, unless it is the last statement
+// of a function. The value of the last expression is the return value.
+def bench(n) {
+    for (var y = 0; y < n; ++y) {
+        for (var x = 0; x < n; ++x) {
+            image.set(y * n + x, (x & 255) + (y & 255) * 256 + ((x + y) & 255) * 65536);
+        }
+    }
+    n * n;
+}

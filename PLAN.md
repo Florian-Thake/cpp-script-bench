@@ -225,7 +225,7 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 | script_to_host | the loop of `calls`, but the functions are registered C++ functions | ✅ |
 | host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ✅ |
 | cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ✅ |
-| buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ⬜ |
+| buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ✅ |
 | string_exchange | strings from the host to a script function and back | ⬜ |
 | array_exchange | arrays from the host to a script function and back (converted both ways); series over the size | ⬜ |
 
@@ -712,6 +712,20 @@ Costs the host application pays for embedding, measured by the harness:
   samples, while the other benchmarks in the same process were normal; it was not reproducible.
   Single engine instances which are slow for their whole run were seen with MSVC in two languages
   (see the open question on repeated runs).
+- `buffer`: n = 400 instead of 256 (160,000 pixels, checksum 6,097,724,102,400, computed by the host
+  in 64 bit). With 256 the slowest headline needed ~120 ms with MSVC, but only ~47 ms with GCC; with
+  400 ChaiScript `no-threads` needs ~295 ms with MSVC and ~119 ms with GCC, TeaScript `vm-O1` ~145 and
+  ~128 ms.
+  - `bind()` runs before n is known, so the host binds an image object and resizes and clears its
+    memory in `call_bench( n )` before every call; the checksum over it is computed in the same call.
+    `bench( n )` returns the number of pixels, which the host checks. Python takes the memoryview in
+    `bench`, since the memory moves when the host resizes the image.
+  - Changed from the design round: ChaiScript and Lua write with a method `set( index, value )`
+    instead of the index operator. It was faster with both toolchains (ChaiScript ~13% / ~25%, Lua
+    with LuaBridge3 ~3.2x; the C API variant is equal). AngelScript keeps `opIndex`, which was faster
+    than a method. Numbers in the README.
+  - LuaBridge3's `__newindex` converts an integer key with `lua_tostring()` before it calls the
+    fallback of the class, so the fallback gets a numeric string.
 
 ## 10. Open questions
 

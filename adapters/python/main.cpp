@@ -11,6 +11,7 @@
 // A free-threaded build (without the GIL) reports them as "free-threaded" and "free-threaded-c-api", which are not
 // part of the main comparison.
 
+#include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_pybind11_git_version.h"
 #include "host_to_script/host.hpp"
@@ -211,6 +212,80 @@ void add_module()
 
 } // namespace c_api_cpp_objects
 
+// buffer with the plain C API: the image of the host as an object with the buffer protocol.
+namespace c_api_buffer {
+
+using csb::host::buffer::Image;
+
+struct PyImage
+{
+    PyObject_HEAD
+    Image       *image;   // the image of the host
+    Py_ssize_t   shape;   // the shape and the stride of the last view, which must live as long as the view
+    Py_ssize_t   stride;
+};
+
+/// The buffer protocol: a writable 1-dimensional view of the pixels (format 'I', 4 bytes each) in the memory of the host.
+int get_buffer( PyObject *const self, Py_buffer *const view, int const flags )
+{
+    auto &object   = *reinterpret_cast<PyImage *>(self);
+    object.shape   = static_cast<Py_ssize_t>(object.image->pixels.size());
+    object.stride  = sizeof( std::uint32_t );
+    view->buf      = object.image->pixels.data();
+    view->obj      = self;
+    Py_INCREF( self );
+    view->len      = object.shape * object.stride;
+    view->readonly = 0;
+    view->itemsize = sizeof( std::uint32_t );
+    view->format   = (flags & PyBUF_FORMAT) != 0 ? const_cast<char *>("I") : nullptr;
+    view->ndim     = 1;
+    view->shape    = (flags & PyBUF_ND) == PyBUF_ND ? &object.shape : nullptr;
+    view->strides  = (flags & PyBUF_STRIDES) == PyBUF_STRIDES ? &object.stride : nullptr;
+    view->suboffsets = nullptr;
+    view->internal   = nullptr;
+    return 0;
+}
+
+PyType_Slot slots[] = {
+    { Py_bf_getbuffer, reinterpret_cast<void *>(&get_buffer) },
+    { 0, nullptr },
+};
+
+PyType_Spec spec = { "host.Image", sizeof( PyImage ), 0, Py_TPFLAGS_DEFAULT, slots };
+
+/// Creates the module 'host' with the object 'image' for the image \param image of the host.
+void add_module( Image &image )
+{
+    auto const module = add_c_api_host_module( nullptr );
+    auto const type   = py::reinterpret_steal<py::object>( PyType_FromSpec( &spec ) );
+    if( not type ) {
+        throw py::error_already_set();
+    }
+    auto const object = py::reinterpret_steal<py::object>( PyType_GenericAlloc( reinterpret_cast<PyTypeObject *>(type.ptr()), 0 ) );
+    if( not object ) {
+        throw py::error_already_set();
+    }
+    reinterpret_cast<PyImage *>(object.ptr())->image = &image;
+    if( PyObject_SetAttrString( module.ptr(), "image", object.ptr() ) < 0 ) {
+        throw py::error_already_set();
+    }
+}
+
+} // namespace c_api_buffer
+
+/// Adds the image \param image of the host for buffer to the module \param m with pybind11: an object of the class
+/// Image with the buffer protocol.
+void bind_buffer( py::module_ &m, csb::host::buffer::Image &image )
+{
+    using csb::host::buffer::Image;
+    py::class_<Image>( m, "Image", py::buffer_protocol() )
+        .def_buffer( []( Image &img ) -> py::buffer_info {
+            return py::buffer_info( img.pixels.data(), static_cast<py::ssize_t>(img.pixels.size()) );
+        } );
+    // A reference: the object of the host, not a copy.
+    m.attr( "image" ) = py::cast( &image, py::return_value_policy::reference );
+}
+
 /// Adds the C++ type of cpp_objects to the module \param m with pybind11.
 void bind_cpp_objects( py::module_ &m )
 {
@@ -304,6 +379,7 @@ class PythonLanguage final : public csb::Language
     py::object                             mF0;       // the script functions of host_to_script, looked up once like bench
     py::object                             mF1;
     py::object                             mF3;
+    csb::host::buffer::Image               mImage;    // buffer: the image of the host, 'host.image' in the script
 
 public:
     explicit PythonLanguage( Variant const &rVariant )
@@ -371,6 +447,13 @@ public:
                     auto m = py::module_::import( "host" );
                     bind_cpp_objects( m );
                 }
+            } else if( info.name == "buffer" ) {
+                if( mVariant.c_api ) {
+                    c_api_buffer::add_module( mImage );
+                } else {
+                    auto m = py::module_::import( "host" );
+                    bind_buffer( m, mImage );
+                }
             }
         } );
     }
@@ -416,22 +499,16 @@ public:
 
     std::int64_t call_bench( std::int64_t const n ) override
     {
-        if( mBenchmark == "host_to_script" ) {
-            return translate_errors( [&]() { return call_host_to_script( n ); } );
-        }
         return translate_errors( [&]() -> std::int64_t {
-            py::object const res = mBench( static_cast<long long>(n) );
-            // Only an int is accepted, not a subclass like bool. A conversion to an integer type would also accept
-            // other types with __index__.
-            if( not PyLong_CheckExact( res.ptr() ) ) {
-                throw std::runtime_error( std::string( "bench() must return an int, but returned: " ) + Py_TYPE( res.ptr() )->tp_name );
+            if( mBenchmark == "host_to_script" ) {
+                return call_host_to_script( n );
             }
-            int overflow = 0;
-            long long const value = PyLong_AsLongLongAndOverflow( res.ptr(), &overflow );
-            if( overflow != 0 ) {
-                throw std::runtime_error( "the result of bench() does not fit into 64 bit" );
+            if( mBenchmark == "buffer" ) {
+                // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
+                mImage.reset( n );
+                return csb::host::buffer::result( n, call_script_bench( n ), mImage.bytes() );
             }
-            return static_cast<std::int64_t>(value);
+            return call_script_bench( n );
         } );
     }
 
@@ -452,6 +529,23 @@ public:
     }
 
 private:
+    /// Calls bench( n ) of the script. \return its result.
+    std::int64_t call_script_bench( std::int64_t const n )
+    {
+        py::object const res = mBench( static_cast<long long>(n) );
+        // Only an int is accepted, not a subclass like bool. A conversion to an integer type would also accept
+        // other types with __index__.
+        if( not PyLong_CheckExact( res.ptr() ) ) {
+            throw std::runtime_error( std::string( "bench() must return an int, but returned: " ) + Py_TYPE( res.ptr() )->tp_name );
+        }
+        int overflow = 0;
+        long long const value = PyLong_AsLongLongAndOverflow( res.ptr(), &overflow );
+        if( overflow != 0 ) {
+            throw std::runtime_error( "the result of bench() does not fit into 64 bit" );
+        }
+        return static_cast<std::int64_t>(value);
+    }
+
     /// The host's loop of host_to_script. pybind11: calls of the function objects with conversions by pybind11.
     /// C API: PyObject_CallNoArgs(), PyObject_CallOneArg() and PyObject_Vectorcall().
     std::int64_t call_host_to_script( std::int64_t const n )

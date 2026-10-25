@@ -10,6 +10,7 @@
 // (asEP_BUILD_WITHOUT_LINE_CUES). The AngelScript manual recommends both AS_NO_THREADS and building
 // without line cues for performance when they are not needed (section "Fine tuning").
 
+#include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
@@ -78,6 +79,18 @@ void construct_vec3i( void *const memory )
     new( memory ) csb::host::cpp_objects::Vec3i();
 }
 
+/// image[index] of buffer: a reference to the pixel, or a script exception if \param index is out of range (like the
+/// index operator of the array add-on).
+std::uint32_t &image_at( std::uint32_t const index, csb::host::buffer::Image &image )
+{
+    if( index >= image.pixels.size() ) {
+        asGetActiveContext()->SetException( "Index out of bounds" );
+        static std::uint32_t dummy = 0;
+        return dummy;
+    }
+    return image.pixels[index];
+}
+
 /// Collects the messages of the compiler, e.g. syntax errors.
 void message_callback( asSMessageInfo const *const msg, void *const param )
 {
@@ -111,6 +124,7 @@ class AngelScriptLanguage final : public csb::Language
     asIScriptFunction   *mF0      = nullptr;  // the script functions of host_to_script, looked up once like bench
     asIScriptFunction   *mF1      = nullptr;
     asIScriptFunction   *mF3      = nullptr;
+    csb::host::buffer::Image  mImage;         // buffer: the image of the host, the script's global property 'image'
     std::string          mMessages;           // compiler messages of the last build
 
 public:
@@ -172,6 +186,13 @@ public:
             check( mEngine->RegisterObjectProperty( "Vec3i", "int x", asOFFSET( Vec3i, x ) ), "RegisterObjectProperty()" );
             check( mEngine->RegisterObjectProperty( "Vec3i", "int y", asOFFSET( Vec3i, y ) ), "RegisterObjectProperty()" );
             check( mEngine->RegisterObjectProperty( "Vec3i", "int z", asOFFSET( Vec3i, z ) ), "RegisterObjectProperty()" );
+        } else if( info.name == "buffer" ) {
+            // A reference type without reference counting (the host owns the object), with an index operator, registered
+            // as a global property.
+            check( mEngine->RegisterObjectType( "Image", 0, asOBJ_REF | asOBJ_NOCOUNT ), "RegisterObjectType()" );
+            check( mEngine->RegisterObjectMethod( "Image", "uint &opIndex( uint )", asFUNCTION( image_at ), asCALL_CDECL_OBJLAST ),
+                   "RegisterObjectMethod()" );
+            check( mEngine->RegisterGlobalProperty( "Image image", &mImage ), "RegisterGlobalProperty()" );
         }
     }
 
@@ -215,6 +236,11 @@ public:
                 [&]() { return execute( mF0, {} ); },
                 [&]( int const a ) { return execute( mF1, { a } ); },
                 [&]( int const a, int const b, int const c ) { return execute( mF3, { a, b, c } ); } );
+        }
+        if( mBenchmark == "buffer" ) {
+            // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
+            mImage.reset( n );
+            return csb::host::buffer::result( n, execute( mBench, { static_cast<int>(n) } ), mImage.bytes() );
         }
         return execute( mBench, { static_cast<int>(n) } );
     }

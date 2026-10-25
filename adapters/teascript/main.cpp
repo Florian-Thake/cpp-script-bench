@@ -7,6 +7,7 @@
 //   vm-O0, vm-O1, vm-O2 : compiled and executed in the TeaStackVM with the given optimization level.
 //   ast                 : the parsed AST is evaluated directly (no compilation).
 
+#include "buffer/host.hpp"
 #include "csb_teascript_git_version.h"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
@@ -131,6 +132,7 @@ class TeaScriptLanguage final : public csb::Language
     std::unique_ptr<BenchEngine>  mEngine;
     teascript::ASTNodePtr         mAst;  // kept alive as long as the engine, the defined functions may refer to it.
     std::string_view              mBenchmark;  // the name of the loaded benchmark
+    teascript::ValueObject        mImage;      // buffer: the Buffer of the host, shared with the script variable 'image'
 
 public:
     explicit TeaScriptLanguage( Variant const &rVariant )
@@ -162,6 +164,11 @@ public:
         translate_errors( [&]() {
             if( info.name == "script_to_host" ) {
                 bind_script_to_host( *mEngine );
+            } else if( info.name == "buffer" ) {
+                // The image is a Buffer created by the host; the host keeps the shared value and resizes it before every
+                // call. (A Buffer cannot refer to memory of the host.)
+                mEngine->AddVar( "image", teascript::Buffer() );
+                mImage = mEngine->GetVar( "image" );
             }
         } );
     }
@@ -198,27 +205,40 @@ public:
 
     std::int64_t call_bench( std::int64_t const n ) override
     {
-        if( mBenchmark == "host_to_script" ) {
-            return translate_errors( [&]() { return call_host_to_script( n ); } );
-        }
-        return translate_errors( [&]() {
-            auto const res = mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) );
-            // Only an Integer is accepted. GetAsInteger() would also convert e.g. a f64 or a String silently.
-            auto const *const p = res.GetValuePtr<teascript::Integer>();
-            if( p == nullptr ) {
-                throw std::runtime_error( "bench() must return an Integer, but returned: " + res.GetTypeInfo()->GetName() );
+        return translate_errors( [&]() -> std::int64_t {
+            if( mBenchmark == "host_to_script" ) {
+                return call_host_to_script( n );
             }
-            return static_cast<std::int64_t>(*p);
+            if( mBenchmark == "buffer" ) {
+                // The host resizes and clears its Buffer, the script fills it, the host computes the checksum over it.
+                auto &image = mImage.GetValue<teascript::Buffer>();
+                image.assign( static_cast<size_t>(n * n * 4), 0 );
+                return csb::host::buffer::result( n, call_script_bench( n ), reinterpret_cast<std::byte const *>(image.data()) );
+            }
+            return call_script_bench( n );
         } );
     }
 
     void destroy_engine() override
     {
+        mImage = teascript::ValueObject();
         mEngine.reset();
         mAst.reset();
     }
 
 private:
+    /// Calls bench( n ) of the script. \return its result.
+    std::int64_t call_script_bench( std::int64_t const n )
+    {
+        auto const res = mEngine->CallFuncEx( "bench", static_cast<teascript::Integer>(n) );
+        // Only an Integer is accepted. GetAsInteger() would also convert e.g. a f64 or a String silently.
+        auto const *const p = res.GetValuePtr<teascript::Integer>();
+        if( p == nullptr ) {
+            throw std::runtime_error( "bench() must return an Integer, but returned: " + res.GetTypeInfo()->GetName() );
+        }
+        return static_cast<std::int64_t>(*p);
+    }
+
     /// The host's loop of host_to_script: calls the script functions by name with CallFuncEx, TeaScript's way to call
     /// a script function from C++.
     std::int64_t call_host_to_script( std::int64_t const n )

@@ -9,6 +9,7 @@
 
 #include "csb_chaiscript_extras_git_version.h"
 #include "csb_chaiscript_git_version.h"
+#include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
@@ -44,6 +45,13 @@ double seconds_since( Clock::time_point const start )
     return std::chrono::duration<double>( Clock::now() - start ).count();
 }
 
+/// image.set( index, value ) of buffer: writes a pixel. int is ChaiScript's natural integer type; an index out of range
+/// throws std::out_of_range, which ChaiScript passes on as an error of the script.
+void image_set( csb::host::buffer::Image &image, int const index, int const value )
+{
+    image.pixels.at( static_cast<std::size_t>(index) ) = static_cast<std::uint32_t>(value);
+}
+
 /// Runs \param func and converts ChaiScript errors into std::runtime_error with a helpful message.
 template< typename F >
 auto translate_errors( F &&func ) -> decltype(func())
@@ -68,6 +76,7 @@ class ChaiScriptLanguage final : public csb::Language
     std::function<int()>                           mF0;
     std::function<int( int )>                      mF1;
     std::function<int( int, int, int )>            mF3;
+    csb::host::buffer::Image                       mImage;  // buffer: the image of the host, bound by reference
 
 public:
     std::string name() const override { return "ChaiScript"; }
@@ -105,6 +114,13 @@ public:
             mChai->add( chaiscript::fun( &Vec3i::x ), "x" );
             mChai->add( chaiscript::fun( &Vec3i::y ), "y" );
             mChai->add( chaiscript::fun( &Vec3i::z ), "z" );
+        } else if( info.name == "buffer" ) {
+            // The image of the host as a user type with the C++ function set, bound by reference as a global (top-level
+            // variables are not visible in functions).
+            using csb::host::buffer::Image;
+            mChai->add( chaiscript::user_type<Image>(), "Image" );
+            mChai->add( chaiscript::fun( &image_set ), "set" );
+            mChai->add_global( chaiscript::var( std::ref( mImage ) ), "image" );
         }
     }
 
@@ -139,16 +155,16 @@ public:
         if( n > INT_MAX ) {
             throw std::out_of_range( "n does not fit into a ChaiScript int" );
         }
-        if( mBenchmark == "host_to_script" ) {
-            return translate_errors( [&]() { return csb::host::host_to_script::run( n, mF0, mF1, mF3 ); } );
-        }
         return translate_errors( [&]() -> std::int64_t {
-            auto const res = mBench( static_cast<int>(n) );
-            // Only an int is accepted. Boxed_Number would also convert e.g. a double silently.
-            if( not res.get_type_info().bare_equal( chaiscript::user_type<int>() ) ) {
-                throw std::runtime_error( "bench() must return an int, but returned: " + mChai->get_type_name( res.get_type_info() ) );
+            if( mBenchmark == "host_to_script" ) {
+                return csb::host::host_to_script::run( n, mF0, mF1, mF3 );
             }
-            return chaiscript::boxed_cast<int>( res );
+            if( mBenchmark == "buffer" ) {
+                // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
+                mImage.reset( n );
+                return csb::host::buffer::result( n, call_script_bench( n ), mImage.bytes() );
+            }
+            return call_script_bench( n );
         } );
     }
 
@@ -160,6 +176,18 @@ public:
         mF3    = nullptr;
         mChai.reset();
         mAst.reset();
+    }
+
+private:
+    /// Calls bench( n ) of the script. \return its result.
+    std::int64_t call_script_bench( std::int64_t const n )
+    {
+        auto const res = mBench( static_cast<int>(n) );
+        // Only an int is accepted. Boxed_Number would also convert e.g. a double silently.
+        if( not res.get_type_info().bare_equal( chaiscript::user_type<int>() ) ) {
+            throw std::runtime_error( "bench() must return an int, but returned: " + mChai->get_type_name( res.get_type_info() ) );
+        }
+        return chaiscript::boxed_cast<int>( res );
     }
 };
 

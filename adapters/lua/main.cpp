@@ -9,6 +9,7 @@
 //   (no name) : with LuaBridge3, the C++ binding library (the headline).
 //   c-api     : with the plain Lua C API. Runs only the interop benchmarks, the others are the same in both.
 
+#include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_luabridge3_git_version.h"
 #include "host_to_script/host.hpp"
@@ -177,6 +178,65 @@ void bind_cpp_objects( lua_State *const L, bool const c_api )
 }
 
 
+// buffer: the image of the host as a userdata with the method set( index, value ). The index runs from 1, like in a
+// Lua array. The usual object form of the C API: the metatable's __index is the table of the methods.
+namespace c_api_buffer {
+
+using csb::host::buffer::Image;
+
+constexpr char metatable_name[] = "Image";
+
+/// image:set( index, value ): writes a pixel. The userdata holds a pointer to the image of the host.
+int set( lua_State *const L )
+{
+    auto &image = **static_cast<Image **>(luaL_checkudata( L, 1, metatable_name ));
+    lua_Integer const index = luaL_checkinteger( L, 2 );
+    luaL_argcheck( L, 1 <= index && index <= static_cast<lua_Integer>(image.pixels.size()), 2, "index out of range" );
+    image.pixels[static_cast<std::size_t>(index - 1)] = static_cast<std::uint32_t>(luaL_checkinteger( L, 3 ));
+    return 0;
+}
+
+constexpr luaL_Reg methods[] = {
+    { "set", &set },
+    { nullptr, nullptr },
+};
+
+} // namespace c_api_buffer
+
+/// image:set( index, value ) with LuaBridge3: writes a pixel; the index runs from 1, like in a Lua array.
+void image_set( csb::host::buffer::Image *const image, lua_Integer const index, std::uint32_t const value, lua_State *const L )
+{
+    if( index < 1 || index > static_cast<lua_Integer>(image->pixels.size()) ) {
+        luaL_error( L, "image:set(): index out of range" );
+    }
+    image->pixels[static_cast<std::size_t>(index - 1)] = value;
+}
+
+/// Binds \param image, the image of the host for buffer, as 'image' in the global table 'host'.
+void bind_buffer( lua_State *const L, bool const c_api, csb::host::buffer::Image &image )
+{
+    if( c_api ) {
+        luaL_newmetatable( L, c_api_buffer::metatable_name );
+        luaL_newlib( L, c_api_buffer::methods );
+        lua_setfield( L, -2, "__index" );
+        lua_pop( L, 1 );
+        lua_newtable( L );
+        *static_cast<csb::host::buffer::Image **>(lua_newuserdatauv( L, sizeof( csb::host::buffer::Image * ), 0 )) = &image;
+        luaL_setmetatable( L, c_api_buffer::metatable_name );
+        lua_setfield( L, -2, "image" );
+        lua_setglobal( L, "host" );
+    } else {
+        luabridge::getGlobalNamespace( L )
+            .beginNamespace( "host" )
+                .beginClass<csb::host::buffer::Image>( "Image" )
+                    .addFunction( "set", &image_set )
+                .endClass()
+                .addVariable( "image", &image )  // a pointer: the object of the host, not a copy
+            .endNamespace();
+    }
+}
+
+
 /// Throws if \param name is not a global function of \param L.
 void check_global_function( lua_State *const L, char const *const name )
 {
@@ -237,6 +297,7 @@ class LuaLanguage final : public csb::Language
     int                               mRef0 = LUA_NOREF;
     int                               mRef1 = LUA_NOREF;
     int                               mRef3 = LUA_NOREF;
+    csb::host::buffer::Image          mImage;  // buffer: the image of the host, 'host.image' in the script
 
 public:
     explicit LuaLanguage( Variant const &rVariant )
@@ -280,6 +341,8 @@ public:
             bind_script_to_host( mL, mVariant.c_api );
         } else if( info.name == "cpp_objects" ) {
             bind_cpp_objects( mL, mVariant.c_api );
+        } else if( info.name == "buffer" ) {
+            bind_buffer( mL, mVariant.c_api, mImage );
         }
     }
 
@@ -326,21 +389,12 @@ public:
         if( mBenchmark == "host_to_script" ) {
             return call_host_to_script( n );
         }
-        lua_getglobal( mL, "bench" );
-        lua_pushinteger( mL, static_cast<lua_Integer>(n) );
-        if( lua_pcall( mL, 1, 1, 0 ) != LUA_OK ) {
-            throw std::runtime_error( "Lua error: " + pop_error( mL ) );
+        if( mBenchmark == "buffer" ) {
+            // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
+            mImage.reset( n );
+            return csb::host::buffer::result( n, call_script_bench( n ), mImage.bytes() );
         }
-        // Only an integer is accepted. lua_tointegerx() would also convert e.g. a float with an integral value,
-        // or a numeric string.
-        if( not lua_isinteger( mL, -1 ) ) {
-            std::string const type = lua_type( mL, -1 ) == LUA_TNUMBER ? "float" : luaL_typename( mL, -1 );
-            lua_pop( mL, 1 );
-            throw std::runtime_error( "bench() must return an integer, but returned: " + type );
-        }
-        lua_Integer const value = lua_tointeger( mL, -1 );
-        lua_pop( mL, 1 );
-        return static_cast<std::int64_t>(value);
+        return call_script_bench( n );
     }
 
     void collect_garbage() override
@@ -362,6 +416,26 @@ public:
     }
 
 private:
+    /// Calls bench( n ) of the script. \return its result.
+    std::int64_t call_script_bench( std::int64_t const n )
+    {
+        lua_getglobal( mL, "bench" );
+        lua_pushinteger( mL, static_cast<lua_Integer>(n) );
+        if( lua_pcall( mL, 1, 1, 0 ) != LUA_OK ) {
+            throw std::runtime_error( "Lua error: " + pop_error( mL ) );
+        }
+        // Only an integer is accepted. lua_tointegerx() would also convert e.g. a float with an integral value,
+        // or a numeric string.
+        if( not lua_isinteger( mL, -1 ) ) {
+            std::string const type = lua_type( mL, -1 ) == LUA_TNUMBER ? "float" : luaL_typename( mL, -1 );
+            lua_pop( mL, 1 );
+            throw std::runtime_error( "bench() must return an integer, but returned: " + type );
+        }
+        lua_Integer const value = lua_tointeger( mL, -1 );
+        lua_pop( mL, 1 );
+        return static_cast<std::int64_t>(value);
+    }
+
     /// The host's loop of host_to_script. LuaBridge3: calls through LuaRefs, looked up once.
     /// C API: lua_pcall() of the functions from their registry references (luaL_ref), looked up once.
     std::int64_t call_host_to_script( std::int64_t const n )
