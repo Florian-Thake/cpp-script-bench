@@ -9,6 +9,7 @@
 
 #include "csb_chaiscript_extras_git_version.h"
 #include "csb_chaiscript_git_version.h"
+#include "cpp_objects/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
@@ -97,6 +98,13 @@ public:
             mChai->add( chaiscript::fun( &host::f0 ), "f0" );
             mChai->add( chaiscript::fun( &host::f1 ), "f1" );
             mChai->add( chaiscript::fun( &host::f3 ), "f3" );
+        } else if( info.name == "cpp_objects" ) {
+            using csb::host::cpp_objects::Vec3i;
+            mChai->add( chaiscript::user_type<Vec3i>(), "Vec3i" );
+            mChai->add( chaiscript::constructor<Vec3i()>(), "Vec3i" );
+            mChai->add( chaiscript::fun( &Vec3i::x ), "x" );
+            mChai->add( chaiscript::fun( &Vec3i::y ), "y" );
+            mChai->add( chaiscript::fun( &Vec3i::z ), "z" );
         }
     }
 

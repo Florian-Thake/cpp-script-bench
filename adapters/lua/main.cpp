@@ -9,6 +9,7 @@
 //   (no name) : with LuaBridge3, the C++ binding library (the headline).
 //   c-api     : with the plain Lua C API. Runs only the interop benchmarks, the others are the same in both.
 
+#include "cpp_objects/host.hpp"
 #include "csb_luabridge3_git_version.h"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
@@ -21,6 +22,7 @@
 
 #include <chrono>
 #include <initializer_list>
+#include <new>
 #include <optional>
 #include <stdexcept>
 
@@ -101,6 +103,75 @@ void bind_script_to_host( lua_State *const L, bool const c_api )
                 .addFunction( "f0", &host::f0 )
                 .addFunction( "f1", &host::f1 )
                 .addFunction( "f3", &host::f3 )
+            .endNamespace();
+    }
+}
+
+
+// cpp_objects with the plain C API: a full userdata with a metatable, whose __index and __newindex map the field
+// names to the members (like the array example of "Programming in Lua").
+namespace c_api_cpp_objects {
+
+using csb::host::cpp_objects::Vec3i;
+
+constexpr char metatable_name[] = "Vec3i";
+
+constexpr char const *field_names[] = { "x", "y", "z", nullptr };
+constexpr int Vec3i::*fields[]      = { &Vec3i::x, &Vec3i::y, &Vec3i::z };
+
+/// Vec3i(): creates a new Vec3i.
+int create( lua_State *const L )
+{
+    new( lua_newuserdatauv( L, sizeof( Vec3i ), 0 ) ) Vec3i();
+    luaL_setmetatable( L, metatable_name );
+    return 1;
+}
+
+/// v.x: reads a field.
+int index( lua_State *const L )
+{
+    auto const &v = *static_cast<Vec3i *>(luaL_checkudata( L, 1, metatable_name ));
+    lua_pushinteger( L, v.*fields[luaL_checkoption( L, 2, nullptr, field_names )] );
+    return 1;
+}
+
+/// v.x = value: writes a field.
+int new_index( lua_State *const L )
+{
+    auto &v = *static_cast<Vec3i *>(luaL_checkudata( L, 1, metatable_name ));
+    v.*fields[luaL_checkoption( L, 2, nullptr, field_names )] = static_cast<int>(luaL_checkinteger( L, 3 ));
+    return 0;
+}
+
+constexpr luaL_Reg functions[] = {
+    { "Vec3i", &create },
+    { nullptr, nullptr },
+};
+
+} // namespace c_api_cpp_objects
+
+/// Binds the C++ type of cpp_objects as 'Vec3i' in the global table 'host'.
+void bind_cpp_objects( lua_State *const L, bool const c_api )
+{
+    if( c_api ) {
+        luaL_newmetatable( L, c_api_cpp_objects::metatable_name );
+        lua_pushcfunction( L, &c_api_cpp_objects::index );
+        lua_setfield( L, -2, "__index" );
+        lua_pushcfunction( L, &c_api_cpp_objects::new_index );
+        lua_setfield( L, -2, "__newindex" );
+        lua_pop( L, 1 );
+        luaL_newlib( L, c_api_cpp_objects::functions );
+        lua_setglobal( L, "host" );
+    } else {
+        using csb::host::cpp_objects::Vec3i;
+        luabridge::getGlobalNamespace( L )
+            .beginNamespace( "host" )
+                .beginClass<Vec3i>( "Vec3i" )
+                    .addConstructor<void (*)()>()
+                    .addProperty( "x", &Vec3i::x, &Vec3i::x )
+                    .addProperty( "y", &Vec3i::y, &Vec3i::y )
+                    .addProperty( "z", &Vec3i::z, &Vec3i::z )
+                .endClass()
             .endNamespace();
     }
 }
@@ -207,6 +278,8 @@ public:
     {
         if( info.name == "script_to_host" ) {
             bind_script_to_host( mL, mVariant.c_api );
+        } else if( info.name == "cpp_objects" ) {
+            bind_cpp_objects( mL, mVariant.c_api );
         }
     }
 

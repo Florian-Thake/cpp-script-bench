@@ -1,0 +1,15 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// Vec3i is a C++ type, which the host binds: a default constructor and the fields x, y and z.
+// No 'return': ChaiScript implements it with a C++ exception, unless it is the last statement
+// of a function. The value of the last expression is the return value.
+def bench(n) {
+    var p = Vec3i();
+    for (var i = 0; i < n; ++i) {
+        p.x = p.x + (i & 7);
+        p.y = p.y + (p.x & 3);
+        p.z = p.z + (p.y & 1);
+    }
+    p.x + p.y + p.z;
+}

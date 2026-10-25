@@ -11,6 +11,7 @@
 // A free-threaded build (without the GIL) reports them as "free-threaded" and "free-threaded-c-api", which are not
 // part of the main comparison.
 
+#include "cpp_objects/host.hpp"
 #include "csb_pybind11_git_version.h"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
@@ -19,15 +20,26 @@
 #include <csb/runner.hpp>
 
 #include <pybind11/embed.h>
+#if PY_VERSION_HEX < 0x030C0000
+# include <structmember.h>  // T_INT, which Python 3.12 renamed to Py_T_INT
+#endif
 
 #include <chrono>
 #include <climits>
+#include <cstddef>
 #include <initializer_list>
+#include <new>
 #include <optional>
 #include <stdexcept>
 
 
 namespace py = pybind11;
+
+#if PY_VERSION_HEX >= 0x030C0000
+constexpr int member_type_int = Py_T_INT;
+#else
+constexpr int member_type_int = T_INT;
+#endif
 
 // The module 'host', which the scripts of the interop benchmarks import. With pybind11 it is an embedded module;
 // bind() adds what the benchmark needs, so every benchmark binds only its own functions.
@@ -92,20 +104,22 @@ bool to_int( PyObject *const obj, int &rValue )
     return true;
 }
 
-/// Creates the module 'host' with \param methods for the C API variant and puts it into sys.modules, where the
-/// import of the script finds it.
-void add_c_api_host_module( PyMethodDef *const methods )
+/// Creates the module 'host' with \param methods (may be nullptr) for the C API variant and puts it into sys.modules,
+/// where the import of the script finds it. \return the module.
+py::object add_c_api_host_module( PyMethodDef *const methods )
 {
-    auto const module = py::reinterpret_steal<py::object>( PyModule_New( "host" ) );
+    auto module = py::reinterpret_steal<py::object>( PyModule_New( "host" ) );
     if( not module ) {
         throw py::error_already_set();
     }
 #if defined( Py_GIL_DISABLED )
     PyUnstable_Module_SetGIL( module.ptr(), Py_MOD_GIL_NOT_USED );
 #endif
-    if( PyModule_AddFunctions( module.ptr(), methods ) < 0 || PyDict_SetItemString( PyImport_GetModuleDict(), "host", module.ptr() ) < 0 ) {
+    if( (methods != nullptr && PyModule_AddFunctions( module.ptr(), methods ) < 0)
+        || PyDict_SetItemString( PyImport_GetModuleDict(), "host", module.ptr() ) < 0 ) {
         throw py::error_already_set();
     }
+    return module;
 }
 
 
@@ -149,6 +163,64 @@ PyMethodDef methods[] = {
 };
 
 } // namespace c_api_script_to_host
+
+// cpp_objects with the plain C API: a type whose fields are member descriptors at their offsets in the object.
+namespace c_api_cpp_objects {
+
+using csb::host::cpp_objects::Vec3i;
+
+struct PyVec3i
+{
+    PyObject_HEAD
+    Vec3i value;
+};
+
+PyObject *create( PyTypeObject *const type, PyObject *, PyObject * )
+{
+    PyObject *const self = type->tp_alloc( type, 0 );
+    if( self != nullptr ) {
+        new( &reinterpret_cast<PyVec3i *>(self)->value ) Vec3i();
+    }
+    return self;
+}
+
+PyMemberDef members[] = {
+    { "x", member_type_int, offsetof( PyVec3i, value ) + offsetof( Vec3i, x ), 0, nullptr },
+    { "y", member_type_int, offsetof( PyVec3i, value ) + offsetof( Vec3i, y ), 0, nullptr },
+    { "z", member_type_int, offsetof( PyVec3i, value ) + offsetof( Vec3i, z ), 0, nullptr },
+    { nullptr, 0, 0, 0, nullptr },
+};
+
+PyType_Slot slots[] = {
+    { Py_tp_new, reinterpret_cast<void *>(&create) },
+    { Py_tp_members, members },
+    { 0, nullptr },
+};
+
+PyType_Spec spec = { "host.Vec3i", sizeof( PyVec3i ), 0, Py_TPFLAGS_DEFAULT, slots };
+
+/// Creates the module 'host' with the type Vec3i.
+void add_module()
+{
+    auto const module = add_c_api_host_module( nullptr );
+    auto const type   = py::reinterpret_steal<py::object>( PyType_FromSpec( &spec ) );
+    if( not type || PyObject_SetAttrString( module.ptr(), "Vec3i", type.ptr() ) < 0 ) {
+        throw py::error_already_set();
+    }
+}
+
+} // namespace c_api_cpp_objects
+
+/// Adds the C++ type of cpp_objects to the module \param m with pybind11.
+void bind_cpp_objects( py::module_ &m )
+{
+    using csb::host::cpp_objects::Vec3i;
+    py::class_<Vec3i>( m, "Vec3i" )
+        .def( py::init<>() )
+        .def_readwrite( "x", &Vec3i::x )
+        .def_readwrite( "y", &Vec3i::y )
+        .def_readwrite( "z", &Vec3i::z );
+}
 
 /// Adds the C++ functions of script_to_host to the module \param m with pybind11.
 void bind_script_to_host( py::module_ &m )
@@ -287,10 +359,17 @@ public:
         translate_errors( [&]() {
             if( info.name == "script_to_host" ) {
                 if( mVariant.c_api ) {
-                    add_c_api_host_module( c_api_script_to_host::methods );
+                    (void)add_c_api_host_module( c_api_script_to_host::methods );
                 } else {
                     auto m = py::module_::import( "host" );
                     bind_script_to_host( m );
+                }
+            } else if( info.name == "cpp_objects" ) {
+                if( mVariant.c_api ) {
+                    c_api_cpp_objects::add_module();
+                } else {
+                    auto m = py::module_::import( "host" );
+                    bind_cpp_objects( m );
                 }
             }
         } );

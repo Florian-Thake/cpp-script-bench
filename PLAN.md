@@ -224,7 +224,7 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 |----------------|--------------------------------------------------|--------|
 | script_to_host | the loop of `calls`, but the functions are registered C++ functions | ✅ |
 | host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ✅ |
-| cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ⬜ |
+| cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ✅ |
 | buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ⬜ |
 | string_exchange | strings from the host to a script function and back | ⬜ |
 | array_exchange | arrays from the host to a script function and back (converted both ways); series over the size | ⬜ |
@@ -701,12 +701,26 @@ Costs the host application pays for embedding, measured by the harness:
     handle, following the rule of the design round; `lua_getglobal` on every call was ~17% slower.
   - Python imports the module `host` only for the benchmarks which bind something (before: for the
     whole interop group, which showed up as `bind` time of `host_to_script`).
+- `cpp_objects`: n = 150,000 as planned (checksum 787,500), like `records`. TeaScript has no script
+  ("n/a"). The slowest headline, ChaiScript `no-threads`, needs ~460 ms per call with MSVC (GCC:
+  ~198 ms), within the target. AngelScript binds `Vec3i` as a value type, its form for a small struct;
+  its fields are properties at their offsets, as fast as the script class of `records`. The binding
+  libraries cost the most here: Lua ~106 ms with LuaBridge3 and ~60 ms with the C API (a Lua table:
+  ~5 ms), Python ~257 ms with pybind11 and ~31 ms with the C API's member descriptors (a Python class:
+  ~13.5 ms); numbers in the README.
+- One run of Python's `cpp_objects` (pybind11, MSVC) needed 1.27 s instead of ~257 ms, in all of its
+  samples, while the other benchmarks in the same process were normal; it was not reproducible.
+  Single engine instances which are slow for their whole run were seen with MSVC in two languages
+  (see the open question on repeated runs).
 
 ## 10. Open questions
 
 - Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
   already has one entry per n.
 - Process priority and CPU pinning for less noise? Phase 5, before the published runs.
+- Repeated runs in separate processes: some engine instances are slower for their whole run than
+  the others (with MSVC, up to 5x once), although the statistics of their samples look clean. Phase 5
+  should repeat every run in several processes and report the spread between them.
 - Format of the published results: Markdown tables, charts, a web page? Phase 5.
 - Script alternatives: a second script per benchmark and language (e.g. TeaScript `_strtonum` or
   `_strtonumex` instead of `as i64`, Python `"item" + str(i)` instead of an f-string), selectable

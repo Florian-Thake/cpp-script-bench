@@ -10,6 +10,7 @@
 // (asEP_BUILD_WITHOUT_LINE_CUES). The AngelScript manual recommends both AS_NO_THREADS and building
 // without line cues for performance when they are not needed (section "Fine tuning").
 
+#include "cpp_objects/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
@@ -25,6 +26,7 @@
 #include <chrono>
 #include <climits>
 #include <initializer_list>
+#include <new>
 #include <stdexcept>
 
 
@@ -68,6 +70,12 @@ void check( int const r, char const *const what )
     if( r < 0 ) {
         throw std::runtime_error( std::string( what ) + " failed with AngelScript error code " + std::to_string( r ) );
     }
+}
+
+/// The default constructor of the value type Vec3i of cpp_objects.
+void construct_vec3i( void *const memory )
+{
+    new( memory ) csb::host::cpp_objects::Vec3i();
 }
 
 /// Collects the messages of the compiler, e.g. syntax errors.
@@ -153,6 +161,17 @@ public:
             check( mEngine->RegisterGlobalFunction( "int f1( int a )", asFUNCTION( host::f1 ), asCALL_CDECL ), "RegisterGlobalFunction()" );
             check( mEngine->RegisterGlobalFunction( "int f3( int a, int b, int c )", asFUNCTION( host::f3 ), asCALL_CDECL ),
                    "RegisterGlobalFunction()" );
+        } else if( info.name == "cpp_objects" ) {
+            // A value type, AngelScript's form for a small C++ struct: it lives on the script stack like an int, and its
+            // fields are properties at their offsets.
+            using csb::host::cpp_objects::Vec3i;
+            check( mEngine->RegisterObjectType( "Vec3i", sizeof( Vec3i ), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Vec3i>() ),
+                   "RegisterObjectType()" );
+            check( mEngine->RegisterObjectBehaviour( "Vec3i", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION( construct_vec3i ), asCALL_CDECL_OBJLAST ),
+                   "RegisterObjectBehaviour()" );
+            check( mEngine->RegisterObjectProperty( "Vec3i", "int x", asOFFSET( Vec3i, x ) ), "RegisterObjectProperty()" );
+            check( mEngine->RegisterObjectProperty( "Vec3i", "int y", asOFFSET( Vec3i, y ) ), "RegisterObjectProperty()" );
+            check( mEngine->RegisterObjectProperty( "Vec3i", "int z", asOFFSET( Vec3i, z ) ), "RegisterObjectProperty()" );
         }
     }
 
