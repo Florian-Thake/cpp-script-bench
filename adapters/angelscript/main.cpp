@@ -15,6 +15,7 @@
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
+#include "string_exchange/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -124,6 +125,7 @@ class AngelScriptLanguage final : public csb::Language
     asIScriptFunction   *mF0      = nullptr;  // the script functions of host_to_script, looked up once like bench
     asIScriptFunction   *mF1      = nullptr;
     asIScriptFunction   *mF3      = nullptr;
+    asIScriptFunction   *mStringF = nullptr;  // the script function f of string_exchange
     csb::host::buffer::Image  mImage;         // buffer: the image of the host, the script's global property 'image'
     std::string          mMessages;           // compiler messages of the last build
 
@@ -217,6 +219,8 @@ public:
             mF0 = find_function( mod, "int f0()" );
             mF1 = find_function( mod, "int f1( int )" );
             mF3 = find_function( mod, "int f3( int, int, int )" );
+        } else if( mBenchmark == "string_exchange" ) {
+            mStringF = find_function( mod, "string f( const string &in )" );
         } else {
             mBench = find_function( mod, "int bench( int )" );
         }
@@ -237,6 +241,9 @@ public:
                 [&]( int const a ) { return execute( mF1, { a } ); },
                 [&]( int const a, int const b, int const c ) { return execute( mF3, { a, b, c } ); } );
         }
+        if( mBenchmark == "string_exchange" ) {
+            return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return execute( mStringF, s ); } );
+        }
         if( mBenchmark == "buffer" ) {
             // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
             mImage.reset( n );
@@ -256,6 +263,7 @@ public:
         mF0    = nullptr;
         mF1    = nullptr;
         mF3    = nullptr;
+        mStringF = nullptr;
         if( mContext != nullptr ) {
             mContext->Release();
             mContext = nullptr;
@@ -286,6 +294,23 @@ private:
         for( int const arg : args ) {
             check( mContext->SetArgDWord( index++, static_cast<asDWORD>(arg) ), "SetArgDWord()" );
         }
+        execute_prepared( func );
+        return static_cast<int>(mContext->GetReturnDWord());
+    }
+
+    /// Calls the script function \param func, declared string f( const string &in ), with \param s in the reused
+    /// context. \return a copy of its result.
+    std::string execute( asIScriptFunction *const func, std::string const &s )
+    {
+        check( mContext->Prepare( func ), "Prepare()" );
+        check( mContext->SetArgObject( 0, const_cast<std::string *>(&s) ), "SetArgObject()" );
+        execute_prepared( func );
+        return *static_cast<std::string const *>(mContext->GetReturnObject());
+    }
+
+    /// Executes the prepared script function \param func and throws if it did not finish.
+    void execute_prepared( asIScriptFunction *const func )
+    {
         int const r = mContext->Execute();
         if( r != asEXECUTION_FINISHED ) {
             if( r == asEXECUTION_EXCEPTION ) {
@@ -295,7 +320,6 @@ private:
             }
             throw std::runtime_error( "the execution of " + std::string( func->GetName() ) + "() did not finish, state " + std::to_string( r ) );
         }
-        return static_cast<int>(mContext->GetReturnDWord());
     }
 };
 

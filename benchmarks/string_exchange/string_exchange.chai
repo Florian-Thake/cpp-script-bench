@@ -1,0 +1,9 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The host calls f(s) in its loop with a string and converts the result back (there is no bench).
+// No 'return': ChaiScript implements it with a C++ exception, unless it is the last statement
+// of a function. The value of the last expression is the return value.
+def f(s) {
+    s;
+}

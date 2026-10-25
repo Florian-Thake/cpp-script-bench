@@ -17,6 +17,7 @@
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
+#include "string_exchange/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -358,6 +359,31 @@ long call_c_api( PyObject *const func, std::initializer_list<long> const args )
 }
 
 
+/// Calls \param func with the string \param s through the C API: a str from the UTF-8 of \param s,
+/// PyObject_CallOneArg(), the UTF-8 of the result. \return the result.
+std::string call_c_api( PyObject *const func, std::string const &s )
+{
+    PyObject *const arg = PyUnicode_FromStringAndSize( s.data(), static_cast<Py_ssize_t>(s.size()) );
+    if( arg == nullptr ) {
+        throw py::error_already_set();
+    }
+    PyObject *const result = PyObject_CallOneArg( func, arg );
+    Py_DECREF( arg );
+    if( result == nullptr ) {
+        throw py::error_already_set();
+    }
+    Py_ssize_t length = 0;
+    char const *const chars = PyUnicode_AsUTF8AndSize( result, &length );
+    if( chars == nullptr ) {
+        Py_DECREF( result );
+        throw py::error_already_set();
+    }
+    std::string value( chars, static_cast<std::size_t>(length) );
+    Py_DECREF( result );
+    return value;
+}
+
+
 /// Throws if the experimental JIT of CPython is enabled. It must be off for the main comparison (PLAN.md, rule 8).
 void check_jit_is_off()
 {
@@ -379,6 +405,7 @@ class PythonLanguage final : public csb::Language
     py::object                             mF0;       // the script functions of host_to_script, looked up once like bench
     py::object                             mF1;
     py::object                             mF3;
+    py::object                             mF;        // the script function f of string_exchange
     csb::host::buffer::Image               mImage;    // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -489,6 +516,8 @@ public:
                 mF0 = find_function( globals, "f0" );
                 mF1 = find_function( globals, "f1" );
                 mF3 = find_function( globals, "f3" );
+            } else if( mBenchmark == "string_exchange" ) {
+                mF = find_function( globals, "f" );
             } else {
                 mBench = find_function( globals, "bench" );
             }
@@ -502,6 +531,13 @@ public:
         return translate_errors( [&]() -> std::int64_t {
             if( mBenchmark == "host_to_script" ) {
                 return call_host_to_script( n );
+            }
+            if( mBenchmark == "string_exchange" ) {
+                // pybind11: the call of the function object, cast<std::string>() of the result. C API: see call_c_api().
+                if( mVariant.c_api ) {
+                    return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return call_c_api( mF.ptr(), s ); } );
+                }
+                return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return mF( s ).cast<std::string>(); } );
             }
             if( mBenchmark == "buffer" ) {
                 // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
@@ -524,6 +560,7 @@ public:
         mF0      = py::object();
         mF1      = py::object();
         mF3      = py::object();
+        mF       = py::object();
         mGlobals = py::object();
         mInterpreter.reset();
     }

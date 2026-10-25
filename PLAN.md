@@ -226,7 +226,7 @@ The catalogue entries `var_access`, `arrays` and `objects` were split into sever
 | host_to_script | the mirror: a C++ loop calls the script functions of `calls` | ✅ |
 | cpp_objects    | the loop of `records` on a bound C++ type (`Vec3i`). TeaScript has no class binding: "n/a" | ✅ |
 | buffer         | fill an RGBA image buffer owned by the host (from the old BufferOverhead test) | ✅ |
-| string_exchange | strings from the host to a script function and back | ⬜ |
+| string_exchange | strings from the host to a script function and back | ✅ |
 | array_exchange | arrays from the host to a script function and back (converted both ways); series over the size | ⬜ |
 
 The catalogue entry `data_exchange` was split into `string_exchange` and `array_exchange` (decision
@@ -726,6 +726,11 @@ Costs the host application pays for embedding, measured by the harness:
     than a method. Numbers in the README.
   - LuaBridge3's `__newindex` converts an integer key with `lua_tostring()` before it calls the
     fallback of the class, so the fallback gets a numeric string.
+- `string_exchange`: n = 250,000 instead of 100,000. With 100,000 the slowest headline, TeaScript
+  `vm-O1`, needed only ~62 ms with MSVC and ~40 ms with GCC; with 250,000 ~155 and ~103 ms. The
+  checksum adds the last digit of every result to its length, so a result with the same length but
+  another content is detected (checksum 3,513,890). Each language passes the string in its normal way
+  (AngelScript: `const string &in`, the result from `GetReturnObject()`); numbers in the README.
 
 ## 10. Open questions
 

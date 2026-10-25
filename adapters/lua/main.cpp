@@ -15,6 +15,7 @@
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
+#include "string_exchange/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -26,6 +27,7 @@
 #include <new>
 #include <optional>
 #include <stdexcept>
+#include <string>
 
 
 namespace {
@@ -275,8 +277,29 @@ lua_Integer call_ref( lua_State *const L, int const ref, std::initializer_list<l
     return result;
 }
 
+/// Calls the function with the registry reference \param ref with the string \param s through the C API.
+/// \return its string result.
+std::string call_ref( lua_State *const L, int const ref, std::string const &s )
+{
+    lua_rawgeti( L, LUA_REGISTRYINDEX, ref );
+    lua_pushlstring( L, s.data(), s.size() );
+    if( lua_pcall( L, 1, 1, 0 ) != LUA_OK ) {
+        throw std::runtime_error( "Lua error: " + pop_error( L ) );
+    }
+    std::size_t length = 0;
+    char const *const chars = lua_tolstring( L, -1, &length );
+    if( chars == nullptr ) {
+        lua_pop( L, 1 );
+        throw std::runtime_error( "a script function must return a string" );
+    }
+    std::string result( chars, length );
+    lua_pop( L, 1 );
+    return result;
+}
+
 /// \return the result of a call with LuaBridge3, or throws its error.
-int result_of( luabridge::TypeResult<int> const &result )
+template< typename T >
+T result_of( luabridge::TypeResult<T> const &result )
 {
     if( not result ) {
         throw std::runtime_error( "Lua error: " + result.message() );
@@ -297,6 +320,9 @@ class LuaLanguage final : public csb::Language
     int                               mRef0 = LUA_NOREF;
     int                               mRef1 = LUA_NOREF;
     int                               mRef3 = LUA_NOREF;
+    // The script function f of string_exchange, the same way.
+    std::optional<luabridge::LuaRef>  mF;
+    int                               mRefF = LUA_NOREF;
     csb::host::buffer::Image          mImage;  // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -378,6 +404,13 @@ public:
                 mF1 = luabridge::getGlobal( mL, "f1" );
                 mF3 = luabridge::getGlobal( mL, "f3" );
             }
+        } else if( mBenchmark == "string_exchange" ) {
+            if( mVariant.c_api ) {
+                mRefF = ref_global_function( mL, "f" );
+            } else {
+                check_global_function( mL, "f" );
+                mF = luabridge::getGlobal( mL, "f" );
+            }
         } else {
             check_global_function( mL, "bench" );
         }
@@ -388,6 +421,13 @@ public:
     {
         if( mBenchmark == "host_to_script" ) {
             return call_host_to_script( n );
+        }
+        if( mBenchmark == "string_exchange" ) {
+            // LuaBridge3: call<std::string>() through the LuaRef. C API: lua_pushlstring(), lua_pcall(), lua_tolstring().
+            if( mVariant.c_api ) {
+                return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return call_ref( mL, mRefF, s ); } );
+            }
+            return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return result_of( mF->call<std::string>( s ) ); } );
         }
         if( mBenchmark == "buffer" ) {
             // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
@@ -408,7 +448,8 @@ public:
         mF0.reset();
         mF1.reset();
         mF3.reset();
-        mRef0 = mRef1 = mRef3 = LUA_NOREF;
+        mF.reset();
+        mRef0 = mRef1 = mRef3 = mRefF = LUA_NOREF;
         if( mL != nullptr ) {
             lua_close( mL );
             mL = nullptr;

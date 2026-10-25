@@ -12,6 +12,7 @@
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
+#include "string_exchange/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -208,6 +209,11 @@ public:
         return translate_errors( [&]() -> std::int64_t {
             if( mBenchmark == "host_to_script" ) {
                 return call_host_to_script( n );
+            }
+            if( mBenchmark == "string_exchange" ) {
+                // The string goes in as a String, the result comes back with GetAsString().
+                return csb::host::string_exchange::run(
+                    n, [&]( std::string const &s ) { return mEngine->CallFuncEx( "f", s ).GetAsString(); } );
             }
             if( mBenchmark == "buffer" ) {
                 // The host resizes and clears its Buffer, the script fills it, the host computes the checksum over it.

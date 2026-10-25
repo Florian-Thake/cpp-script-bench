@@ -14,6 +14,7 @@
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
+#include "string_exchange/host.hpp"
 
 #include <csb/runner.hpp>
 
@@ -76,6 +77,7 @@ class ChaiScriptLanguage final : public csb::Language
     std::function<int()>                           mF0;
     std::function<int( int )>                      mF1;
     std::function<int( int, int, int )>            mF3;
+    std::function<std::string( std::string const & )>  mStringF;  // the script function f of string_exchange
     csb::host::buffer::Image                       mImage;  // buffer: the image of the host, bound by reference
 
 public:
@@ -142,6 +144,8 @@ public:
                 mF0 = mChai->eval<std::function<int()>>( "f0" );
                 mF1 = mChai->eval<std::function<int( int )>>( "f1" );
                 mF3 = mChai->eval<std::function<int( int, int, int )>>( "f3" );
+            } else if( mBenchmark == "string_exchange" ) {
+                mStringF = mChai->eval<std::function<std::string( std::string const & )>>( "f" );
             } else {
                 mBench = mChai->eval<std::function<chaiscript::Boxed_Value( int )>>( "bench" );
             }
@@ -159,6 +163,9 @@ public:
             if( mBenchmark == "host_to_script" ) {
                 return csb::host::host_to_script::run( n, mF0, mF1, mF3 );
             }
+            if( mBenchmark == "string_exchange" ) {
+                return csb::host::string_exchange::run( n, mStringF );
+            }
             if( mBenchmark == "buffer" ) {
                 // The host resizes and clears its image, the script fills it, the host computes the checksum over it.
                 mImage.reset( n );
@@ -174,6 +181,7 @@ public:
         mF0    = nullptr;
         mF1    = nullptr;
         mF3    = nullptr;
+        mStringF = nullptr;
         mChai.reset();
         mAst.reset();
     }
