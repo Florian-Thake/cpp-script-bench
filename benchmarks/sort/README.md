@@ -52,7 +52,9 @@ return sum
 - `_tuple_append` shares the value object of its argument with the new element. Appending the
   variable `x` itself would make all elements the same variable, so the script appends a copy
   (`def v := x`). Other forms of a copy (`x + 0`, or appending the expression and reading `x` back
-  from the Tuple) have the same speed: this loop runs only n times.
+  from the Tuple) have the same speed: this loop runs only n times. Defining `v` once before the loop
+  and assigning `v := x` in it does not work: the assignment writes into the value object which the
+  previously appended element shares, so all elements get the last value.
 - The inner loop is `repeat` with `if( j < 0 or a[j] <= v ) { stop }`; TeaScript has no `while`.
 - `v` is `const`: a copy of `a[i]`, which doesn't change.
 

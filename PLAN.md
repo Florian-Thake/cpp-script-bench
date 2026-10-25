@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-18.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-25.
 
 ## 1. Goal
 
@@ -592,6 +592,15 @@ Costs the host application pays for embedding, measured by the harness:
   - Python keeps the plain class like in `records`: `__slots__` was 0-9% faster (the most for
     n = 12).
 - Phase 4b is done.
+
+**2026-10-25**
+- TeaScript: the pin moves to `v0.17.0-30-g4ceb756` (six commits after the one used for 4b, with fixes in
+  the TeaStackVM and the type registration). All benchmarks are ok with MSVC, GCC 11 and GCC 13.
+- `sort` (reviewed): TeaScript keeps the copy `def v := x` inside the loop. Defining `v` once before the
+  loop and assigning `v := x` in it gives a wrong result: the assignment writes into the value object
+  which the previously appended element shares.
+- `records` and `binary_trees` (reviewed): Python keeps plain classes, the natural form for the average
+  Python user; `__slots__` is an optimization.
 
 ## 10. Open questions
 
