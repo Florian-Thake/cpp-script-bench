@@ -298,7 +298,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
-      community reviews, publish.
+      community reviews, publish. Before that: adapt `engine_reset` to the parameter of TeaScript's
+      `ResetState()` once it exists (decision log 2026-10-28).
 
 ## 9. Decision log
 
@@ -898,6 +899,9 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     engine (MSVC: ~0.92 ms reset, ~1.0 ms creation). For the others, reset and load cost a fraction of
     a fresh engine. Numbers in the README.
 - Phase 4d is done, and with it Phase 4.
+- TeaScript's `ResetState()` will get a parameter before the 0.18.0 release, which controls the parts
+  that are reset, so the Core Library can stay without a new bootstrap (the user). `engine_reset` is
+  adapted once it exists.
 
 ## 10. Open questions
 

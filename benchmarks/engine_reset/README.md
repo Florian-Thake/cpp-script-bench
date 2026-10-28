@@ -41,7 +41,9 @@ check: bench( n )                                            (not measured)
 ## Notes per language
 
 - TeaScript: `ResetState()` restarts the VM, clears the state of the parser and bootstraps the Core
-  Library again, so it costs about as much as creating an engine (`engine_lifecycle`).
+  Library again, so it costs about as much as creating an engine (`engine_lifecycle`). Before the
+  0.18.0 release it will get a parameter for the parts to reset, so the Core Library can stay; this
+  benchmark will use it then (PLAN.md, decision log 2026-10-28).
 - ChaiScript: the state contains the functions, global objects and types of the engine; the user
   defined type conversions are not part of it (ChaiScript's documentation).
 - AngelScript: what the engine has registered stays; only the script goes away.
