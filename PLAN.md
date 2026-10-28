@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-25.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-28.
 
 ## 1. Goal
 
@@ -236,14 +236,19 @@ log 2026-10-25).
 
 Costs the host application pays for embedding, measured by the harness:
 
-| Discipline      | Workload                                        | Status |
-|-----------------|-------------------------------------------------|--------|
-| engine_lifecycle | create and destroy an engine, empty and with the standard library | ⬜ |
-| parse_compile   | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript and Lua: one combined step; Python: `ast.parse` + `compile()`) | ⬜ |
-| registration    | register N C++ functions and variables          | ⬜ |
-| function_lookup | call by name vs through a cached handle         | ⬜ |
-| engine_reset    | reset/reuse an engine                           | ⬜ |
-| memory          | peak working set and allocation counts per engine and per workload | ⬜ |
+| Discipline         | Workload                                        | Status |
+|--------------------|-------------------------------------------------|--------|
+| engine_lifecycle   | create and destroy an engine with the standard library | ⬜ |
+| engine_minimal     | the same with the smallest engine the API allows | ⬜ |
+| parse_compile      | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript, Lua and Python: one combined step) | ⬜ |
+| register_functions | register N C++ functions                        | ⬜ |
+| register_variables | register N host variables                       | ⬜ |
+| call_by_name       | the host calls script functions by name, among M functions | ⬜ |
+| call_by_handle     | the same through handles looked up once         | ⬜ |
+| engine_reset       | reset an engine and load the script again       | ⬜ |
+
+The catalogue entries `registration` and `function_lookup` were split, `engine_minimal` was added, and
+`memory` moved to Phase 5 (decision log 2026-10-28).
 
 ### Later / optional
 
@@ -276,10 +281,12 @@ Costs the host application pays for embedding, measured by the harness:
   - [x] **4c Interop:** `script_to_host`, `host_to_script`, `cpp_objects`, `buffer`,
         `string_exchange`, `array_exchange` (design round and implementation 2026-10-25). Extends
         `csb::Language`; brings in LuaBridge3.
-  - [ ] **4d Host API (next):** `engine_lifecycle`, `parse_compile`, `registration`, `function_lookup`,
-        `engine_reset`, `memory`. A new kind of benchmark: the runner times C++ operations. `memory` may
-        move to Phase 5.
-- [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts.
+  - [ ] **4d Host API (next):** `engine_lifecycle`, `engine_minimal`, `parse_compile`,
+        `register_functions`, `register_variables`, `call_by_name`, `call_by_handle`, `engine_reset`
+        (design round 2026-10-28). A new kind of benchmark: the adapter times C++ operations
+        (`run_host()`).
+- [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
+      (peak working set and allocation counts per engine and per workload, one process per run).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish.
 
@@ -740,6 +747,74 @@ Costs the host application pays for embedding, measured by the harness:
   copies them as a block (`GetBuffer()`). Lua and Python use the converters of their binding
   libraries (LuaBridge3 `Vector.h`, pybind11 `stl.h`) for the headline.
 - Phase 4c is done.
+
+**2026-10-28**
+- TeaScript: the pin moves to `v0.17.0-32-gbdd696c`. Until 0.18.0 is released, TeaScript is pinned to
+  its HEAD by default (the user's rule); every move is verified with all toolchains. All benchmarks
+  are ok with MSVC, GCC 11 and GCC 13.
+- 4d design round. The catalogue entry `registration` becomes `register_functions` and
+  `register_variables`, `function_lookup` becomes `call_by_name` and `call_by_handle`, `engine_minimal`
+  is new, and `memory` moves to Phase 5. One combined number would hide which part is slow, as in 4b.
+  The sizes are starting points, tuned during the implementation as before.
+- Measurement model: the host group gets a new adapter method `run_host( info, n )`. It prepares a
+  sample without measuring it (e.g. a fresh engine), measures only the operation itself, checks the
+  result afterwards and returns the duration, the sub-phases and a checksum, like `load()`, which
+  already measures its own sub-phases. The runner keeps everything else: the first call, the warm-up
+  calls, the samples, the time budget, the statistics and the JSON; the sub-phases get statistics of
+  their own. Startup, bind and load of the other groups don't apply ("-").
+- The C++ runner reports the host group as "n/a", it embeds nothing. The `c-api` variants of Lua and
+  Python run the host benchmarks which use the binding layer (`register_functions`,
+  `register_variables`, `call_by_name`, `call_by_handle`); the others are "n/a" there (the same code as
+  the variant without a name).
+- `engine_lifecycle`: per sample, n cycles of creating an engine with the standard library (as
+  `create_engine()` does) and destroying it; sub-phases `create` and `destroy`. The startup and
+  teardown of the other benchmarks are single measurements per run; this gives them samples. n = 10 to
+  start, so Lua's ~45 us per engine are well above the resolution of the clock. The checksum is the
+  number of engines; every API reports a failure.
+- `engine_minimal`: the same with the smallest engine each API allows: Lua `luaL_newstate()` without
+  libraries, AngelScript the engine without add-ons, ChaiScript `ChaiScript_Basic` without `Std_Lib`,
+  TeaScript `config::minimal()`. Python is "n/a": the interpreter always loads its core modules, and
+  the isolated configuration is already its minimum.
+- `parse_compile`: one template per language (`parse_compile.<ext>`: a header, one function, a footer
+  with `bench( n )`); the harness repeats the function N times and numbers it before anything is
+  measured. A function has about 10 lines: a parameter, locals, a loop, an if/else, arithmetic and a
+  call of a helper of the header. Every sample loads into a fresh engine (TeaScript and ChaiScript
+  reject a redefinition). Series N = 100 / 1,000 / 10,000. The headline is "source -> runnable", with
+  the sub-phases of `load()`. An unmeasured call of `bench( n )` gives the checksum.
+  - Python: one step, `Py_CompileString()` (`parse_compile`), then `top_level`, not `ast.parse` +
+    `compile()` as planned: `ast.parse` builds Python objects for the AST, which the normal path never
+    does.
+  - Lua: the generated functions are globals. `local function` would exceed Lua's limit of 200 local
+    variables per function.
+- `register_functions`: register N C++ functions in a fresh engine with each language's normal API:
+  `f1` of `script_to_host` under the names `f0` .. `f{N-1}`, generated before the measurement. An
+  unmeasured script calls them for the checksum. `register_variables`: the same with N host `int`
+  variables, in each API's normal form of a global variable (the user's choice; in TeaScript,
+  functions are variables as well: `AddVar`). Series N = 10 / 100 / 1,000.
+- `call_by_name` and `call_by_handle`: a generated script defines M tiny functions `f_k( a )`; the host
+  makes 100,000 calls and cycles through them. `call_by_name` looks the function up by name at every
+  call (Lua `lua_getglobal` or LuaBridge3's `getGlobal`, Python the namespace dict, AngelScript
+  `GetFunctionByName()`, ChaiScript `eval<std::function<...>>( name )`, TeaScript `CallFuncEx`).
+  `call_by_handle` looks every function up once and calls its handle, as in `host_to_script`
+  (ChaiScript's `std::function`, Lua's `LuaRef` or registry reference, Python's function object,
+  AngelScript's `asIScriptFunction *`). Series M = 10 / 1,000 / 10,000: shows whether the cost of a
+  lookup grows with the number of functions.
+- TeaScript `call_by_handle` is "n/a" (the user's choice). Its counterpart of a handle is the
+  `FunctionPtr` from `GetVar()` + `GetValueCopy<FunctionPtr>()`, but calling it needs the `Context`,
+  which only a class derived from `Engine` reaches. That is the low-level API, which users can use, but
+  not part of the default public API. A public call of a `FunctionPtr` may be added to TeaScript later;
+  then it is used here. `host_to_script` keeps `CallFuncEx` (2026-10-09).
+- `engine_reset`: reset an engine and load a small script again (sub-phases `reset` and `load`), to
+  compare with a fresh engine. TeaScript `ResetState()`, ChaiScript `set_state()` with the state saved
+  after the creation, AngelScript `Discard()` of the module and a new module. Lua and Python have no
+  reset; their form of reuse counts (the user's choice): a fresh `_ENV` table, a fresh globals dict. It
+  does not undo what a script changed in libraries or modules (documented).
+- `memory` moves to Phase 5. The peak working set is a value per process (on Windows it can't be
+  reset), so it needs one process per run, which is the job of the orchestration. Allocation counts
+  need an allocator hook per library (`lua_Alloc`, `asSetGlobalMemoryFunctions()`,
+  `PyMem_SetAllocator()`, `operator new`), and these don't count the same things.
+- Order: the interface with `engine_lifecycle` and `engine_minimal` first, then `parse_compile`,
+  `register_functions` and `register_variables`, `call_by_name` and `call_by_handle`, `engine_reset`.
 
 ## 10. Open questions
 
