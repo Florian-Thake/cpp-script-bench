@@ -1,0 +1,11 @@
+# SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+# SPDX-License-Identifier: MIT
+
+# The check after the registration, not measured: bench( n ) adds the first and the last
+# of the n variables registered by the host (the runner replaces __LAST__ with n-1, see README.md).
+
+from host import v0, v__LAST__
+
+
+def bench(n):
+    return v0 + v__LAST__

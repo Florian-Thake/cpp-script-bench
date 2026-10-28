@@ -249,8 +249,8 @@ Costs the host application pays for embedding, measured by the harness:
 | engine_lifecycle   | create and destroy an engine with the standard library | ✅ |
 | engine_minimal     | the same with the smallest engine the API allows | ✅ |
 | parse_compile      | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript, Lua and Python: one combined step) | ✅ |
-| register_functions | register N C++ functions                        | ⬜ |
-| register_variables | register N host variables                       | ⬜ |
+| register_functions | register N C++ functions                        | ✅ |
+| register_variables | register N host variables                       | ✅ |
 | call_by_name       | the host calls script functions by name, among M functions | ⬜ |
 | call_by_handle     | the same through handles looked up once         | ⬜ |
 | engine_reset       | reset an engine and load the script again       | ⬜ |
@@ -846,6 +846,21 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   `no-threads`, needs ~1.36 s with MSVC for 10,000 functions (GCC ~0.88 s): its `top_level` grows
   quadratically, because ChaiScript's function table (`QuickFlatMap`) is searched linearly at every
   `def`. Numbers in the README.
+- `register_functions` and `register_variables`: the series 10 / 100 / 1,000 as planned. The
+  registrations go where `script_to_host` puts its functions: global in TeaScript, ChaiScript and
+  AngelScript, the table `host` in Lua, the module `host` in Python. Creating the table is measured in
+  Lua (both variants do it in the same step as the registrations); importing or creating the module in
+  Python is not. The names (`fn<k>`, `v<k>`), AngelScript's declarations and the C API lists
+  (`luaL_Reg`, `PyMethodDef`) are created before the measurement. A generated check script calls the
+  first and the last registration afterwards (a template without a repeated block, only `__LAST__`).
+  `uses_binding()` (`benchmarks/registry.hpp`) names the benchmarks the `c-api` variants run.
+  - Variables: bound by reference where the API binds a C++ variable (ChaiScript
+    `add_global( var( std::ref( x ) ) )`, AngelScript `RegisterGlobalProperty`, LuaBridge3 read-write
+    properties), a copy where it only copies (TeaScript `AddVar`, Lua's C API, Python `m.attr` and
+    `PyModule_AddIntConstant`).
+  - The samples of n = 10 take only a few microseconds, so their spread is larger (up to ~15%). The
+    slowest headline is ChaiScript's `register_functions`, ~12.7 ms for 1,000 functions with MSVC; it
+    grows quadratically like its `top_level` in `parse_compile`. Numbers in the READMEs.
 
 ## 10. Open questions
 

@@ -13,6 +13,7 @@
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
+#include "register_functions/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -91,6 +92,13 @@ void check_param_count( teascript::Context const &rContext, size_t const expecte
     }
 }
 
+/// The user callback of f1 of script_to_host, which register_functions registers n times.
+auto const f1_callback = []( teascript::Context &rContext ) -> teascript::ValueObject {
+    check_param_count( rContext, 1, "f1" );
+    auto const a = rContext.ConsumeParam();
+    return teascript::ValueObject( static_cast<teascript::Integer>(csb::host::script_to_host::f1( static_cast<int>(a.GetAsInteger()) )) );
+};
+
 /// Registers the C++ functions of script_to_host as user callbacks, TeaScript's way to call C++ from a script.
 void bind_script_to_host( teascript::Engine &rEngine )
 {
@@ -100,11 +108,7 @@ void bind_script_to_host( teascript::Engine &rEngine )
         check_param_count( rContext, 0, "f0" );
         return teascript::ValueObject( static_cast<teascript::Integer>(host::f0()) );
     } );
-    rEngine.RegisterUserCallback( "f1", []( teascript::Context &rContext ) -> teascript::ValueObject {
-        check_param_count( rContext, 1, "f1" );
-        auto const a = rContext.ConsumeParam();
-        return teascript::ValueObject( static_cast<teascript::Integer>(host::f1( static_cast<int>(a.GetAsInteger()) )) );
-    } );
+    rEngine.RegisterUserCallback( "f1", f1_callback );
     rEngine.RegisterUserCallback( "f3", []( teascript::Context &rContext ) -> teascript::ValueObject {
         check_param_count( rContext, 3, "f3" );
         auto const a = rContext.ConsumeParam();
@@ -248,6 +252,24 @@ public:
             }
             if( info.name == "parse_compile" ) {
                 return csb::host::parse_compile::run( *this, info, n, source );
+            }
+            if( info.name == "register_functions" ) {
+                auto const names = csb::host::register_functions::names( "fn", n );
+                return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                    for( auto const &name : names ) {
+                        mEngine->RegisterUserCallback( name, f1_callback );
+                    }
+                } );
+            }
+            if( info.name == "register_variables" ) {
+                // Copied into the engine: AddVar() creates a script variable with the value.
+                auto const names  = csb::host::register_functions::names( "v", n );
+                auto const values = csb::host::register_functions::values( n );
+                return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                    for( size_t i = 0; i < names.size(); ++i ) {
+                        mEngine->AddVar( names[i], values[i] );
+                    }
+                } );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );

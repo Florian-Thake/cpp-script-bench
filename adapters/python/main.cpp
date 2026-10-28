@@ -18,6 +18,7 @@
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
+#include "register_functions/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -452,6 +453,7 @@ class PythonLanguage final : public csb::Language
     py::object                             mF1;
     py::object                             mF3;
     py::object                             mF;        // the script function f of string_exchange and array_exchange
+    py::object                             mHost;     // register_functions and register_variables: the module 'host'
     csb::host::buffer::Image               mImage;    // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -483,7 +485,7 @@ public:
         if( info.name == "engine_minimal" ) {
             return false;
         }
-        return not mVariant.c_api || info.group == "interop";
+        return not mVariant.c_api || csb::uses_binding( info );
     }
 
     void create_engine() override
@@ -620,6 +622,7 @@ public:
         mF3      = py::object();
         mF       = py::object();
         mGlobals = py::object();
+        mHost    = py::object();
         mInterpreter.reset();
     }
 
@@ -632,10 +635,65 @@ public:
         if( info.name == "parse_compile" ) {
             return csb::host::parse_compile::run( *this, info, n, source );
         }
+        if( info.name == "register_functions" || info.name == "register_variables" ) {
+            return translate_errors( [&]() { return run_register( info, n, source ); } );
+        }
         throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
     }
 
 private:
+    /// register_functions and register_variables: the registrations go into the module 'host', like the functions of
+    /// script_to_host. Importing it (pybind11's embedded module) or creating it (C API) is not measured.
+    csb::HostSample run_register( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const &source )
+    {
+        namespace reg = csb::host::register_functions;
+        bool const functions = info.name == "register_functions";
+        auto const names     = reg::names( functions ? "fn" : "v", n );
+        auto const values    = reg::values( n );
+        // The C API takes the functions as a PyMethodDef list, created before the measurement like the names. The list
+        // must live as long as the functions.
+        std::vector<PyMethodDef> methods;
+        if( functions && mVariant.c_api ) {
+            for( auto const &name : names ) {
+                methods.push_back( { name.c_str(), &c_api_script_to_host::f1, METH_O, nullptr } );
+            }
+            methods.push_back( { nullptr, nullptr, 0, nullptr } );
+        }
+
+        auto const prepare = [&]() {
+            mHost = mVariant.c_api ? add_c_api_host_module( nullptr ) : py::module_::import( "host" );
+        };
+        auto const register_all = [&]() {
+            if( mVariant.c_api ) {
+                if( functions ) {
+                    if( PyModule_AddFunctions( mHost.ptr(), methods.data() ) < 0 ) {
+                        throw py::error_already_set();
+                    }
+                } else {
+                    // Module attributes with copies of the values.
+                    for( size_t i = 0; i < names.size(); ++i ) {
+                        if( PyModule_AddIntConstant( mHost.ptr(), names[i].c_str(), values[i] ) < 0 ) {
+                            throw py::error_already_set();
+                        }
+                    }
+                }
+            } else {
+                auto m = py::reinterpret_borrow<py::module_>( mHost );
+                if( functions ) {
+                    for( auto const &name : names ) {
+                        m.def( name.c_str(), &csb::host::script_to_host::f1 );
+                    }
+                } else {
+                    // Module attributes with copies of the values, pybind11's form of exporting a variable.
+                    for( size_t i = 0; i < names.size(); ++i ) {
+                        m.attr( names[i].c_str() ) = values[i];
+                    }
+                }
+            }
+        };
+        return reg::run( *this, info, n, source, prepare, register_all );
+    }
+
     /// Calls bench( n ) of the script. \return its result.
     std::int64_t call_script_bench( std::int64_t const n )
     {

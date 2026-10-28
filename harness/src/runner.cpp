@@ -233,6 +233,9 @@ std::string expand_template( std::string const &tmpl, std::int64_t const n, std:
 {
     auto const begin = tmpl.find( "csb:repeat" );
     auto const end   = tmpl.find( "csb:end" );
+    if( begin == std::string::npos && end == std::string::npos ) {
+        return replace_all( tmpl, "__LAST__", std::to_string( n - 1 ) );
+    }
     if( begin == std::string::npos || end == std::string::npos || end < begin ) {
         throw std::runtime_error( path.string() + ": no block between a line with csb:repeat and a line with csb:end" );
     }

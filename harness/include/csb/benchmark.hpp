@@ -16,8 +16,8 @@ enum class ScriptKind
 {
     file,       ///< benchmarks/<name>/<name><ext>, used as it is
     generated,  ///< the same file is a template, which the runner expands for each n before anything is measured: the
-                ///< lines between a line with "csb:repeat" and a line with "csb:end" are repeated n times, with "__I__"
-                ///< replaced by 0 .. n-1, and "__LAST__" is replaced by n-1 everywhere
+                ///< lines between a line with "csb:repeat" and a line with "csb:end" (if there are) are repeated n
+                ///< times, with "__I__" replaced by 0 .. n-1, and "__LAST__" is replaced by n-1 everywhere
     none,       ///< no script (e.g. engine_lifecycle)
 };
 

@@ -15,6 +15,7 @@
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
+#include "register_functions/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -209,6 +210,24 @@ public:
             }
             if( info.name == "parse_compile" ) {
                 return csb::host::parse_compile::run( *this, info, n, source );
+            }
+            if( info.name == "register_functions" ) {
+                auto const names = csb::host::register_functions::names( "fn", n );
+                return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                    for( auto const &name : names ) {
+                        mChai->add( chaiscript::fun( &csb::host::script_to_host::f1 ), name );
+                    }
+                } );
+            }
+            if( info.name == "register_variables" ) {
+                // Global variables bound by reference to the variables of the host (std::ref), so functions see them.
+                auto const names  = csb::host::register_functions::names( "v", n );
+                auto       values = csb::host::register_functions::values( n );
+                return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                    for( size_t i = 0; i < names.size(); ++i ) {
+                        mChai->add_global( chaiscript::var( std::ref( values[i] ) ), names[i] );
+                    }
+                } );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );

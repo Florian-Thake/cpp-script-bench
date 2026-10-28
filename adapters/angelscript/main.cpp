@@ -16,6 +16,7 @@
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
+#include "register_functions/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -311,6 +312,29 @@ public:
         }
         if( info.name == "parse_compile" ) {
             return csb::host::parse_compile::run( *this, info, n, source );
+        }
+        if( info.name == "register_functions" ) {
+            // The declarations are created before the measurement, like the names in the other runners.
+            auto decls = csb::host::register_functions::names( "int fn", n );
+            for( auto &decl : decls ) {
+                decl += "( int a )";
+            }
+            return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                for( auto const &decl : decls ) {
+                    check( mEngine->RegisterGlobalFunction( decl.c_str(), asFUNCTION( csb::host::script_to_host::f1 ), asCALL_CDECL ),
+                           "RegisterGlobalFunction()" );
+                }
+            } );
+        }
+        if( info.name == "register_variables" ) {
+            // AngelScript binds a global property to the variable of the host (by reference), its only form.
+            auto const decls  = csb::host::register_functions::names( "int v", n );
+            auto       values = csb::host::register_functions::values( n );
+            return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                for( size_t i = 0; i < decls.size(); ++i ) {
+                    check( mEngine->RegisterGlobalProperty( decls[i].c_str(), &values[i] ), "RegisterGlobalProperty()" );
+                }
+            } );
         }
         throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
     }

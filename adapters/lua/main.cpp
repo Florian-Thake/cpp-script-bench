@@ -16,6 +16,7 @@
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
+#include "register_functions/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -376,7 +377,7 @@ public:
 
     bool supports( csb::BenchmarkInfo const &info ) const override
     {
-        return not mVariant.c_api || info.group == "interop";
+        return not mVariant.c_api || csb::uses_binding( info );
     }
 
     void create_engine() override
@@ -520,6 +521,53 @@ public:
         }
         if( info.name == "parse_compile" ) {
             return csb::host::parse_compile::run( *this, info, n, source );
+        }
+        if( info.name == "register_functions" ) {
+            // Into the table 'host', like the functions of script_to_host.
+            auto const names = csb::host::register_functions::names( "fn", n );
+            if( mVariant.c_api ) {
+                // The functions as a luaL_Reg list, created before the measurement, like luaL_newlib() takes it.
+                std::vector<luaL_Reg> functions;
+                for( auto const &name : names ) {
+                    functions.push_back( { name.c_str(), &c_api_script_to_host::f1 } );
+                }
+                functions.push_back( { nullptr, nullptr } );
+                return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                    lua_createtable( mL, 0, static_cast<int>(names.size()) );
+                    luaL_setfuncs( mL, functions.data(), 0 );
+                    lua_setglobal( mL, "host" );
+                } );
+            }
+            return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                auto ns = luabridge::getGlobalNamespace( mL ).beginNamespace( "host" );
+                for( auto const &name : names ) {
+                    ns.addFunction( name.c_str(), &csb::host::script_to_host::f1 );
+                }
+                ns.endNamespace();
+            } );
+        }
+        if( info.name == "register_variables" ) {
+            auto const names  = csb::host::register_functions::names( "v", n );
+            auto       values = csb::host::register_functions::values( n );
+            if( mVariant.c_api ) {
+                // Copied into the fields of the table 'host'.
+                return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                    lua_createtable( mL, 0, static_cast<int>(names.size()) );
+                    for( size_t i = 0; i < names.size(); ++i ) {
+                        lua_pushinteger( mL, values[i] );
+                        lua_setfield( mL, -2, names[i].c_str() );
+                    }
+                    lua_setglobal( mL, "host" );
+                } );
+            }
+            // Read-write properties of the namespace 'host', bound to the variables of the host (by reference).
+            return csb::host::register_functions::run( *this, info, n, source, []() {}, [&]() {
+                auto ns = luabridge::getGlobalNamespace( mL ).beginNamespace( "host" );
+                for( size_t i = 0; i < names.size(); ++i ) {
+                    ns.addProperty( names[i].c_str(), &values[i], &values[i] );
+                }
+                ns.endNamespace();
+            } );
         }
         throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
     }
