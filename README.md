@@ -7,7 +7,8 @@ through the language's own C++ embedding API and does all the measuring. Only CP
 measured, no IO.
 
 > **Status:** early development. The harness and the runners for all languages work, with the
-> core, data and interop benchmarks. See [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> core, data and interop benchmarks; the host API benchmarks are in progress. See [PLAN.md](PLAN.md)
+> for the full plan and the fairness rules.
 
 ## Languages
 
@@ -126,6 +127,10 @@ Columns in the output:
 | first   | the very first call of `bench( n )` |
 | runs    | the number of measured calls; fewer than `--runs` if the time budget ended the run early, marked with "(time budget)" |
 | median, min, stddev | the measured calls of `bench( n )` after warm-up; the headline numbers |
+
+The host API benchmarks (e.g. `engine_lifecycle`) measure a C++ operation of the embedding API instead
+of a script call: every sample is one such operation, measured by the runner of the language. They
+show "-" for startup, bind and load, and the medians of their sub-phases after the status.
 
 ## Layout
 

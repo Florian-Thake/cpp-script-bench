@@ -185,7 +185,7 @@ void print_list( LanguageEntry const &language, Options const &opt, std::span<Be
 
     std::printf( "Benchmarks:\n" );
     for( auto const &info : benchmarks ) {
-        bool const has_script = extension.empty() || std::filesystem::exists( script_path( opt, info, extension ) );
+        bool const has_script = extension.empty() || not info.has_script || std::filesystem::exists( script_path( opt, info, extension ) );
         std::string series;
         for( auto const n : info.series ) {
             series += (series.empty() ? "" : ",") + std::to_string( n );
@@ -220,10 +220,27 @@ std::string read_file( std::filesystem::path const &path )
 
 struct WrongResult {};
 
+/// Reads the script of \param info for \param lang into \param source, if the benchmark has one.
+/// \return false if the language has no script for \param info.
+bool read_script( Language const &lang, BenchmarkInfo const &info, Options const &opt, std::string &source )
+{
+    auto const extension = lang.script_extension();
+    if( extension.empty() || not info.has_script ) {
+        return true;
+    }
+    auto const path = script_path( opt, info, extension );
+    if( not std::filesystem::exists( path ) ) {
+        return false;
+    }
+    source = read_file( path );
+    return true;
+}
+
 /// A throw-away run before the first measured run of a variant: creates an engine, loads the script of \param info,
-/// calls bench( n ) once with the smallest n and destroys the engine. Nothing is measured or reported. It warms up
-/// what is only cold once per process (the first use of the code, the libraries and their files), so the first
-/// measured run is comparable to the following ones. Errors are ignored here, the measured run reports them.
+/// calls bench( n ) once with the smallest n and destroys the engine (a host API benchmark: one call of run_host()).
+/// Nothing is measured or reported. It warms up what is only cold once per process (the first use of the code, the
+/// libraries and their files), so the first measured run is comparable to the following ones. Errors are ignored
+/// here, the measured run reports them.
 /// \return false if the language has no script for \param info.
 bool warm_up( LanguageEntry const &language, std::string const &variant, BenchmarkInfo const &info, Options const &opt )
 {
@@ -238,13 +255,13 @@ bool warm_up( LanguageEntry const &language, std::string const &variant, Benchma
             return false;
         }
         std::string source;
-        auto const  extension = lang->script_extension();
-        if( not extension.empty() ) {
-            auto const path = script_path( opt, info, extension );
-            if( not std::filesystem::exists( path ) ) {
-                return false;
-            }
-            source = read_file( path );
+        if( not read_script( *lang, info, opt, source ) ) {
+            return false;
+        }
+
+        if( info.group == "host" ) {
+            (void)lang->run_host( info, n, source );
+            return true;
         }
 
         lang->create_engine();
@@ -280,40 +297,58 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
 
         // All file IO happens here, before anything is measured.
         std::string source;
-        auto const  extension = lang->script_extension();
-        if( not extension.empty() ) {
-            auto const path = script_path( opt, info, extension );
-            if( not std::filesystem::exists( path ) ) {
-                r.status = "n/a";
-                return r;
-            }
-            source = read_file( path );
+        if( not read_script( *lang, info, opt, source ) ) {
+            r.status = "n/a";
+            return r;
         }
 
         r.expected = info.reference( opaque( r.n ) );
 
-        auto const t0 = Clock::now();
-        lang->create_engine();
-        auto const t1 = Clock::now();
-        lang->bind( info );
-        auto const t2 = Clock::now();
-        r.load_phases = lang->load( info, source );
-        auto const t3 = Clock::now();
-        r.startup = seconds_between( t0, t1 );
-        r.bind    = seconds_between( t1, t2 );
-        r.load    = seconds_between( t2, t3 );
+        // The host API benchmarks have no engine of the runner: each call of run_host() is one sample, measured by the
+        // adapter itself.
+        bool const host = r.host();
+        if( not host ) {
+            auto const t0 = Clock::now();
+            lang->create_engine();
+            auto const t1 = Clock::now();
+            lang->bind( info );
+            auto const t2 = Clock::now();
+            r.load_phases = lang->load( info, source );
+            auto const t3 = Clock::now();
+            r.startup = seconds_between( t0, t1 );
+            r.bind    = seconds_between( t1, t2 );
+            r.load    = seconds_between( t2, t3 );
+        }
 
         double last = 0.0;  // the duration of the latest call
+        std::vector<Phase> phases;  // the sub-phases of the latest call of run_host()
         auto const measure = [&]() -> double {
-            lang->collect_garbage();
-            auto const start = Clock::now();
-            r.checksum = lang->call_bench( r.n );
-            auto const end = Clock::now();
+            if( host ) {
+                auto sample = lang->run_host( info, r.n, source );
+                r.checksum = sample.checksum;
+                last       = sample.seconds;
+                phases     = std::move( sample.phases );
+            } else {
+                lang->collect_garbage();
+                auto const start = Clock::now();
+                r.checksum = lang->call_bench( r.n );
+                auto const end = Clock::now();
+                last = seconds_between( start, end );
+            }
             if( r.checksum != r.expected ) {
                 throw WrongResult{};
             }
-            last = seconds_between( start, end );
             return last;
+        };
+        // Adds the sub-phases of the latest call to the result (only for measured calls).
+        auto const add_phases = [&]() {
+            for( auto const &phase : phases ) {
+                auto it = std::ranges::find( r.phase_samples, phase.name, &PhaseSamples::name );
+                if( it == r.phase_samples.end() ) {
+                    it = r.phase_samples.insert( it, PhaseSamples{ phase.name, {} } );
+                }
+                it->samples.push_back( phase.seconds );
+            }
         };
 
         // The time budget covers all calls, starting with the first one. A call is only made if it is expected to
@@ -332,12 +367,15 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
         r.samples.reserve( static_cast<size_t>(opt.runs) );
         while( std::ssize( r.samples ) < opt.runs && (std::ssize( r.samples ) < opt.min_runs() || fits( 1 )) ) {
             r.samples.push_back( measure() );
+            add_phases();
         }
         r.budget_limited = r.warmup < opt.warmup || std::ssize( r.samples ) < opt.runs;
 
-        auto const t4 = Clock::now();
-        lang->destroy_engine();
-        r.teardown = seconds_between( t4, Clock::now() );
+        if( not host ) {
+            auto const t4 = Clock::now();
+            lang->destroy_engine();
+            r.teardown = seconds_between( t4, Clock::now() );
+        }
 
         r.status = "ok";
     } catch( WrongResult const & ) {
@@ -368,12 +406,19 @@ void print_result( BenchResult const &r )
         auto const s = compute_stats( r.samples );
         char spread[16];
         std::snprintf( spread, sizeof( spread ), "%.1f%%", s.median > 0.0 ? s.stddev / s.median * 100.0 : 0.0 );
-        // Only the interop benchmarks bind something.
-        std::string const bind = r.group == "interop" ? format_time( r.bind ) : "-";
-        std::printf( "%-20s %8lld %11s %11s %11s %11s %5zu %11s %11s %7s  ok%s\n", r.benchmark.c_str(), static_cast<long long>(r.n),
-                     format_time( r.startup ).c_str(), bind.c_str(), format_time( r.load ).c_str(), format_time( r.first ).c_str(),
-                     r.samples.size(), format_time( s.median ).c_str(), format_time( s.min ).c_str(), spread,
-                     r.budget_limited ? " (time budget)" : "" );
+        // Only the interop benchmarks bind something. The host API benchmarks have no engine of the runner, but the
+        // medians of their sub-phases.
+        std::string const startup = r.host() ? "-" : format_time( r.startup );
+        std::string const bind    = r.group == "interop" ? format_time( r.bind ) : "-";
+        std::string const load    = r.host() ? "-" : format_time( r.load );
+        std::string       phases;
+        for( auto const &phase : r.phase_samples ) {
+            phases += (phases.empty() ? "  " : ", ") + phase.name + " " + format_time( compute_stats( phase.samples ).median );
+        }
+        std::printf( "%-20s %8lld %11s %11s %11s %11s %5zu %11s %11s %7s  ok%s%s\n", r.benchmark.c_str(), static_cast<long long>(r.n),
+                     startup.c_str(), bind.c_str(), load.c_str(), format_time( r.first ).c_str(), r.samples.size(),
+                     format_time( s.median ).c_str(), format_time( s.min ).c_str(), spread, r.budget_limited ? " (time budget)" : "",
+                     phases.c_str() );
     } else if( r.status == "wrong result" ) {
         std::printf( "%-20s %8lld  WRONG RESULT: got %lld, expected %lld\n", r.benchmark.c_str(), static_cast<long long>(r.n),
                      static_cast<long long>(r.checksum), static_cast<long long>(r.expected) );

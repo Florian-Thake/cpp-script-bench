@@ -44,9 +44,22 @@ std::string num( double const v )
     return buf;
 }
 
+/// Writes the statistics and the raw values of \param samples as the members of a JSON object, indented by \param ind.
+void write_samples( std::vector<double> const &samples, std::string const &ind, std::ostream &out )
+{
+    auto const s = compute_stats( samples );
+    out << ind << "\"min\": " << num( s.min ) << ", \"median\": " << num( s.median ) << ", \"mean\": " << num( s.mean )
+        << ", \"stddev\": " << num( s.stddev ) << ", \"max\": " << num( s.max ) << ",\n";
+    out << ind << "\"samples\": [";
+    for( size_t i = 0; i < samples.size(); ++i ) {
+        out << (i == 0 ? " " : ", ") << num( samples[i] );
+    }
+    out << " ]\n";
+}
+
 void write_benchmark( BenchResult const &b, std::ostream &out )
 {
-    char const *const ind = "          ";
+    std::string const ind = "          ";
     out << "        {\n";
     out << ind << "\"name\": " << str( b.benchmark ) << ",\n";
     out << ind << "\"group\": " << str( b.group ) << ",\n";
@@ -54,28 +67,36 @@ void write_benchmark( BenchResult const &b, std::ostream &out )
     out << ind << "\"status\": " << str( b.status );
     if( b.ok() ) {
         out << ",\n" << ind << "\"checksum\": " << b.checksum << ",\n";
-        out << ind << "\"startup_s\": " << num( b.startup ) << ",\n";
-        out << ind << "\"bind_s\": " << num( b.bind ) << ",\n";
-        out << ind << "\"load_s\": " << num( b.load ) << ",\n";
-        out << ind << "\"load_phases_s\": {";
-        for( size_t i = 0; i < b.load_phases.size(); ++i ) {
-            out << (i == 0 ? " " : ", ") << str( b.load_phases[i].name ) << ": " << num( b.load_phases[i].seconds );
+        // The host API benchmarks have no engine of the runner: the adapter measures each sample itself.
+        if( not b.host() ) {
+            out << ind << "\"startup_s\": " << num( b.startup ) << ",\n";
+            out << ind << "\"bind_s\": " << num( b.bind ) << ",\n";
+            out << ind << "\"load_s\": " << num( b.load ) << ",\n";
+            out << ind << "\"load_phases_s\": {";
+            for( size_t i = 0; i < b.load_phases.size(); ++i ) {
+                out << (i == 0 ? " " : ", ") << str( b.load_phases[i].name ) << ": " << num( b.load_phases[i].seconds );
+            }
+            out << (b.load_phases.empty() ? "},\n" : " },\n");
         }
-        out << (b.load_phases.empty() ? "},\n" : " },\n");
         out << ind << "\"first_s\": " << num( b.first ) << ",\n";
-        out << ind << "\"teardown_s\": " << num( b.teardown ) << ",\n";
+        if( not b.host() ) {
+            out << ind << "\"teardown_s\": " << num( b.teardown ) << ",\n";
+        }
         out << ind << "\"warmup\": " << b.warmup << ",\n";
         out << ind << "\"budget_limited\": " << (b.budget_limited ? "true" : "false") << ",\n";
 
-        auto const s = compute_stats( b.samples );
         out << ind << "\"execute_s\": {\n";
-        out << ind << "  \"min\": " << num( s.min ) << ", \"median\": " << num( s.median ) << ", \"mean\": " << num( s.mean )
-            << ", \"stddev\": " << num( s.stddev ) << ", \"max\": " << num( s.max ) << ",\n";
-        out << ind << "  \"samples\": [";
-        for( size_t i = 0; i < b.samples.size(); ++i ) {
-            out << (i == 0 ? " " : ", ") << num( b.samples[i] );
+        write_samples( b.samples, ind + "  ", out );
+        out << ind << "}" << (b.host() ? ",\n" : "\n");
+        if( b.host() ) {
+            out << ind << "\"phases_s\": {";
+            for( size_t i = 0; i < b.phase_samples.size(); ++i ) {
+                out << (i == 0 ? "\n" : ",\n") << ind << "  " << str( b.phase_samples[i].name ) << ": {\n";
+                write_samples( b.phase_samples[i].samples, ind + "    ", out );
+                out << ind << "  }";
+            }
+            out << (b.phase_samples.empty() ? "}\n" : "\n" + ind + "}\n");
         }
-        out << " ]\n" << ind << "}\n";
     } else {
         out << ",\n" << ind << "\"expected\": " << b.expected << ",\n";
         out << ind << "\"checksum\": " << b.checksum << "\n";

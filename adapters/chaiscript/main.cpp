@@ -12,6 +12,7 @@
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
+#include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
@@ -96,10 +97,7 @@ public:
     void create_engine() override
     {
         // The full standard library, like the other languages get theirs.
-        // Loading binary modules and external script files is disabled, so there is no disk IO.
-        mChai = std::make_unique<chaiscript::ChaiScript>( std::vector<std::string>{}, std::vector<std::string>{},
-                                                          std::vector<chaiscript::Options>{ chaiscript::Options::No_Load_Modules,
-                                                                                            chaiscript::Options::No_External_Scripts } );
+        mChai = make_engine( {} );
         // The standard library has no math functions. The math module of ChaiScript_Extras is ChaiScript's official
         // module for <cmath>, the counterpart of AngelScript's math add-on, so it belongs to the standard library here.
         mChai->add( chaiscript::extras::math::bootstrap() );
@@ -195,7 +193,34 @@ public:
         mAst.reset();
     }
 
+    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const & ) override
+    {
+        return translate_errors( [&]() {
+            if( info.name == "engine_lifecycle" ) {
+                return csb::host::engine_lifecycle::run( n, [&]() { create_engine(); }, [&]() { destroy_engine(); } );
+            }
+            if( info.name == "engine_minimal" ) {
+                // Without the standard library (an empty module instead of Std_Lib): only the parser and the functions
+                // of the eval system (eval, print_string, ...). Even the operators of the built-in types are part of
+                // Std_Lib.
+                return csb::host::engine_lifecycle::run( n, [&]() { mChai = make_engine( { chaiscript::Library_Options::No_Stdlib } ); },
+                                                         [&]() { mChai.reset(); } );
+            }
+            throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
+        } );
+    }
+
 private:
+    /// Creates an engine with the library options \param lib_options.
+    static std::unique_ptr<chaiscript::ChaiScript> make_engine( std::vector<chaiscript::Library_Options> lib_options )
+    {
+        // Loading binary modules and external script files is disabled, so there is no disk IO.
+        return std::make_unique<chaiscript::ChaiScript>( std::vector<std::string>{}, std::vector<std::string>{},
+                                                         std::vector<chaiscript::Options>{ chaiscript::Options::No_Load_Modules,
+                                                                                           chaiscript::Options::No_External_Scripts },
+                                                         std::move( lib_options ) );
+    }
+
     /// array_exchange: converts \param a into a Vector, calls f with it and converts the result back.
     std::vector<int> call_array_function( std::vector<int> const &a )
     {

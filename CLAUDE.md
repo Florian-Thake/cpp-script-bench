@@ -51,7 +51,7 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 - `harness/`: `csb::Language` interface (`include/csb/language.hpp`), `csb::run_main()`, statistics,
   JSON report, system info.
 - `benchmarks/<name>/`: `README.md` (spec), `reference.cpp`, one script per language
-  (`<name>.tea`, `.chai`, ...), for interop benchmarks `host.hpp` (the host side). Registry:
+  (`<name>.tea`, `.chai`, ...), for interop and host API benchmarks `host.hpp` (the host side). Registry:
   `benchmarks/registry.cpp`.
 - `adapters/<lang>/`: one runner executable per language.
 - `cmake/`: `csb_apply_compiler_options()` (same flags for all code built from source),
@@ -67,7 +67,11 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 5. Interop benchmarks: the C++ functions, types and data in `benchmarks/<name>/host.hpp`, registered in
    the `bind()` of every adapter. Lua and Python bind twice: with LuaBridge3 / pybind11 (headline) and
    with the plain C API (variant `c-api`).
-6. Update the discipline table in PLAN.md.
+6. Host API benchmarks (group `host`): `run_host()` in every adapter, which prepares and checks a
+   sample without measuring it and measures only the C++ operation (PLAN.md, section 3). A shared
+   measuring loop goes into `benchmarks/<name>/host.hpp`; `has_script = false` in the registry if the
+   benchmark has no script. C++ is "n/a".
+7. Update the discipline table in PLAN.md.
 
 ## Adding a language
 

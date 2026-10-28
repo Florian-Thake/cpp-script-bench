@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -25,10 +26,20 @@ struct Phase
 };
 
 
+/// One sample of a host API benchmark (group "host"), measured by the adapter itself.
+struct HostSample
+{
+    double              seconds  = 0.0;  ///< the measured operation in total
+    std::vector<Phase>  phases;          ///< its sub-phases, if available
+    std::int64_t        checksum = 0;    ///< shows that the operation worked, checked against the C++ reference
+};
+
+
 /// The interface every language adapter implements.
 /// One instance represents one variant of one language, e.g. TeaScript in the TeaStackVM with O1.
 /// The runner calls the phases in this order:
 ///   create_engine(), bind(), load(), call_bench() repeatedly, destroy_engine().
+/// For the host API benchmarks (group "host") it only calls run_host() repeatedly instead.
 /// Every phase may throw a std::exception on errors.
 class Language
 {
@@ -60,6 +71,16 @@ public:
 
     /// Runs a full garbage collection if the language has one. Called before each call_bench(), not measured.
     virtual void collect_garbage() {}
+
+    /// Host API benchmarks: performs the C++ operation of \param info once with the size \param n and measures it.
+    /// What a sample needs beforehand (e.g. a fresh engine) and the check of its result afterwards are not measured.
+    /// \param source is the script of \param info, empty if it has none. Each call stands alone: no engine is left over.
+    virtual HostSample run_host( BenchmarkInfo const &info, std::int64_t n, std::string const &source )
+    {
+        (void)n;
+        (void)source;
+        throw std::runtime_error( "run_host() is not implemented for " + std::string( info.name ) );
+    }
 
     /// Destroys the engine. Measured as "teardown".
     virtual void destroy_engine() = 0;

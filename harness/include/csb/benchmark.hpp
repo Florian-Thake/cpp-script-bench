@@ -22,6 +22,7 @@ struct BenchmarkInfo
     std::string_view               description;
     std::span<std::int64_t const>  series;       ///< workload sizes passed to bench( n ), each one is a separate run; usually only one
     std::int64_t                 (*reference)( std::int64_t n );  ///< C++ reference implementation, returns the expected checksum
+    bool                           has_script = true;  ///< false: the benchmark needs no script (e.g. engine_lifecycle)
 };
 
 

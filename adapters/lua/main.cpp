@@ -13,6 +13,7 @@
 #include "buffer/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_luabridge3_git_version.h"
+#include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
@@ -494,6 +495,29 @@ public:
             lua_close( mL );
             mL = nullptr;
         }
+    }
+
+    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const & ) override
+    {
+        if( info.name == "engine_lifecycle" ) {
+            return csb::host::engine_lifecycle::run( n, [&]() { create_engine(); }, [&]() { destroy_engine(); } );
+        }
+        if( info.name == "engine_minimal" ) {
+            // A state without any library.
+            return csb::host::engine_lifecycle::run(
+                n,
+                [&]() {
+                    mL = luaL_newstate();
+                    if( mL == nullptr ) {
+                        throw std::runtime_error( "luaL_newstate() failed" );
+                    }
+                },
+                [&]() {
+                    lua_close( mL );
+                    mL = nullptr;
+                } );
+        }
+        throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
     }
 
 private:

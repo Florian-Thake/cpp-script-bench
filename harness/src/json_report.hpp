@@ -15,7 +15,16 @@
 
 namespace csb {
 
+/// The measured samples of one sub-phase of a host API benchmark, in seconds.
+struct PhaseSamples
+{
+    std::string          name;
+    std::vector<double>  samples;
+};
+
 /// The result of one benchmark for one language variant. All times in seconds.
+/// For the host API benchmarks (group "host") only first, warmup, samples and phase_samples are used: the adapter
+/// measures the operation itself (Language::run_host()).
 struct BenchResult
 {
     std::string          benchmark;
@@ -32,9 +41,11 @@ struct BenchResult
     double               teardown = 0.0;  ///< destroy_engine()
     int                  warmup   = 0;    ///< the number of warm-up calls made
     std::vector<double>  samples;         ///< the measured calls of bench( n ) after warm-up
+    std::vector<PhaseSamples>  phase_samples;  ///< host API benchmarks: the sub-phases of the measured samples
     bool                 budget_limited = false;  ///< the time budget ended the warm-up or the measured calls early
 
     bool ok() const { return status == "ok"; }
+    bool host() const { return group == "host"; }
 };
 
 struct VariantResult

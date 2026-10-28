@@ -10,6 +10,7 @@
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
 #include "csb_teascript_git_version.h"
+#include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
@@ -155,10 +156,7 @@ public:
     void create_engine() override
     {
         // The full Core Library, like the other languages get their full standard library.
-        // The tsb path stays empty, so Bootstrap() neither reads nor writes compiled .tsb files (no disk IO).
-        teascript::Settings settings( teascript::config::full(), mVariant.opt_level );
-        mEngine = std::make_unique<BenchEngine>( std::move( settings ), mVariant.compile ? teascript::Engine::eMode::Compile
-                                                                                         : teascript::Engine::eMode::Eval );
+        mEngine = make_engine( teascript::config::full() );
     }
 
     void bind( csb::BenchmarkInfo const &info ) override
@@ -236,7 +234,31 @@ public:
         mAst.reset();
     }
 
+    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const & ) override
+    {
+        return translate_errors( [&]() {
+            if( info.name == "engine_lifecycle" ) {
+                return csb::host::engine_lifecycle::run( n, [&]() { create_engine(); }, [&]() { destroy_engine(); } );
+            }
+            if( info.name == "engine_minimal" ) {
+                // The lowest level of the Core Library: only the types and the version variables.
+                return csb::host::engine_lifecycle::run( n, [&]() { mEngine = make_engine( teascript::config::minimal() ); },
+                                                         [&]() { mEngine.reset(); } );
+            }
+            throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
+        } );
+    }
+
 private:
+    /// Creates an engine with the Core Library of \param config in the mode of the variant.
+    std::unique_ptr<BenchEngine> make_engine( teascript::config::eConfig const config ) const
+    {
+        // The tsb path stays empty, so Bootstrap() neither reads nor writes compiled .tsb files (no disk IO).
+        teascript::Settings settings( config, mVariant.opt_level );
+        return std::make_unique<BenchEngine>( std::move( settings ), mVariant.compile ? teascript::Engine::eMode::Compile
+                                                                                      : teascript::Engine::eMode::Eval );
+    }
+
     /// Calls bench( n ) of the script. \return its result.
     std::int64_t call_script_bench( std::int64_t const n )
     {

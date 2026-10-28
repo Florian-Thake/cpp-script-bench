@@ -4,7 +4,8 @@
  */
 
 // The native C++ reference: calls the reference implementation of each benchmark directly.
-// No engine, no script. The compiler and flags are part of the system info in the report.
+// No engine, no script, so the host API benchmarks are "n/a". The compiler and flags are part of the system info in
+// the report.
 
 #include "registry.hpp"
 
@@ -21,6 +22,9 @@ public:
     std::string name() const override { return "C++"; }
     std::string version() const override { return "(native reference)"; }
     std::string script_extension() const override { return {}; }
+
+    // The host API benchmarks measure the costs of embedding an engine; C++ embeds nothing.
+    bool supports( csb::BenchmarkInfo const &info ) const override { return info.group != "host"; }
 
     void create_engine() override {}
 

@@ -56,6 +56,11 @@ Every benchmark run goes through these phases, each measured separately:
 | execute  | R measured calls of `bench( n )` after W warm-up calls: **the headline numbers** |
 | teardown | destroy the engine                                        |
 
+The host API benchmarks (group `host`, Phase 4d) are different: they measure a C++ operation of the
+embedding API (e.g. creating an engine). Each sample is one call of the adapter's `run_host()`, which
+measures the operation itself and reports its sub-phases; the runner keeps the first call, the
+warm-up, the samples, the time budget and the statistics as for `bench( n )`.
+
 ### Protocol
 
 Each script defines a function `bench( n )` which returns an integer checksum. The host calls it
@@ -129,9 +134,12 @@ runner/       (later) orchestrates all runners, collects JSON, produces tables a
 
 **Adapter interface** (`harness/include/csb/language.hpp`): `create_engine()`, `bind()`, `load()`,
 `call_bench( n )`, `collect_garbage()`, `destroy_engine()`, and `supports()`, which lets a variant
-report a benchmark as "n/a". Every runner's `main()` provides a `LanguageEntry` with its variants, and
-calls `csb::run_main()`. The interop benchmarks share their host side (C++ functions, types, data) in
-`benchmarks/<name>/host.hpp`, which the C++ reference and the runners use.
+report a benchmark as "n/a". The host API benchmarks use `run_host( info, n, source )` instead: one
+call is one sample, in which the adapter prepares what the sample needs (e.g. a fresh engine) without
+measuring it, measures the C++ operation itself, and returns its duration, its sub-phases and a
+checksum. Every runner's `main()` provides a `LanguageEntry` with its variants, and calls
+`csb::run_main()`. The interop and host API benchmarks share their host side (C++ functions, types,
+data, measuring loops) in `benchmarks/<name>/host.hpp`, which the C++ reference and the runners use.
 
 **Variants.** One language can have several ways of running code. They are selected with
 `--variant <name>` or `--variant all`, without rebuilding. TeaScript: `vm-O0`, `vm-O1` (default),
@@ -238,8 +246,8 @@ Costs the host application pays for embedding, measured by the harness:
 
 | Discipline         | Workload                                        | Status |
 |--------------------|-------------------------------------------------|--------|
-| engine_lifecycle   | create and destroy an engine with the standard library | ⬜ |
-| engine_minimal     | the same with the smallest engine the API allows | ⬜ |
+| engine_lifecycle   | create and destroy an engine with the standard library | ✅ |
+| engine_minimal     | the same with the smallest engine the API allows | ✅ |
 | parse_compile      | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript, Lua and Python: one combined step) | ⬜ |
 | register_functions | register N C++ functions                        | ⬜ |
 | register_variables | register N host variables                       | ⬜ |
@@ -815,6 +823,19 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   `PyMem_SetAllocator()`, `operator new`), and these don't count the same things.
 - Order: the interface with `engine_lifecycle` and `engine_minimal` first, then `parse_compile`,
   `register_functions` and `register_variables`, `call_by_name` and `call_by_handle`, `engine_reset`.
+- The interface is implemented as planned. `BenchmarkInfo::has_script` marks the benchmarks without a
+  script. The console shows "-" for startup, bind and load of the host group and the medians of the
+  sub-phases after the status; the JSON has no `startup_s`, `bind_s`, `load_s` and `teardown_s` there,
+  but `phases_s` with the statistics and samples of every sub-phase. The warm-up engine of a variant
+  is one call of `run_host()` when the first selected benchmark is a host benchmark.
+- `engine_lifecycle`: n = 10 as planned; each cycle is the runner's `create_engine()` and
+  `destroy_engine()`. Per engine (headline variants, MSVC): Lua ~30 us, AngelScript ~0.48 ms,
+  TeaScript ~1.05 ms, ChaiScript ~4.1 ms, Python ~6.5 ms; numbers in the README.
+- `engine_minimal`: n = 10 like `engine_lifecycle`. 100 engines per sample did not make the spread
+  smaller (2-6% with both). ChaiScript uses `Library_Options::No_Stdlib`, its own option for an engine
+  without `Std_Lib` (an empty module instead), not a `ChaiScript_Basic` constructed by hand.
+  TeaScript uses `config::minimal()`, not the protected constructor of `Engine` without the Core Library
+  (the low-level API, see `call_by_handle`).
 
 ## 10. Open questions
 
