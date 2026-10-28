@@ -56,10 +56,12 @@ Every benchmark run goes through these phases, each measured separately:
 | execute  | R measured calls of `bench( n )` after W warm-up calls: **the headline numbers** |
 | teardown | destroy the engine                                        |
 
-The host API benchmarks (group `host`, Phase 4d) are different: they measure a C++ operation of the
+Most host API benchmarks (group `host`, Phase 4d) are different: they measure a C++ operation of the
 embedding API (e.g. creating an engine). Each sample is one call of the adapter's `run_host()`, which
 measures the operation itself and reports its sub-phases; the runner keeps the first call, the
-warm-up, the samples, the time budget and the statistics as for `bench( n )`.
+warm-up, the samples, the time budget and the statistics as for `bench( n )`. The registry marks them
+with `Sampling::run_host`. `call_by_name` and `call_by_handle` use the normal phases, like
+`host_to_script`: the measured `call_bench( n )` is the host's loop of calls.
 
 ### Protocol
 
@@ -251,8 +253,8 @@ Costs the host application pays for embedding, measured by the harness:
 | parse_compile      | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript, Lua and Python: one combined step) | ✅ |
 | register_functions | register N C++ functions                        | ✅ |
 | register_variables | register N host variables                       | ✅ |
-| call_by_name       | the host calls script functions by name, among M functions | ⬜ |
-| call_by_handle     | the same through handles looked up once         | ⬜ |
+| call_by_name       | the host calls script functions by name, among M functions | ✅ |
+| call_by_handle     | the same through handles looked up once         | ✅ |
 | engine_reset       | reset an engine and load the script again       | ⬜ |
 
 The catalogue entries `registration` and `function_lookup` were split, `engine_minimal` was added, and
@@ -861,6 +863,27 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   - The samples of n = 10 take only a few microseconds, so their spread is larger (up to ~15%). The
     slowest headline is ChaiScript's `register_functions`, ~12.7 ms for 1,000 functions with MSVC; it
     grows quadratically like its `top_level` in `parse_compile`. Numbers in the READMEs.
+- `call_by_name` and `call_by_handle`: the series M = 10 / 1,000 / 10,000 as planned, 100,000 calls of
+  `fn<k>( a ) = a + k` per call of `call_bench`, which cycle through the functions (checksums 800,000 /
+  50,300,000 / 500,300,000).
+  - They use the normal phases like `host_to_script` (changes the measurement model of the design round
+    for them): one engine per run, the generated script is loaded once, the measured `call_bench( n )`
+    is the host's loop. With `run_host()` every sample would need a fresh engine and the load of up to
+    10,000 functions, unmeasured but within the time budget (ChaiScript: ~1.3 s per sample).
+    `BenchmarkInfo::sampling` (`Sampling::run_host` or `Sampling::call_bench`) replaces the check of the
+    group in the runner.
+  - `load()` gets the size n of the run, so the adapter creates the names and looks up the handles
+    there, like `host_to_script` (n was only known to `call_bench`).
+  - Lookups by name: TeaScript `CallFuncEx`, ChaiScript `eval<std::function<int( int )>>( name )` (its
+    documented way), AngelScript `GetFunctionByName()`, Lua `lua_getglobal()` (C API) or LuaBridge3's
+    `getGlobal()`, Python the item of the namespace dict (`PyDict_GetItemString()` with the C API).
+    TeaScript has no script for `call_by_handle` ("n/a", like `cpp_objects`).
+  - The slowest headline is ChaiScript's `call_by_name` with 10,000 functions, ~1.47 s with MSVC (GCC
+    ~0.85 s), above the usual 0.1-0.5 s: its `eval()` parses the name and searches the function table
+    linearly (~14.7 us per call, ~2.8 us with 10 functions). The 100,000 calls stay, so the numbers
+    compare with `call_by_handle` and `host_to_script` (like the series of ChaiScript's recursion).
+    Through handles, the time per call grows at most ~30% from 10 to 10,000 functions in every
+    language. Numbers in the READMEs.
 
 ## 10. Open questions
 

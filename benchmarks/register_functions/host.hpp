@@ -56,7 +56,7 @@ HostSample run( Language &lang, BenchmarkInfo const &info, std::int64_t const n,
         register_all();
         double const seconds = std::chrono::duration<double>( Clock::now() - start ).count();
 
-        (void)lang.load( info, source );
+        (void)lang.load( info, source, n );
         auto const checksum = lang.call_bench( n );
         lang.destroy_engine();
         return { seconds, {}, checksum };

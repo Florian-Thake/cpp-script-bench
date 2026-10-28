@@ -67,11 +67,13 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 5. Interop benchmarks: the C++ functions, types and data in `benchmarks/<name>/host.hpp`, registered in
    the `bind()` of every adapter. Lua and Python bind twice: with LuaBridge3 / pybind11 (headline) and
    with the plain C API (variant `c-api`).
-6. Host API benchmarks (group `host`): `run_host()` in every adapter, which prepares and checks a
-   sample without measuring it and measures only the C++ operation (PLAN.md, section 3). A shared
-   measuring loop goes into `benchmarks/<name>/host.hpp`. In the registry: `ScriptKind::none` if the
-   benchmark has no script, `ScriptKind::generated` for a template, which the runner expands per n.
-   C++ is "n/a".
+6. Host API benchmarks (group `host`): `Sampling::run_host` in the registry and `run_host()` in every
+   adapter, which prepares and checks a sample without measuring it and measures only the C++
+   operation (PLAN.md, section 3). A host loop of calls (`call_by_name`) uses the normal phases
+   instead, like `host_to_script`. A shared measuring loop goes into `benchmarks/<name>/host.hpp`. In
+   the registry: `ScriptKind::none` if the benchmark has no script, `ScriptKind::generated` for a
+   template, which the runner expands per n (`load()` gets n). C++ is "n/a"; `uses_binding()` names
+   the benchmarks of the `c-api` variants.
 7. Update the discipline table in PLAN.md.
 
 ## Adding a language

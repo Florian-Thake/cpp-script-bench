@@ -12,6 +12,7 @@
 
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
+#include "call_by_name/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
@@ -134,6 +135,9 @@ class AngelScriptLanguage final : public csb::Language
     asIScriptFunction   *mStringF = nullptr;  // the script function f of string_exchange
     asIScriptFunction   *mArrayF  = nullptr;  // the script function f of array_exchange
     asITypeInfo         *mIntArrayType = nullptr;  // array<int>, looked up once
+    asIScriptModule     *mModule  = nullptr;  // call_by_name: the module of the script
+    std::vector<std::string>          mNames;    // call_by_name: the names of the script functions
+    std::vector<asIScriptFunction *>  mHandles;  // call_by_handle: the script functions
     csb::host::buffer::Image  mImage;         // buffer: the image of the host, the script's global property 'image'
     std::string          mMessages;           // compiler messages of the last build
 
@@ -206,7 +210,7 @@ public:
         }
     }
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source, std::int64_t const n ) override
     {
         std::vector<csb::Phase> phases;
         std::string const section_name = std::string( info.name ) + script_extension();
@@ -232,6 +236,15 @@ public:
         } else if( mBenchmark == "array_exchange" ) {
             mArrayF       = find_function( mod, "array<int>@ f( const array<int>@ )" );
             mIntArrayType = mEngine->GetTypeInfoByDecl( "array<int>" );
+        } else if( mBenchmark == "call_by_name" ) {
+            // The module and the names of the script functions, which GetFunctionByName() looks up at every call.
+            mModule = mod;
+            mNames  = csb::host::register_functions::names( "fn", n );
+        } else if( mBenchmark == "call_by_handle" ) {
+            // The asIScriptFunction of every script function, looked up once like bench.
+            for( auto const &name : csb::host::register_functions::names( "fn", n ) ) {
+                mHandles.push_back( find_function( mod, ("int " + name + "( int )").c_str() ) );
+            }
         } else {
             mBench = find_function( mod, "int bench( int )" );
         }
@@ -254,6 +267,15 @@ public:
         }
         if( mBenchmark == "array_exchange" ) {
             return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return execute( mArrayF, a ); } );
+        }
+        if( mBenchmark == "call_by_name" ) {
+            // execute() throws if the function is not found (Prepare() with a null pointer fails).
+            return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) {
+                return execute( mModule->GetFunctionByName( mNames[k].c_str() ), { a } );
+            } );
+        }
+        if( mBenchmark == "call_by_handle" ) {
+            return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return execute( mHandles[k], { a } ); } );
         }
         if( mBenchmark == "string_exchange" ) {
             return csb::host::string_exchange::run( n, [&]( std::string const &s ) { return execute( mStringF, s ); } );
@@ -280,6 +302,8 @@ public:
         mStringF = nullptr;
         mArrayF  = nullptr;
         mIntArrayType = nullptr;
+        mModule       = nullptr;
+        mHandles.clear();
         if( mContext != nullptr ) {
             mContext->Release();
             mContext = nullptr;

@@ -1,0 +1,13 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// A template: the runner generates the marked function n times, as fn0 .. fn<n-1> (see README.md).
+// There is no bench: the host calls the functions in its loop, through handles looked up once.
+// No 'return' (see fib_recursive/README.md): the value of the last expression is the return value.
+
+// csb:repeat
+def fn__I__(a) {
+    a + __I__;
+}
+
+// csb:end

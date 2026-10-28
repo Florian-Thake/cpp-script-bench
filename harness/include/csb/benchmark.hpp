@@ -21,6 +21,13 @@ enum class ScriptKind
     none,       ///< no script (e.g. engine_lifecycle)
 };
 
+/// How the samples of a benchmark are measured.
+enum class Sampling
+{
+    call_bench,  ///< the runner creates an engine, loads the script and measures calls of Language::call_bench()
+    run_host,    ///< every sample is one call of Language::run_host(), which measures the operation itself
+};
+
 /// Describes one benchmark discipline.
 /// The scripts live in benchmarks/<name>/<name><ext>. The C++ reference implementation is compiled into
 /// every runner. It is the "C++" entry of the comparison and also computes the expected checksum for
@@ -32,7 +39,8 @@ struct BenchmarkInfo
     std::string_view               description;
     std::span<std::int64_t const>  series;       ///< workload sizes passed to bench( n ), each one is a separate run; usually only one
     std::int64_t                 (*reference)( std::int64_t n );  ///< C++ reference implementation, returns the expected checksum
-    ScriptKind                     script = ScriptKind::file;
+    ScriptKind                     script   = ScriptKind::file;
+    Sampling                       sampling = Sampling::call_bench;
 };
 
 

@@ -13,6 +13,7 @@
 
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
+#include "call_by_name/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_pybind11_git_version.h"
 #include "engine_lifecycle/host.hpp"
@@ -454,6 +455,8 @@ class PythonLanguage final : public csb::Language
     py::object                             mF3;
     py::object                             mF;        // the script function f of string_exchange and array_exchange
     py::object                             mHost;     // register_functions and register_variables: the module 'host'
+    std::vector<std::string>               mNames;    // call_by_name: the names of the script functions
+    std::vector<py::object>                mHandles;  // call_by_handle: the script functions
     csb::host::buffer::Image               mImage;    // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -537,7 +540,7 @@ public:
         } );
     }
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source, std::int64_t const n ) override
     {
         return translate_errors( [&]() {
             std::vector<csb::Phase> phases;
@@ -570,6 +573,14 @@ public:
                 mF3 = find_function( globals, "f3" );
             } else if( mBenchmark == "string_exchange" || mBenchmark == "array_exchange" ) {
                 mF = find_function( globals, "f" );
+            } else if( mBenchmark == "call_by_name" ) {
+                // The names of the script functions, which are looked up in the namespace at every call.
+                mNames = csb::host::register_functions::names( "fn", n );
+            } else if( mBenchmark == "call_by_handle" ) {
+                // The function object of every script function, looked up once like bench.
+                for( auto const &name : csb::host::register_functions::names( "fn", n ) ) {
+                    mHandles.push_back( find_function( globals, name.c_str() ) );
+                }
             } else {
                 mBench = find_function( globals, "bench" );
             }
@@ -583,6 +594,23 @@ public:
         return translate_errors( [&]() -> std::int64_t {
             if( mBenchmark == "host_to_script" ) {
                 return call_host_to_script( n );
+            }
+            if( mBenchmark == "call_by_name" ) {
+                // pybind11: the item of the namespace by its name, called. C API: PyDict_GetItemString(), call_c_api().
+                if( mVariant.c_api ) {
+                    return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) {
+                        return call_c_api( item_of_globals( mNames[k].c_str() ), { a } );
+                    } );
+                }
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) {
+                    return mGlobals[mNames[k].c_str()]( a ).cast<int>();
+                } );
+            }
+            if( mBenchmark == "call_by_handle" ) {
+                if( mVariant.c_api ) {
+                    return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return call_c_api( mHandles[k].ptr(), { a } ); } );
+                }
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return mHandles[k]( a ).cast<int>(); } );
             }
             if( mBenchmark == "array_exchange" ) {
                 // pybind11: the call of the function object with the std::vector, cast<std::vector<int>>() of the result
@@ -623,6 +651,7 @@ public:
         mF       = py::object();
         mGlobals = py::object();
         mHost    = py::object();
+        mHandles.clear();
         mInterpreter.reset();
     }
 
@@ -642,6 +671,16 @@ public:
     }
 
 private:
+    /// call_by_name with the C API: \return the item \param name of the namespace of the script (a borrowed reference).
+    PyObject *item_of_globals( char const *const name ) const
+    {
+        PyObject *const item = PyDict_GetItemString( mGlobals.ptr(), name );
+        if( item == nullptr ) {
+            throw std::runtime_error( "the script does not define " + std::string( name ) );
+        }
+        return item;
+    }
+
     /// register_functions and register_variables: the registrations go into the module 'host', like the functions of
     /// script_to_host. Importing it (pybind11's embedded module) or creating it (C API) is not measured.
     csb::HostSample run_register( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const &source )

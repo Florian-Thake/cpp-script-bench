@@ -67,8 +67,8 @@ void write_benchmark( BenchResult const &b, std::ostream &out )
     out << ind << "\"status\": " << str( b.status );
     if( b.ok() ) {
         out << ",\n" << ind << "\"checksum\": " << b.checksum << ",\n";
-        // The host API benchmarks have no engine of the runner: the adapter measures each sample itself.
-        if( not b.host() ) {
+        // Sampling::run_host: there is no engine of the runner, the adapter measures each sample itself.
+        if( not b.self_measured ) {
             out << ind << "\"startup_s\": " << num( b.startup ) << ",\n";
             out << ind << "\"bind_s\": " << num( b.bind ) << ",\n";
             out << ind << "\"load_s\": " << num( b.load ) << ",\n";
@@ -79,7 +79,7 @@ void write_benchmark( BenchResult const &b, std::ostream &out )
             out << (b.load_phases.empty() ? "},\n" : " },\n");
         }
         out << ind << "\"first_s\": " << num( b.first ) << ",\n";
-        if( not b.host() ) {
+        if( not b.self_measured ) {
             out << ind << "\"teardown_s\": " << num( b.teardown ) << ",\n";
         }
         out << ind << "\"warmup\": " << b.warmup << ",\n";
@@ -87,8 +87,8 @@ void write_benchmark( BenchResult const &b, std::ostream &out )
 
         out << ind << "\"execute_s\": {\n";
         write_samples( b.samples, ind + "  ", out );
-        out << ind << "}" << (b.host() ? ",\n" : "\n");
-        if( b.host() ) {
+        out << ind << "}" << (b.self_measured ? ",\n" : "\n");
+        if( b.self_measured ) {
             out << ind << "\"phases_s\": {";
             for( size_t i = 0; i < b.phase_samples.size(); ++i ) {
                 out << (i == 0 ? "\n" : ",\n") << ind << "  " << str( b.phase_samples[i].name ) << ": {\n";

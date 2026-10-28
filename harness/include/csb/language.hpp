@@ -26,7 +26,7 @@ struct Phase
 };
 
 
-/// One sample of a host API benchmark (group "host"), measured by the adapter itself.
+/// One sample of a benchmark with Sampling::run_host (most host API benchmarks), measured by the adapter itself.
 struct HostSample
 {
     double              seconds  = 0.0;  ///< the measured operation in total
@@ -39,7 +39,7 @@ struct HostSample
 /// One instance represents one variant of one language, e.g. TeaScript in the TeaStackVM with O1.
 /// The runner calls the phases in this order:
 ///   create_engine(), bind(), load(), call_bench() repeatedly, destroy_engine().
-/// For the host API benchmarks (group "host") it only calls run_host() repeatedly instead.
+/// For the benchmarks with Sampling::run_host it only calls run_host() repeatedly instead.
 /// Every phase may throw a std::exception on errors.
 class Language
 {
@@ -62,9 +62,10 @@ public:
     virtual void bind( BenchmarkInfo const &info ) { (void)info; }
 
     /// Makes \param source runnable: parse/compile it and run its top level code, which defines bench( n ).
-    /// \param source stays valid until destroy_engine() was called. Measured as "load" in total.
+    /// \param source stays valid until destroy_engine() was called. \param n is the size of the run, which the calls of
+    /// call_bench() will get (a generated source was generated for it). Measured as "load" in total.
     /// \return optional sub-phase timings, measured by the adapter itself.
-    virtual std::vector<Phase> load( BenchmarkInfo const &info, std::string const &source ) = 0;
+    virtual std::vector<Phase> load( BenchmarkInfo const &info, std::string const &source, std::int64_t n ) = 0;
 
     /// Calls bench( n ) once and returns its checksum. Measured as "execute".
     virtual std::int64_t call_bench( std::int64_t n ) = 0;
@@ -72,7 +73,7 @@ public:
     /// Runs a full garbage collection if the language has one. Called before each call_bench(), not measured.
     virtual void collect_garbage() {}
 
-    /// Host API benchmarks: performs the C++ operation of \param info once with the size \param n and measures it.
+    /// Sampling::run_host: performs the C++ operation of \param info once with the size \param n and measures it.
     /// What a sample needs beforehand (e.g. a fresh engine) and the check of its result afterwards are not measured.
     /// \param source is the script of \param info, empty if it has none. Each call stands alone: no engine is left over.
     virtual HostSample run_host( BenchmarkInfo const &info, std::int64_t n, std::string const &source )

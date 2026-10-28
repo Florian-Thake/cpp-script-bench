@@ -11,6 +11,7 @@
 
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
+#include "call_by_name/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "csb_luabridge3_git_version.h"
 #include "engine_lifecycle/host.hpp"
@@ -283,6 +284,24 @@ lua_Integer call_ref( lua_State *const L, int const ref, std::initializer_list<l
     return result;
 }
 
+/// Calls the global function \param name with the integer argument \param a through the C API, looked up by its name
+/// with lua_getglobal(). \return its integer result.
+lua_Integer call_global( lua_State *const L, char const *const name, lua_Integer const a )
+{
+    lua_getglobal( L, name );
+    lua_pushinteger( L, a );
+    if( lua_pcall( L, 1, 1, 0 ) != LUA_OK ) {
+        throw std::runtime_error( "Lua error: " + pop_error( L ) );
+    }
+    int is_number = 0;
+    lua_Integer const result = lua_tointegerx( L, -1, &is_number );
+    lua_pop( L, 1 );
+    if( not is_number ) {
+        throw std::runtime_error( "a script function must return an integer" );
+    }
+    return result;
+}
+
 /// Calls the function with the registry reference \param ref with the string \param s through the C API.
 /// \return its string result.
 std::string call_ref( lua_State *const L, int const ref, std::string const &s )
@@ -358,6 +377,9 @@ class LuaLanguage final : public csb::Language
     // The script function f of string_exchange and array_exchange, the same way.
     std::optional<luabridge::LuaRef>  mF;
     int                               mRefF = LUA_NOREF;
+    std::vector<std::string>          mNames;    // call_by_name: the names of the script functions
+    std::vector<luabridge::LuaRef>    mHandles;  // call_by_handle: the script functions (LuaBridge3)
+    std::vector<int>                  mRefs;     // call_by_handle: their registry references (C API)
     csb::host::buffer::Image          mImage;  // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -407,7 +429,7 @@ public:
         }
     }
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source, std::int64_t const n ) override
     {
         std::vector<csb::Phase> phases;
         std::string const chunk_name = "=" + std::string( info.name ) + script_extension();
@@ -446,6 +468,19 @@ public:
                 check_global_function( mL, "f" );
                 mF = luabridge::getGlobal( mL, "f" );
             }
+        } else if( mBenchmark == "call_by_name" ) {
+            // The names of the script functions, which are looked up at every call.
+            mNames = csb::host::register_functions::names( "fn", n );
+        } else if( mBenchmark == "call_by_handle" ) {
+            // The handle of every script function, looked up once: a registry reference (C API) or a LuaRef.
+            for( auto const &name : csb::host::register_functions::names( "fn", n ) ) {
+                if( mVariant.c_api ) {
+                    mRefs.push_back( ref_global_function( mL, name.c_str() ) );
+                } else {
+                    check_global_function( mL, name.c_str() );
+                    mHandles.push_back( luabridge::getGlobal( mL, name.c_str() ) );
+                }
+            }
         } else {
             check_global_function( mL, "bench" );
         }
@@ -456,6 +491,21 @@ public:
     {
         if( mBenchmark == "host_to_script" ) {
             return call_host_to_script( n );
+        }
+        if( mBenchmark == "call_by_name" ) {
+            // C API: lua_getglobal(), the canonical call by name. LuaBridge3: getGlobal() gives a LuaRef, which is called.
+            if( mVariant.c_api ) {
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return call_global( mL, mNames[k].c_str(), a ); } );
+            }
+            return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) {
+                return result_of( luabridge::getGlobal( mL, mNames[k].c_str() ).call<int>( a ) );
+            } );
+        }
+        if( mBenchmark == "call_by_handle" ) {
+            if( mVariant.c_api ) {
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return call_ref( mL, mRefs[k], { a } ); } );
+            }
+            return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return result_of( mHandles[k].call<int>( a ) ); } );
         }
         if( mBenchmark == "array_exchange" ) {
             // LuaBridge3: call<std::vector<int>>() through the LuaRef, which converts both ways (LuaBridge/Vector.h).
@@ -492,7 +542,9 @@ public:
         mF1.reset();
         mF3.reset();
         mF.reset();
+        mHandles.clear();
         mRef0 = mRef1 = mRef3 = mRefF = LUA_NOREF;
+        mRefs.clear();
         if( mL != nullptr ) {
             lua_close( mL );
             mL = nullptr;

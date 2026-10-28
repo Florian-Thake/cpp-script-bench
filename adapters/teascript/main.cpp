@@ -9,6 +9,7 @@
 
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
+#include "call_by_name/host.hpp"
 #include "csb_teascript_git_version.h"
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
@@ -141,6 +142,7 @@ class TeaScriptLanguage final : public csb::Language
     teascript::ASTNodePtr         mAst;  // kept alive as long as the engine, the defined functions may refer to it.
     std::string_view              mBenchmark;  // the name of the loaded benchmark
     teascript::ValueObject        mImage;      // buffer: the Buffer of the host, shared with the script variable 'image'
+    std::vector<std::string>      mNames;      // call_by_name: the names of the script functions
 
 public:
     explicit TeaScriptLanguage( Variant const &rVariant )
@@ -178,9 +180,13 @@ public:
         } );
     }
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source, std::int64_t const n ) override
     {
         mBenchmark = info.name;
+        if( mBenchmark == "call_by_name" ) {
+            // The names of the script functions, which CallFuncEx looks up at every call.
+            mNames = csb::host::register_functions::names( "fn", n );
+        }
         return translate_errors( [&]() {
             std::vector<csb::Phase> phases;
 
@@ -213,6 +219,11 @@ public:
         return translate_errors( [&]() -> std::int64_t {
             if( mBenchmark == "host_to_script" ) {
                 return call_host_to_script( n );
+            }
+            if( mBenchmark == "call_by_name" ) {
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) {
+                    return mEngine->CallFuncEx( mNames[k], static_cast<teascript::Integer>(a) ).GetAsInteger();
+                } );
             }
             if( mBenchmark == "array_exchange" ) {
                 return csb::host::array_exchange::run( n, [&]( std::vector<int> const &a ) { return call_array_function( a ); } );

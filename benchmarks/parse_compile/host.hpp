@@ -22,7 +22,7 @@ inline HostSample run( Language &lang, BenchmarkInfo const &info, std::int64_t c
 {
     lang.create_engine();
     try {
-        auto phases = lang.load( info, source );
+        auto phases = lang.load( info, source, n );
         auto const checksum = lang.call_bench( n );
         lang.destroy_engine();
 

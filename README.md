@@ -128,9 +128,9 @@ Columns in the output:
 | runs    | the number of measured calls; fewer than `--runs` if the time budget ended the run early, marked with "(time budget)" |
 | median, min, stddev | the measured calls of `bench( n )` after warm-up; the headline numbers |
 
-The host API benchmarks (e.g. `engine_lifecycle`) measure a C++ operation of the embedding API instead
-of a script call: every sample is one such operation, measured by the runner of the language. They
-show "-" for startup, bind and load, and the medians of their sub-phases after the status.
+Most host API benchmarks (e.g. `engine_lifecycle`) measure a C++ operation of the embedding API
+instead of a script call: every sample is one such operation, measured by the runner of the language.
+They show "-" for startup, bind and load, and the medians of their sub-phases after the status.
 
 ## Layout
 

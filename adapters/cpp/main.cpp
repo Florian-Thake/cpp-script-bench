@@ -28,7 +28,7 @@ public:
 
     void create_engine() override {}
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const & ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &, std::int64_t ) override
     {
         mFunc = info.reference;
         return {};

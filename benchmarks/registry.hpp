@@ -15,8 +15,8 @@ namespace csb {
 std::span<BenchmarkInfo const> all_benchmarks();
 
 /// \return whether \param info uses the binding layer of a language (a C++ binding library or a C API): the interop
-/// benchmarks, and the host API benchmarks which register C++ in an engine. The c-api variants of Lua and Python run
-/// only these.
+/// benchmarks, and the host API benchmarks which register C++ in an engine or call script functions. The c-api
+/// variants of Lua and Python run only these.
 bool uses_binding( BenchmarkInfo const &info );
 
 } // namespace csb

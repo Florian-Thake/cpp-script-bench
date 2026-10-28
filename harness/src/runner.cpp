@@ -275,7 +275,7 @@ bool read_script( Language const &lang, BenchmarkInfo const &info, std::int64_t 
 }
 
 /// A throw-away run before the first measured run of a variant: creates an engine, loads the script of \param info,
-/// calls bench( n ) once with the smallest n and destroys the engine (a host API benchmark: one call of run_host()).
+/// calls bench( n ) once with the smallest n and destroys the engine (Sampling::run_host: one call of run_host()).
 /// Nothing is measured or reported. It warms up what is only cold once per process (the first use of the code, the
 /// libraries and their files), so the first measured run is comparable to the following ones. Errors are ignored
 /// here, the measured run reports them.
@@ -297,7 +297,7 @@ bool warm_up( LanguageEntry const &language, std::string const &variant, Benchma
             return false;
         }
 
-        if( info.group == "host" ) {
+        if( info.sampling == Sampling::run_host ) {
             (void)lang->run_host( info, n, source );
             return true;
         }
@@ -305,7 +305,7 @@ bool warm_up( LanguageEntry const &language, std::string const &variant, Benchma
         lang->create_engine();
         try {
             lang->bind( info );
-            (void)lang->load( info, source );
+            (void)lang->load( info, source, n );
             (void)lang->call_bench( n );
         } catch( std::exception const & ) {
             lang->destroy_engine();
@@ -322,9 +322,10 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
                            Options const &opt )
 {
     BenchResult r;
-    r.benchmark = info.name;
-    r.group     = info.group;
-    r.n         = n;
+    r.benchmark     = info.name;
+    r.group         = info.group;
+    r.n             = n;
+    r.self_measured = info.sampling == Sampling::run_host;
 
     try {
         auto lang = language.make( variant );
@@ -342,16 +343,16 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
 
         r.expected = info.reference( opaque( r.n ) );
 
-        // The host API benchmarks have no engine of the runner: each call of run_host() is one sample, measured by the
+        // Sampling::run_host: there is no engine of the runner, each call of run_host() is one sample, measured by the
         // adapter itself.
-        bool const host = r.host();
+        bool const host = r.self_measured;
         if( not host ) {
             auto const t0 = Clock::now();
             lang->create_engine();
             auto const t1 = Clock::now();
             lang->bind( info );
             auto const t2 = Clock::now();
-            r.load_phases = lang->load( info, source );
+            r.load_phases = lang->load( info, source, r.n );
             auto const t3 = Clock::now();
             r.startup = seconds_between( t0, t1 );
             r.bind    = seconds_between( t1, t2 );
@@ -444,11 +445,11 @@ void print_result( BenchResult const &r )
         auto const s = compute_stats( r.samples );
         char spread[16];
         std::snprintf( spread, sizeof( spread ), "%.1f%%", s.median > 0.0 ? s.stddev / s.median * 100.0 : 0.0 );
-        // Only the interop benchmarks bind something. The host API benchmarks have no engine of the runner, but the
-        // medians of their sub-phases.
-        std::string const startup = r.host() ? "-" : format_time( r.startup );
+        // Only the interop benchmarks bind something. Sampling::run_host has no engine of the runner; the console shows
+        // the medians of the sub-phases instead.
+        std::string const startup = r.self_measured ? "-" : format_time( r.startup );
         std::string const bind    = r.group == "interop" ? format_time( r.bind ) : "-";
-        std::string const load    = r.host() ? "-" : format_time( r.load );
+        std::string const load    = r.self_measured ? "-" : format_time( r.load );
         std::string       phases;
         for( auto const &phase : r.phase_samples ) {
             phases += (phases.empty() ? "  " : ", ") + phase.name + " " + format_time( compute_stats( phase.samples ).median );

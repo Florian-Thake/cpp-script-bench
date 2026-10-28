@@ -11,6 +11,7 @@
 #include "csb_chaiscript_git_version.h"
 #include "array_exchange/host.hpp"
 #include "buffer/host.hpp"
+#include "call_by_name/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
@@ -85,6 +86,8 @@ class ChaiScriptLanguage final : public csb::Language
     // The script function f of array_exchange: takes and returns a Vector, ChaiScript's array (std::vector<Boxed_Value>).
     std::function<chaiscript::Boxed_Value( std::vector<chaiscript::Boxed_Value> const & )>  mArrayF;
     csb::host::buffer::Image                       mImage;  // buffer: the image of the host, bound by reference
+    std::vector<std::string>                       mNames;    // call_by_name: the names of the script functions
+    std::vector<std::function<int( int )>>         mHandles;  // call_by_handle: the script functions
 
 public:
     std::string name() const override { return "ChaiScript"; }
@@ -129,7 +132,7 @@ public:
         }
     }
 
-    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source ) override
+    std::vector<csb::Phase> load( csb::BenchmarkInfo const &info, std::string const &source, std::int64_t const n ) override
     {
         mBenchmark = info.name;
         return translate_errors( [&]() {
@@ -151,6 +154,14 @@ public:
                 mStringF = mChai->eval<std::function<std::string( std::string const & )>>( "f" );
             } else if( mBenchmark == "array_exchange" ) {
                 mArrayF = mChai->eval<std::function<chaiscript::Boxed_Value( std::vector<chaiscript::Boxed_Value> const & )>>( "f" );
+            } else if( mBenchmark == "call_by_name" ) {
+                // The names of the script functions, which eval() looks up at every call.
+                mNames = csb::host::register_functions::names( "fn", n );
+            } else if( mBenchmark == "call_by_handle" ) {
+                // The std::function of every script function, looked up once like bench.
+                for( auto const &name : csb::host::register_functions::names( "fn", n ) ) {
+                    mHandles.push_back( mChai->eval<std::function<int( int )>>( name ) );
+                }
             } else {
                 mBench = mChai->eval<std::function<chaiscript::Boxed_Value( int )>>( "bench" );
             }
@@ -167,6 +178,15 @@ public:
         return translate_errors( [&]() -> std::int64_t {
             if( mBenchmark == "host_to_script" ) {
                 return csb::host::host_to_script::run( n, mF0, mF1, mF3 );
+            }
+            if( mBenchmark == "call_by_name" ) {
+                // ChaiScript's way to get a script function by name: eval() of the name as a std::function.
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) {
+                    return mChai->eval<std::function<int( int )>>( mNames[k] )( a );
+                } );
+            }
+            if( mBenchmark == "call_by_handle" ) {
+                return csb::host::call_by_name::run( n, [&]( std::size_t const k, int const a ) { return mHandles[k]( a ); } );
             }
             if( mBenchmark == "string_exchange" ) {
                 return csb::host::string_exchange::run( n, mStringF );
@@ -191,6 +211,7 @@ public:
         mF3    = nullptr;
         mStringF = nullptr;
         mArrayF  = nullptr;
+        mHandles.clear();
         mChai.reset();
         mAst.reset();
     }

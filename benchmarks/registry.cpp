@@ -37,6 +37,8 @@ std::int64_t engine_minimal( std::int64_t n );
 std::int64_t parse_compile( std::int64_t n );
 std::int64_t register_functions( std::int64_t n );
 std::int64_t register_variables( std::int64_t n );
+std::int64_t call_by_name( std::int64_t n );
+std::int64_t call_by_handle( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -75,6 +77,8 @@ constexpr std::int64_t engine_minimal_n[]   = { 10 };
 constexpr std::int64_t parse_compile_n[]    = { 100, 1'000, 10'000 };
 constexpr std::int64_t register_functions_n[] = { 10, 100, 1'000 };
 constexpr std::int64_t register_variables_n[] = { 10, 100, 1'000 };
+constexpr std::int64_t call_by_name_n[]       = { 10, 1'000, 10'000 };
+constexpr std::int64_t call_by_handle_n[]     = { 10, 1'000, 10'000 };
 
 } // namespace
 
@@ -105,18 +109,22 @@ std::span<BenchmarkInfo const> all_benchmarks()
         { "buffer",        "interop", "Fill an n x n image of 32 bit pixels owned by the host", buffer_n, &reference::buffer },
         { "string_exchange", "interop", "Strings from the host to a script function and back", string_exchange_n, &reference::string_exchange },
         { "array_exchange", "interop", "Arrays from the host to a script function and back, converted both ways", array_exchange_n, &reference::array_exchange },
-        { "engine_lifecycle", "host", "Create and destroy an engine with the standard library, n times", engine_lifecycle_n, &reference::engine_lifecycle, ScriptKind::none },
-        { "engine_minimal", "host", "Create and destroy the smallest engine the API allows, n times", engine_minimal_n, &reference::engine_minimal, ScriptKind::none },
-        { "parse_compile", "host", "Make a generated source of n functions runnable: parse, compile, top level", parse_compile_n, &reference::parse_compile, ScriptKind::generated },
-        { "register_functions", "host", "Register n C++ functions in a fresh engine", register_functions_n, &reference::register_functions, ScriptKind::generated },
-        { "register_variables", "host", "Register n host variables in a fresh engine", register_variables_n, &reference::register_variables, ScriptKind::generated },
+        { "engine_lifecycle", "host", "Create and destroy an engine with the standard library, n times", engine_lifecycle_n, &reference::engine_lifecycle, ScriptKind::none, Sampling::run_host },
+        { "engine_minimal", "host", "Create and destroy the smallest engine the API allows, n times", engine_minimal_n, &reference::engine_minimal, ScriptKind::none, Sampling::run_host },
+        { "parse_compile", "host", "Make a generated source of n functions runnable: parse, compile, top level", parse_compile_n, &reference::parse_compile, ScriptKind::generated, Sampling::run_host },
+        { "register_functions", "host", "Register n C++ functions in a fresh engine", register_functions_n, &reference::register_functions, ScriptKind::generated, Sampling::run_host },
+        { "register_variables", "host", "Register n host variables in a fresh engine", register_variables_n, &reference::register_variables, ScriptKind::generated, Sampling::run_host },
+        // Like host_to_script: one engine per run, the measured call_bench( n ) is the host's loop of calls.
+        { "call_by_name", "host", "The host calls n script functions by name, 100,000 calls", call_by_name_n, &reference::call_by_name, ScriptKind::generated },
+        { "call_by_handle", "host", "The host calls n script functions through handles, 100,000 calls", call_by_handle_n, &reference::call_by_handle, ScriptKind::generated },
     };
     return list;
 }
 
 bool uses_binding( BenchmarkInfo const &info )
 {
-    return info.group == "interop" || info.name == "register_functions" || info.name == "register_variables";
+    return info.group == "interop" || info.name == "register_functions" || info.name == "register_variables"
+        || info.name == "call_by_name" || info.name == "call_by_handle";
 }
 
 } // namespace csb

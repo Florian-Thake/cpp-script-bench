@@ -23,8 +23,8 @@ struct PhaseSamples
 };
 
 /// The result of one benchmark for one language variant. All times in seconds.
-/// For the host API benchmarks (group "host") only first, warmup, samples and phase_samples are used: the adapter
-/// measures the operation itself (Language::run_host()).
+/// For the benchmarks whose adapter measures the samples itself (Sampling::run_host) only first, warmup, samples and
+/// phase_samples are used.
 struct BenchResult
 {
     std::string          benchmark;
@@ -41,11 +41,11 @@ struct BenchResult
     double               teardown = 0.0;  ///< destroy_engine()
     int                  warmup   = 0;    ///< the number of warm-up calls made
     std::vector<double>  samples;         ///< the measured calls of bench( n ) after warm-up
-    std::vector<PhaseSamples>  phase_samples;  ///< host API benchmarks: the sub-phases of the measured samples
+    std::vector<PhaseSamples>  phase_samples;  ///< Sampling::run_host: the sub-phases of the measured samples
     bool                 budget_limited = false;  ///< the time budget ended the warm-up or the measured calls early
+    bool                 self_measured  = false;  ///< Sampling::run_host: the adapter measured the samples itself
 
     bool ok() const { return status == "ok"; }
-    bool host() const { return group == "host"; }
 };
 
 struct VariantResult
