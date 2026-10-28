@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// A template: the runner generates the marked function n times, as fn0 .. fn<n-1> (see README.md).
+
+func g( x ) {
+    2 * x + 1
+}
+
+// csb:repeat
+func fn__I__( a ) {
+    def sum := 0
+    forall( i in _seq( 0, a - 1, 1 ) ) {
+        const r := i mod 3
+        if( r == 0 ) {
+            sum := sum + g( i )
+        } else {
+            sum := sum - i * r
+        }
+    }
+    sum + __I__
+}
+
+// csb:end
+func bench( n ) {
+    fn0( n ) + fn__LAST__( n )
+}

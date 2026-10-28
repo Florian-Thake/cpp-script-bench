@@ -12,6 +12,7 @@
 #include "csb_teascript_git_version.h"
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
+#include "parse_compile/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -234,7 +235,7 @@ public:
         mAst.reset();
     }
 
-    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const & ) override
+    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const &source ) override
     {
         return translate_errors( [&]() {
             if( info.name == "engine_lifecycle" ) {
@@ -244,6 +245,9 @@ public:
                 // The lowest level of the Core Library: only the types and the version variables.
                 return csb::host::engine_lifecycle::run( n, [&]() { mEngine = make_engine( teascript::config::minimal() ); },
                                                          [&]() { mEngine.reset(); } );
+            }
+            if( info.name == "parse_compile" ) {
+                return csb::host::parse_compile::run( *this, info, n, source );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );

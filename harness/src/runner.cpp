@@ -185,7 +185,7 @@ void print_list( LanguageEntry const &language, Options const &opt, std::span<Be
 
     std::printf( "Benchmarks:\n" );
     for( auto const &info : benchmarks ) {
-        bool const has_script = extension.empty() || not info.has_script || std::filesystem::exists( script_path( opt, info, extension ) );
+        bool const has_script = extension.empty() || info.script == ScriptKind::none || std::filesystem::exists( script_path( opt, info, extension ) );
         std::string series;
         for( auto const n : info.series ) {
             series += (series.empty() ? "" : ",") + std::to_string( n );
@@ -220,12 +220,44 @@ std::string read_file( std::filesystem::path const &path )
 
 struct WrongResult {};
 
-/// Reads the script of \param info for \param lang into \param source, if the benchmark has one.
-/// \return false if the language has no script for \param info.
-bool read_script( Language const &lang, BenchmarkInfo const &info, Options const &opt, std::string &source )
+std::string replace_all( std::string s, std::string_view const from, std::string const &to )
+{
+    for( auto pos = s.find( from ); pos != std::string::npos; pos = s.find( from, pos + to.size() ) ) {
+        s.replace( pos, from.size(), to );
+    }
+    return s;
+}
+
+/// Expands the script template \param tmpl of a generated benchmark for the size \param n (see ScriptKind::generated).
+std::string expand_template( std::string const &tmpl, std::int64_t const n, std::filesystem::path const &path )
+{
+    auto const begin = tmpl.find( "csb:repeat" );
+    auto const end   = tmpl.find( "csb:end" );
+    if( begin == std::string::npos || end == std::string::npos || end < begin ) {
+        throw std::runtime_error( path.string() + ": no block between a line with csb:repeat and a line with csb:end" );
+    }
+    // The positions of the lines: the marker lines are removed.
+    auto const line_start = [&]( size_t const pos ) { auto const nl = tmpl.rfind( '\n', pos ); return nl == std::string::npos ? 0 : nl + 1; };
+    auto const next_line  = [&]( size_t const pos ) { auto const nl = tmpl.find( '\n', pos ); return nl == std::string::npos ? tmpl.size() : nl + 1; };
+    auto const block_begin = next_line( begin );
+    auto const block_end   = line_start( end );
+    std::string const block = tmpl.substr( block_begin, block_end - block_begin );
+
+    std::string res = tmpl.substr( 0, line_start( begin ) );
+    res.reserve( tmpl.size() + static_cast<size_t>(n) * (block.size() + 8) );
+    for( std::int64_t i = 0; i < n; ++i ) {
+        res += replace_all( block, "__I__", std::to_string( i ) );
+    }
+    res += tmpl.substr( next_line( end ) );
+    return replace_all( std::move( res ), "__LAST__", std::to_string( n - 1 ) );
+}
+
+/// Reads the script of \param info for \param lang into \param source, if the benchmark has one, and expands it for
+/// the size \param n if it is a template. \return false if the language has no script for \param info.
+bool read_script( Language const &lang, BenchmarkInfo const &info, std::int64_t const n, Options const &opt, std::string &source )
 {
     auto const extension = lang.script_extension();
-    if( extension.empty() || not info.has_script ) {
+    if( extension.empty() || info.script == ScriptKind::none ) {
         return true;
     }
     auto const path = script_path( opt, info, extension );
@@ -233,6 +265,9 @@ bool read_script( Language const &lang, BenchmarkInfo const &info, Options const
         return false;
     }
     source = read_file( path );
+    if( info.script == ScriptKind::generated ) {
+        source = expand_template( source, n, path );
+    }
     return true;
 }
 
@@ -255,7 +290,7 @@ bool warm_up( LanguageEntry const &language, std::string const &variant, Benchma
             return false;
         }
         std::string source;
-        if( not read_script( *lang, info, opt, source ) ) {
+        if( not read_script( *lang, info, n, opt, source ) ) {
             return false;
         }
 
@@ -297,7 +332,7 @@ BenchResult run_benchmark( LanguageEntry const &language, std::string const &var
 
         // All file IO happens here, before anything is measured.
         std::string source;
-        if( not read_script( *lang, info, opt, source ) ) {
+        if( not read_script( *lang, info, r.n, opt, source ) ) {
             r.status = "n/a";
             return r;
         }

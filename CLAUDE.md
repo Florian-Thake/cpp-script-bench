@@ -69,8 +69,9 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
    with the plain C API (variant `c-api`).
 6. Host API benchmarks (group `host`): `run_host()` in every adapter, which prepares and checks a
    sample without measuring it and measures only the C++ operation (PLAN.md, section 3). A shared
-   measuring loop goes into `benchmarks/<name>/host.hpp`; `has_script = false` in the registry if the
-   benchmark has no script. C++ is "n/a".
+   measuring loop goes into `benchmarks/<name>/host.hpp`. In the registry: `ScriptKind::none` if the
+   benchmark has no script, `ScriptKind::generated` for a template, which the runner expands per n.
+   C++ is "n/a".
 7. Update the discipline table in PLAN.md.
 
 ## Adding a language

@@ -1,0 +1,28 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// A template: the runner generates the marked function n times, as fn0 .. fn<n-1> (see README.md).
+// No 'return' (see fib_recursive/README.md): the value of the last expression is the return value.
+
+def g(x) {
+    2 * x + 1;
+}
+
+// csb:repeat
+def fn__I__(a) {
+    var sum = 0;
+    for (var i = 0; i < a; ++i) {
+        var r = i % 3;
+        if (r == 0) {
+            sum = sum + g(i);
+        } else {
+            sum = sum - i * r;
+        }
+    }
+    sum + __I__;
+}
+
+// csb:end
+def bench(n) {
+    fn0(n) + fn__LAST__(n);
+}

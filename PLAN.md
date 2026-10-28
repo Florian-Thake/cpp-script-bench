@@ -248,7 +248,7 @@ Costs the host application pays for embedding, measured by the harness:
 |--------------------|-------------------------------------------------|--------|
 | engine_lifecycle   | create and destroy an engine with the standard library | ✅ |
 | engine_minimal     | the same with the smallest engine the API allows | ✅ |
-| parse_compile      | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript, Lua and Python: one combined step) | ⬜ |
+| parse_compile      | generated sources of 100 / 1,000 / 10,000 functions. Headline is the total "source -> runnable"; sub-phases where available (TeaScript: parse + compile; ChaiScript: parse only; AngelScript, Lua and Python: one combined step) | ✅ |
 | register_functions | register N C++ functions                        | ⬜ |
 | register_variables | register N host variables                       | ⬜ |
 | call_by_name       | the host calls script functions by name, among M functions | ⬜ |
@@ -836,6 +836,16 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   without `Std_Lib` (an empty module instead), not a `ChaiScript_Basic` constructed by hand.
   TeaScript uses `config::minimal()`, not the protected constructor of `Engine` without the Core Library
   (the low-level API, see `call_by_handle`).
+- `parse_compile`: the series 100 / 1,000 / 10,000 as planned. `BenchmarkInfo::script` (`ScriptKind`)
+  replaces `has_script`: `file`, `none`, or `generated` for a template, which the runner expands for
+  each n before anything is measured (the lines between `csb:repeat` and `csb:end` n times, with
+  `__I__` replaced by the index; `__LAST__` by n-1). The function is about 10 lines as planned
+  (README); `bench( n )` calls the first and the last one. The generated functions are named `fn<k>`
+  instead of `f<k>`: `f64` is a type name in TeaScript. A sample is the sum of the sub-phases of
+  `load()`, the lookup of `bench` afterwards is not part of it. The slowest headline, ChaiScript
+  `no-threads`, needs ~1.36 s with MSVC for 10,000 functions (GCC ~0.88 s): its `top_level` grows
+  quadratically, because ChaiScript's function table (`QuickFlatMap`) is searched linearly at every
+  `def`. Numbers in the README.
 
 ## 10. Open questions
 

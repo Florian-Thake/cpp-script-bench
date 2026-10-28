@@ -14,6 +14,7 @@
 #include "cpp_objects/host.hpp"
 #include "engine_lifecycle/host.hpp"
 #include "host_to_script/host.hpp"
+#include "parse_compile/host.hpp"
 #include "registry.hpp"
 #include "script_to_host/host.hpp"
 #include "string_exchange/host.hpp"
@@ -193,7 +194,7 @@ public:
         mAst.reset();
     }
 
-    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const & ) override
+    csb::HostSample run_host( csb::BenchmarkInfo const &info, std::int64_t const n, std::string const &source ) override
     {
         return translate_errors( [&]() {
             if( info.name == "engine_lifecycle" ) {
@@ -205,6 +206,9 @@ public:
                 // Std_Lib.
                 return csb::host::engine_lifecycle::run( n, [&]() { mChai = make_engine( { chaiscript::Library_Options::No_Stdlib } ); },
                                                          [&]() { mChai.reset(); } );
+            }
+            if( info.name == "parse_compile" ) {
+                return csb::host::parse_compile::run( *this, info, n, source );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );
