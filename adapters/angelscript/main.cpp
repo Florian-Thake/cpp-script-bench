@@ -15,6 +15,7 @@
 #include "call_by_name/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "engine_lifecycle/host.hpp"
+#include "engine_reset/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
 #include "register_functions/host.hpp"
@@ -358,6 +359,15 @@ public:
                 for( size_t i = 0; i < decls.size(); ++i ) {
                     check( mEngine->RegisterGlobalProperty( decls[i].c_str(), &values[i] ), "RegisterGlobalProperty()" );
                 }
+            } );
+        }
+        if( info.name == "engine_reset" ) {
+            // The script lives in a module: discarding it removes its functions and global variables, and the context
+            // releases the function it executed last. load() builds a new module.
+            return csb::host::engine_reset::run( *this, info, n, source, []() {}, [&]() {
+                check( mContext->Unprepare(), "Unprepare()" );
+                check( mEngine->DiscardModule( "bench" ), "DiscardModule()" );
+                mBench = nullptr;
             } );
         }
         throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );

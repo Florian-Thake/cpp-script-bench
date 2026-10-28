@@ -1,0 +1,21 @@
+// SPDX-FileCopyrightText: Copyright (C) 2026 Florian Thake, <contact |at| tea-age.solutions>.
+// SPDX-License-Identifier: MIT
+
+// The script of engine_reset: a top-level variable and two functions. The runner loads it, resets
+// the engine and loads it again (see README.md).
+// A global, since a top-level 'var' is not visible in functions. No 'return' (see
+// fib_recursive/README.md).
+
+global offset = 3;
+
+def f1(a) {
+    a & 7;
+}
+
+def bench(n) {
+    var sum = offset;
+    for (var i = 0; i < n; ++i) {
+        sum = sum + f1(i);
+    }
+    sum;
+}

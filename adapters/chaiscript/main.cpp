@@ -14,6 +14,7 @@
 #include "call_by_name/host.hpp"
 #include "cpp_objects/host.hpp"
 #include "engine_lifecycle/host.hpp"
+#include "engine_reset/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
 #include "register_functions/host.hpp"
@@ -249,6 +250,12 @@ public:
                         mChai->add_global( chaiscript::var( std::ref( values[i] ) ), names[i] );
                     }
                 } );
+            }
+            if( info.name == "engine_reset" ) {
+                // set_state() with the state saved after the creation of the engine, ChaiScript's form of a reset.
+                chaiscript::ChaiScript::State state;
+                return csb::host::engine_reset::run( *this, info, n, source, [&]() { state = mChai->get_state(); },
+                                                     [&]() { mChai->set_state( state ); } );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );

@@ -15,6 +15,7 @@
 #include "cpp_objects/host.hpp"
 #include "csb_luabridge3_git_version.h"
 #include "engine_lifecycle/host.hpp"
+#include "engine_reset/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
 #include "register_functions/host.hpp"
@@ -380,6 +381,7 @@ class LuaLanguage final : public csb::Language
     std::vector<std::string>          mNames;    // call_by_name: the names of the script functions
     std::vector<luabridge::LuaRef>    mHandles;  // call_by_handle: the script functions (LuaBridge3)
     std::vector<int>                  mRefs;     // call_by_handle: their registry references (C API)
+    int                               mEnv = LUA_NOREF;  // engine_reset: the environment (_ENV) of the script
     csb::host::buffer::Image          mImage;  // buffer: the image of the host, 'host.image' in the script
 
 public:
@@ -440,6 +442,11 @@ public:
             throw std::runtime_error( "Lua syntax error: " + pop_error( mL ) );
         }
         phases.push_back( { "parse_compile", seconds_since( start ) } );
+        if( mEnv != LUA_NOREF ) {
+            // engine_reset: the chunk runs in its own environment, its only upvalue is _ENV.
+            lua_rawgeti( mL, LUA_REGISTRYINDEX, mEnv );
+            (void)lua_setupvalue( mL, -2, 1 );
+        }
 
         start = Clock::now();
         if( lua_pcall( mL, 0, 0, 0 ) != LUA_OK ) {
@@ -481,7 +488,7 @@ public:
                     mHandles.push_back( luabridge::getGlobal( mL, name.c_str() ) );
                 }
             }
-        } else {
+        } else if( mEnv == LUA_NOREF ) {
             check_global_function( mL, "bench" );
         }
         return phases;
@@ -545,6 +552,7 @@ public:
         mHandles.clear();
         mRef0 = mRef1 = mRef3 = mRefF = LUA_NOREF;
         mRefs.clear();
+        mEnv = LUA_NOREF;
         if( mL != nullptr ) {
             lua_close( mL );
             mL = nullptr;
@@ -621,14 +629,37 @@ public:
                 ns.endNamespace();
             } );
         }
+        if( info.name == "engine_reset" ) {
+            // Lua has no reset: every load of the script runs in an environment, which the reset replaces with a fresh one.
+            return csb::host::engine_reset::run( *this, info, n, source, [&]() { new_environment(); }, [&]() { new_environment(); } );
+        }
         throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
     }
 
 private:
+    /// engine_reset: gives the script a fresh environment, whose metatable reads the globals of the state
+    /// (__index = _G): Lua's form of a reset. The old environment, with what the script defined in it, becomes garbage.
+    void new_environment()
+    {
+        luaL_unref( mL, LUA_REGISTRYINDEX, mEnv );
+        lua_newtable( mL );
+        lua_newtable( mL );
+        lua_pushglobaltable( mL );
+        lua_setfield( mL, -2, "__index" );
+        lua_setmetatable( mL, -2 );
+        mEnv = luaL_ref( mL, LUA_REGISTRYINDEX );
+    }
+
     /// Calls bench( n ) of the script. \return its result.
     std::int64_t call_script_bench( std::int64_t const n )
     {
-        lua_getglobal( mL, "bench" );
+        if( mEnv != LUA_NOREF ) {
+            lua_rawgeti( mL, LUA_REGISTRYINDEX, mEnv );
+            lua_getfield( mL, -1, "bench" );
+            lua_remove( mL, -2 );
+        } else {
+            lua_getglobal( mL, "bench" );
+        }
         lua_pushinteger( mL, static_cast<lua_Integer>(n) );
         if( lua_pcall( mL, 1, 1, 0 ) != LUA_OK ) {
             throw std::runtime_error( "Lua error: " + pop_error( mL ) );

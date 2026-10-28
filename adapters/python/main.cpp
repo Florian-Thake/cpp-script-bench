@@ -17,6 +17,7 @@
 #include "cpp_objects/host.hpp"
 #include "csb_pybind11_git_version.h"
 #include "engine_lifecycle/host.hpp"
+#include "engine_reset/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
 #include "register_functions/host.hpp"
@@ -666,6 +667,15 @@ public:
         }
         if( info.name == "register_functions" || info.name == "register_variables" ) {
             return translate_errors( [&]() { return run_register( info, n, source ); } );
+        }
+        if( info.name == "engine_reset" ) {
+            // Python has no reset: the old namespace of the script is released, load() creates a fresh one.
+            return translate_errors( [&]() {
+                return csb::host::engine_reset::run( *this, info, n, source, []() {}, [&]() {
+                    mBench   = py::object();
+                    mGlobals = py::object();
+                } );
+            } );
         }
         throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
     }

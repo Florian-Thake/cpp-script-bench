@@ -35,7 +35,8 @@ add_library( csb_benchmarks STATIC
     register_functions/reference.cpp
     register_variables/reference.cpp
     call_by_name/reference.cpp
-    call_by_handle/reference.cpp )
+    call_by_handle/reference.cpp
+    engine_reset/reference.cpp )
 
 target_include_directories( csb_benchmarks PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}" )
 target_link_libraries( csb_benchmarks PUBLIC csb_harness )

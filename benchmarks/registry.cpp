@@ -39,6 +39,7 @@ std::int64_t register_functions( std::int64_t n );
 std::int64_t register_variables( std::int64_t n );
 std::int64_t call_by_name( std::int64_t n );
 std::int64_t call_by_handle( std::int64_t n );
+std::int64_t engine_reset( std::int64_t n );
 
 } // namespace csb::reference
 
@@ -79,6 +80,7 @@ constexpr std::int64_t register_functions_n[] = { 10, 100, 1'000 };
 constexpr std::int64_t register_variables_n[] = { 10, 100, 1'000 };
 constexpr std::int64_t call_by_name_n[]       = { 10, 1'000, 10'000 };
 constexpr std::int64_t call_by_handle_n[]     = { 10, 1'000, 10'000 };
+constexpr std::int64_t engine_reset_n[]       = { 100 };
 
 } // namespace
 
@@ -117,6 +119,7 @@ std::span<BenchmarkInfo const> all_benchmarks()
         // Like host_to_script: one engine per run, the measured call_bench( n ) is the host's loop of calls.
         { "call_by_name", "host", "The host calls n script functions by name, 100,000 calls", call_by_name_n, &reference::call_by_name, ScriptKind::generated },
         { "call_by_handle", "host", "The host calls n script functions through handles, 100,000 calls", call_by_handle_n, &reference::call_by_handle, ScriptKind::generated },
+        { "engine_reset", "host", "Reset an engine which has run a script and load the script again", engine_reset_n, &reference::engine_reset, ScriptKind::file, Sampling::run_host },
     };
     return list;
 }

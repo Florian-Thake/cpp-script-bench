@@ -12,6 +12,7 @@
 #include "call_by_name/host.hpp"
 #include "csb_teascript_git_version.h"
 #include "engine_lifecycle/host.hpp"
+#include "engine_reset/host.hpp"
 #include "host_to_script/host.hpp"
 #include "parse_compile/host.hpp"
 #include "register_functions/host.hpp"
@@ -281,6 +282,10 @@ public:
                         mEngine->AddVar( names[i], values[i] );
                     }
                 } );
+            }
+            if( info.name == "engine_reset" ) {
+                // ResetState(): back to the state after the creation (the Core Library is bootstrapped again).
+                return csb::host::engine_reset::run( *this, info, n, source, []() {}, [&]() { mEngine->ResetState(); } );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );

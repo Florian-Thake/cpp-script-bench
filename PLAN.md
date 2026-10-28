@@ -255,7 +255,7 @@ Costs the host application pays for embedding, measured by the harness:
 | register_variables | register N host variables                       | ✅ |
 | call_by_name       | the host calls script functions by name, among M functions | ✅ |
 | call_by_handle     | the same through handles looked up once         | ✅ |
-| engine_reset       | reset an engine and load the script again       | ⬜ |
+| engine_reset       | reset an engine and load the script again       | ✅ |
 
 The catalogue entries `registration` and `function_lookup` were split, `engine_minimal` was added, and
 `memory` moved to Phase 5 (decision log 2026-10-28).
@@ -281,7 +281,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
       15 / 20 / 25), time budget for slow runs, headline variants marked (ChaiScript `no-threads`).
 - [x] **Phase 2:** Lua and AngelScript runners, with scripts for the three core benchmarks.
 - [x] **Phase 3:** Python (pybind11) runner.
-- [ ] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
+- [x] **Phase 4:** the full discipline catalogue, in four subphases. Each discipline is implemented for
       all languages at once (one commit each).
   - [x] **4a Core:** `int_arith`, `calls`, `tak`, `branching`, `math_builtins` (design round
         2026-10-09, implemented 2026-10-14).
@@ -291,11 +291,11 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   - [x] **4c Interop:** `script_to_host`, `host_to_script`, `cpp_objects`, `buffer`,
         `string_exchange`, `array_exchange` (design round and implementation 2026-10-25). Extends
         `csb::Language`; brings in LuaBridge3.
-  - [ ] **4d Host API (next):** `engine_lifecycle`, `engine_minimal`, `parse_compile`,
+  - [x] **4d Host API:** `engine_lifecycle`, `engine_minimal`, `parse_compile`,
         `register_functions`, `register_variables`, `call_by_name`, `call_by_handle`, `engine_reset`
-        (design round 2026-10-28). A new kind of benchmark: the adapter times C++ operations
-        (`run_host()`).
-- [ ] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
+        (design round and implementation 2026-10-28). A new kind of benchmark: the adapter times C++
+        operations (`run_host()`).
+- [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish.
@@ -884,6 +884,20 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     compare with `call_by_handle` and `host_to_script` (like the series of ChaiScript's recursion).
     Through handles, the time per call grows at most ~30% from 10 to 10,000 functions in every
     language. Numbers in the READMEs.
+- `engine_reset`: a small script (a top-level variable, a helper, `bench`), n = 100 only for the check
+  (checksum 345). One sample: a fresh engine which has loaded and called the script (not measured), then
+  the reset and the load again (measured, sub-phases `reset` and `load`), then `bench( n )` as the check.
+  - The resets as planned. AngelScript also calls `Unprepare()` of the context, which holds the function
+    it executed last; `DiscardModule()` removes the module. Lua: every load of this benchmark runs in its
+    own environment (the `_ENV` upvalue of the chunk, a table with `__index = _G`), which the reset
+    replaces; `bench` is looked up there. Python: the reset releases the old namespace, the load creates
+    a fresh one as always.
+  - Lua's, Python's and AngelScript's old definitions are freed later by their garbage collection (in
+    Python a cycle: the functions refer to the namespace), which is not part of the reset (README).
+  - TeaScript's `ResetState()` bootstraps the Core Library again, so it costs about as much as a fresh
+    engine (MSVC: ~0.92 ms reset, ~1.0 ms creation). For the others, reset and load cost a fraction of
+    a fresh engine. Numbers in the README.
+- Phase 4d is done, and with it Phase 4.
 
 ## 10. Open questions
 
