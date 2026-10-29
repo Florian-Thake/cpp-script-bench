@@ -298,8 +298,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
       Design round part 1 (where and how results are measured and published) on 2026-10-29. Steps:
-      [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [ ] `memory` (decided: the
-      peak memory per process against the C++ baseline; to do in the report), [x] the report generator
+      [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [x] `memory` (the peak
+      memory per process against the C++ baseline, a table per group in the report), [x] the report generator
       (`runner/report.py`), [x] the noise check, [ ] the first result sets (marked "preview" until
       TeaScript 0.18.0).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite

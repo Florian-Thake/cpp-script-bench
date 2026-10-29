@@ -61,6 +61,10 @@ def fmt_bytes(b):
     return f'{b / 2 ** 30:.1f} GiB'
 
 
+def fmt_mib(b, sign=False):
+    return f'{b / 2 ** 20:{"+" if sign else ""}.1f} MiB'
+
+
 def short_cpu(cpu):
     s = re.sub(r'\(R\)|\(TM\)|@.*$|\d+-Core Processor|\bProcessor\b|\bCPU\b|\d+(st|nd|rd|th) Gen|\bIntel\b|\bAMD\b|\bCore\b',
                ' ', cpu)
@@ -135,6 +139,12 @@ class Value:
         self.median = statistics.median(medians) if medians and self.status == 'ok' else None
         self.spread = (max(medians) - min(medians)) / self.median if self.median else None
         self.budget_limited = any(p.get('result', {}).get('budget_limited') for p in run['processes'])
+        # The peak memory of the processes: of the measured ones, and of all (C++ is the baseline also where it
+        # is "n/a": its process is then the harness alone).
+        peaks = [p['peak_memory_bytes'] for p in run['processes'] if p['status'] == 'ok' and 'peak_memory_bytes' in p]
+        self.peak = statistics.median(peaks) if peaks and self.ok else None
+        any_peaks = [p['peak_memory_bytes'] for p in run['processes'] if 'peak_memory_bytes' in p]
+        self.peak_any = statistics.median(any_peaks) if any_peaks else None
 
     @property
     def ok(self):
@@ -392,6 +402,27 @@ def group_table(rs, group):
     return '\n'.join(lines)
 
 
+def memory_table(rs, group):
+    lanes = rs.headline
+    ref = next((lane for lane in lanes if lane.id == REFERENCE), None)
+    lines = ['| Benchmark | n | ' + ' | '.join(lane.label for lane in lanes) + ' |',
+             '|---|--:|' + '--:|' * len(lanes)]
+    for benchmark, n in rs.rows[group]:
+        base = rs.value(ref, benchmark, n) if ref else None
+        base = base.peak_any if base else None
+        cells = []
+        for lane in lanes:
+            v = rs.value(lane, benchmark, n)
+            if lane is ref:
+                cells.append(f'{fmt_mib(base)}' if base is not None else 'n/a')
+            elif v is None or v.peak is None:
+                cells.append('n/a' if v is None or v.status == 'n/a' else f'**{v.status}**')
+            else:
+                cells.append(f'**{fmt_mib(v.peak)}**' + (f'<br><sub>{fmt_mib(v.peak - base, True)}</sub>' if base else ''))
+        lines.append(f'| {benchmark} | {fmt_n(n)} | ' + ' | '.join(cells) + ' |')
+    return '\n'.join(lines)
+
+
 def variant_table(rs, lang_id):
     lanes = [lane for lane in rs.lanes if lane.id == lang_id]
     head = next((lane for lane in lanes if lane.headline), lanes[0])
@@ -505,6 +536,17 @@ def write_set(rs, out, status, draft):
     if variant_tables:
         md += ['## Variants', '', 'All variants of each language; the factor is relative to its headline variant.',
                ''] + variant_tables
+
+    if any(v.peak is not None for v in rs.values.values()):
+        md += ['## Peak memory', '',
+               'The peak memory of each process, the median over the processes of a run: the peak working set on '
+               'Windows, the peak resident set on Linux. It covers the whole process: the runtime and libraries of the '
+               'language, the unmeasured warm-up engine, the engine of the run and its workload. Below it: the '
+               'difference to the process of the C++ runner for the same benchmark and n, which is the harness alone '
+               'where C++ is "n/a" (the host API benchmarks). Headline variants.', '']
+        for group, title in GROUPS:
+            if group in rs.rows:
+                md += [f'### {title}', '', memory_table(rs, group), '']
 
     if rs.data['problems']:
         md += ['## Problems', ''] + [f'- `{p}`' for p in rs.data['problems']] + ['']
