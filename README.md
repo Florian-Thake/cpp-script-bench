@@ -161,6 +161,15 @@ checkout are refused (`--draft` for tests).
 python runner/report.py build/msvc-local/results/<time>/results.json   # the name of the set from compiler, CPU and OS
 ```
 
+A set takes hours. On Windows, `runner/sets.py` measures the MSVC set and then the GCC set in WSL2 one
+after the other, keeps Windows awake meanwhile, and publishes both into `results/` at the end. Start it
+in a terminal of its own and leave the machine alone; its status is in `build/sets/<time>/status.json`.
+
+```
+python runner/sets.py                        # all variants; --variants headline for the headline variants only
+python runner/sets.py --resume build/sets/<time>
+```
+
 ## Layout
 
 ```

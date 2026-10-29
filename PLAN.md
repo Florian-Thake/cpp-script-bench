@@ -1014,6 +1014,15 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   and floats from free lists that never reach `PyMem`, while a replaced `operator new` counts every
   C++ allocation of ChaiScript and TeaScript).
 - `run.py --bench name:n1/n2` selects the sizes of one benchmark (for subsets like the noise check).
+- A full set takes ~1.65 h with MSVC and ~1.2 h with GCC in WSL2 (all variants, 5 processes per run;
+  ~0.7 and ~0.5 h with the headline variants only), estimated from the time per call of a test set and
+  the time budget (the same estimate gave 6.1 min for the noise check, which took 6.0). That is longer
+  than a working session, and the session itself would disturb the measurement. So `runner/sets.py`
+  (Windows) runs the sets one after the other in a terminal of their own: MSVC, then GCC in WSL2 (`wsl
+  --cd <repo> -e python3 runner/run.py ...`), then publishes them with `report.py` (without a commit).
+  It keeps Windows awake meanwhile (`SetThreadExecutionState`), writes its status after every step
+  (`build/sets/<time>/status.json`, the console output in `sets.log`), and continues an interrupted
+  run with `--resume`. `--variants all|headline` selects the variants.
 - Noise check (2026-10-29): 9 runs of different kinds (`loop`, `fib_recursive` 20, `int_arith`, `records`,
   `maps`, `binary_trees` 8, `string_exchange`, `engine_lifecycle`, `parse_compile` 1,000), the headline
   variants, 5 processes per run; spreads as the median / 90th percentile / maximum over the runs:

@@ -38,7 +38,9 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 `--budget S`, `--scripts dir`, `--json file`.
 
 Result sets: `python runner/run.py <build dir>/adapters` (Linux: `python3`), one process per run; see
-README.md and PLAN.md (decision log 2026-10-29). A full set takes hours: only on a quiet machine.
+README.md and PLAN.md (decision log 2026-10-29). A full set takes hours: only on a quiet machine. On
+Windows, the user starts `runner/sets.py` (MSVC, then WSL2, then publish) in a terminal of their own,
+outside any Claude session; a later session picks up the results (`build/sets/<time>/status.json`).
 
 - Only Release builds give meaningful numbers.
 - Never take timings while something else compiles or runs on the same machine. A VM or WSL shares
