@@ -978,6 +978,25 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     again); the set records the number of sessions.
   - With the defaults, a set has 50 rows (benchmark and n), 15 variants and 3 processes per run:
     2,250 processes (900 with the headline variants only).
+- Implemented: the report generator `runner/report.py` (Python standard library only, like `run.py`).
+  - The value of a run is the median of the medians of its processes; its spread is the range of the
+    process medians (slowest minus fastest) relative to that median.
+  - `results/<set>/README.md`: the setup, then per group a chart and a table (one row per benchmark and
+    n, a column per language with its headline variant; each cell the median, the factor to C++ and
+    the spread), the series as charts over n (log-log), and a table of all variants per language (the
+    factor relative to the headline variant). `results/README.md` lists the sets.
+  - The order of the languages in all tables and charts: C++, then the script languages in
+    alphabetical order (AngelScript, ChaiScript, Lua, Python, TeaScript), a neutral order. Each
+    language keeps its color in every chart; C++ is a gray reference mark.
+  - The group chart is a dot plot on a logarithmic axis (bars need a zero baseline, which a log axis
+    doesn't have): one band per benchmark and n, one fixed sub-row per language, so only neighbouring
+    colors of the palette meet. The palette is the reference palette of the charting guidelines used
+    here, checked with their validator (colorblind and normal vision, light and dark): it holds for
+    neighbouring colors, but not for 5 colors in arbitrary pairs, which a single row of dots would
+    need. The tables are the text version of every chart.
+  - Every chart exists as a light and a dark SVG, shown with `<picture>` and `prefers-color-scheme`.
+  - The name of a set comes from its compiler, CPU and OS (e.g. `msvc19.44-i7-11700-windows10`),
+    unless `--name` gives one. The status is "preview" by default (until TeaScript 0.18.0).
 
 ## 10. Open questions
 

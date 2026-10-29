@@ -152,6 +152,15 @@ of the machine during the process), the console output of each process, and `res
 merged set. A set is refused if the runners were built from different commits or from a modified
 checkout (`--allow-dirty` for tests), or if they are not a Release build. `--help` lists all options.
 
+`runner/report.py` publishes a set into `results/<set>/`: a `README.md` with the setup of the machine,
+tables and charts (SVG, light and dark), and a copy of `results.json`. It also updates the index
+`results/README.md`. Incomplete sets, sets with problems and sets from a modified
+checkout are refused (`--draft` for tests).
+
+```
+python runner/report.py build/msvc-local/results/<time>/results.json   # the name of the set from compiler, CPU and OS
+```
+
 ## Layout
 
 ```
