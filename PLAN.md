@@ -1022,13 +1022,15 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   |---|---|---|---|
   | Windows, idle, pinned | 0.5% | 1.3 / 4.0 / 5.9% | 2.4% |
   | Windows, idle, not pinned | 1.1% | 5.3 / 9.8 / 14.7% | 4.2% |
-  | Windows, light use (editor, browser, an ssh session), pinned | 0.8% | 1.8 / 4.7 / 13.5% | 6.6% |
+  | Windows, idle, pinned, second run | 0.8% | 1.8 / 4.7 / 13.5% | 6.6% |
   | WSL2, idle, pinned | 0.7% | 3.7 / 20 / 38% | 2.9% |
-  | WSL2, light use, pinned | 0.8% | 2.1 / 6.7 / 29% | 7.6% |
+  | WSL2, idle, pinned, second run | 0.8% | 2.1 / 6.7 / 29% | 7.6% |
   | cloud VM (2 vCPUs, GCC 13), idle, pinned | 7.9% | 23 / 45 / 76% | 39% |
 
-  - Light use doesn't move the medians: factor 1.000 (0.92-1.02) on Windows and 1.003 (0.96-1.03) in
-    WSL2 against idle, geometric mean (range). It makes single processes slower now and then.
+  - The second runs were planned with light use of the machine, but the machine stayed idle (the
+    request to start the light use didn't reach the user in time). So they are a second idle run:
+    their medians differ from the first by a factor of 1.000 (0.92-1.02) on Windows and 1.003
+    (0.96-1.03) in WSL2, geometric mean (range). Light use is not measured yet.
   - In WSL2, all languages were 12-38% slower in the same 20 seconds at the end of the idle scenario,
     while WSL2 itself had no other load: an event on the Windows side, which is not visible from inside
     WSL2. Interleaving works as intended: the event hit one repetition of all languages alike, and the
@@ -1039,7 +1041,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     were still up to ~8% off under light use, or landed on one side of a bimodal run. Pinned to the last
     logical CPU: without pinning, the spread between the processes is 4x larger (unpinned runs were ~1%
     faster in the mean, probably on the cores with the highest boost; within a set this doesn't
-    matter). Light use of the machine during a set is acceptable; idle is better for the regular sets.
+    matter). Until light use is measured, the sets run on an idle machine.
   - The cloud VM is too noisy for a result set (7.9% within a process, without measurable load in the
     VM and with ~2% steal time: probably other guests of the host): it stays a machine for the
     correctness checks with GCC 13. Pinned and not pinned made no difference there.
