@@ -520,9 +520,13 @@ int run_main( int const argc, char *argv[], LanguageEntry const &language, std::
 
     std::printf( "cpp-script-bench %s\n", report.system.csb_version.c_str() );
     std::printf( "language : %s %s\n", report.language_name.c_str(), report.language_version.c_str() );
-    std::printf( "cpu      : %s\n", report.system.cpu.c_str() );
-    std::printf( "os       : %s\n", report.system.os.c_str() );
-    std::printf( "compiler : %s, %s, arch %s\n", report.system.compiler.c_str(), report.system.build_config.c_str(), report.system.arch.c_str() );
+    auto const &sys = report.system;
+    std::printf( "cpu      : %s, %d cores, %d threads, %.1f GiB RAM\n", sys.cpu.c_str(), sys.cpu_cores, sys.cpu_threads,
+                 static_cast<double>(sys.memory) / (1024.0 * 1024.0 * 1024.0) );
+    std::printf( "os       : %s (%s)%s%s\n", sys.os_name.c_str(), sys.os.c_str(), sys.hypervisor.empty() ? "" : ", hypervisor ",
+                 sys.hypervisor.c_str() );
+    std::printf( "compiler : %s, %s, arch %s, flags %s\n", sys.compiler.c_str(), sys.build_config.c_str(), sys.arch.c_str(),
+                 sys.compiler_flags.c_str() );
     if( opt.budget > 0 ) {
         std::printf( "settings : warmup %d, runs %d, time budget %d s (at least %d runs)\n", opt.warmup, opt.runs, opt.budget, opt.min_runs() );
     } else {

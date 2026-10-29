@@ -117,8 +117,14 @@ void write_json( Report const &report, std::ostream &out )
         << ", \"version\": " << str( report.language_version ) << " },\n";
     out << "  \"system\": {\n";
     out << "    \"cpu\": " << str( report.system.cpu ) << ",\n";
+    out << "    \"cpu_cores\": " << report.system.cpu_cores << ",\n";
+    out << "    \"cpu_threads\": " << report.system.cpu_threads << ",\n";
+    out << "    \"memory_bytes\": " << report.system.memory << ",\n";
     out << "    \"os\": " << str( report.system.os ) << ",\n";
+    out << "    \"os_name\": " << str( report.system.os_name ) << ",\n";
+    out << "    \"hypervisor\": " << str( report.system.hypervisor ) << ",\n";
     out << "    \"compiler\": " << str( report.system.compiler ) << ",\n";
+    out << "    \"compiler_flags\": " << str( report.system.compiler_flags ) << ",\n";
     out << "    \"build_config\": " << str( report.system.build_config ) << ",\n";
     out << "    \"arch\": " << str( report.system.arch ) << "\n";
     out << "  },\n";
