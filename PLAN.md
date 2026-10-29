@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-28.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-29.
 
 ## 1. Goal
 
@@ -297,6 +297,9 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
         operations (`run_host()`).
 - [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
+      Design round part 1 (where and how results are measured and published) on 2026-10-29. Steps:
+      system info in the JSON, the orchestrator (`runner/`), `memory`, the report generator, the noise
+      check, the first result sets (marked "preview" until TeaScript 0.18.0).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish. Before that: adapt `engine_reset` to the parameter of TeaScript's
       `ResetState()` once it exists (decision log 2026-10-28).
@@ -903,15 +906,56 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   that are reset, so the Core Library can stay without a new bootstrap (the user). `engine_reset` is
   adapted once it exists.
 
+**2026-10-29**
+- Phase 5 design round, part 1: where and how the results are measured and published (the user's
+  decisions; the measurement model was proposed in the same round).
+- The results are part of the repo and readable on GitHub in the browser. One directory per
+  configuration (machine, OS, toolchain), `results/<set>/`, with a generated `README.md` (setup, tables,
+  charts), the charts as SVG files and the merged raw data of all processes (`results.json`).
+  `results/README.md` lists the sets with their setup, date and versions. A Python script with the
+  standard library only generates the charts: nothing to install, and the same input gives the same
+  files, so the diffs in git stay small. GitHub's Mermaid charts have no logarithmic axis, which the
+  range from C++ to ChaiScript needs (several orders of magnitude within one benchmark). A web page
+  may follow later from the same data.
+- Tables: one row per benchmark and n (answers the open question on series), the headline variants as
+  columns, each cell the median and the factor vs. C++. Series additionally as a chart over n. The
+  other variants in tables of their own. No overall score: one number would weight the disciplines
+  arbitrarily.
+- Every set states its setup: CPU (model, cores and threads), RAM, OS and version, virtualization
+  (e.g. a Hyper-V root partition, WSL2, KVM with the number of vCPUs), the compiler with version and
+  flags, the version or commit of every library and of cpp-script-bench, the date, and the settings
+  (warm-up, runs, budget, processes per run, priority and pinning, the load before and after). Every
+  chart has a short label of its set in its footer (CPU, OS, compiler, commit, date), so a chart shown
+  elsewhere still says where it comes from. Host names, addresses, paths and user names are never
+  recorded. The runners' JSON gets what is missing for this: cores and threads, RAM, the OS
+  distribution and its version, whether a hypervisor is present, and the compiler flags (the library
+  versions are already part of each runner's version string).
+- A set is built only from runs of one clean commit of cpp-script-bench (no `-dirty`) and one version
+  per library; mixed inputs are rejected. Any change of a measured component (a library, a script, the
+  harness, the compiler) means a full rerun of the set with all languages. No partial updates, e.g.
+  only TeaScript measured again on another day. Earlier sets stay in the git history.
+- Until TeaScript 0.18.0, the sets are marked "preview" and rerun on request, not at every move of the
+  TeaScript pin. The regular sets follow with 0.18.0 (Phase 6).
+- Machines: the MSVC set on Windows, the main GCC set (GCC 11) with WSL2 on the same machine, so the
+  two sets differ in OS and toolchain only. With WSL2 installed, Windows itself runs on the hypervisor
+  (as its root partition), so neither set is bare metal; CPU-bound code runs at nearly native speed in
+  both. A second GCC set (GCC 13, AMD Zen 4) on a cloud VM with 2 vCPUs only if the noise check shows
+  a spread close to that of WSL2: on such a VM, the load of the other vCPU and of other guests of the
+  host (steal time) can't be controlled, only recorded.
+- Measurement model: the orchestrator (`runner/`, Python, standard library only) starts one process
+  per run (variant, benchmark, n). That gives the peak memory of each run (`memory`) and repeats every
+  run in several processes (answers the open question on repeated runs). The repeats are interleaved
+  across the languages (A B C ... A B C ...), so slow changes of the machine during the hours of a run
+  affect all languages alike. Reported per run: the median of the process medians, and the spread
+  between the processes. Priority and pinning (answers the open question): Windows the high priority
+  class and one fixed core, Linux `taskset` with the normal priority (a higher one needs root).
+- Noise check before the first sets: the same subset of benchmarks in 5 processes each, on Windows and
+  WSL2, with an idle machine and with light interactive use (an editor, a browser). It decides the
+  number of processes per run, the core for the pinning, and how quiet the machine must be during a
+  run.
+
 ## 10. Open questions
 
-- Series: how to show them in the report (e.g. one row per n, or a chart over n)? Phase 5; the JSON
-  already has one entry per n.
-- Process priority and CPU pinning for less noise? Phase 5, before the published runs.
-- Repeated runs in separate processes: some engine instances are slower for their whole run than
-  the others (with MSVC, up to 5x once), although the statistics of their samples look clean. Phase 5
-  should repeat every run in several processes and report the spread between them.
-- Format of the published results: Markdown tables, charts, a web page? Phase 5.
 - Script alternatives: a second script per benchmark and language (e.g. TeaScript `_strtonum` or
   `_strtonumex` instead of `as i64`, Python `"item" + str(i)` instead of an f-string), selectable
   on the command line and reported outside the headline? Until then, alternatives are compared
