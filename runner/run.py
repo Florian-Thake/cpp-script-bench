@@ -254,17 +254,22 @@ def make_plan(args, adapters):
             sys.exit(f'unknown runners: {", ".join(sorted(unknown))}')
         runners = [r for r in runners if r['runner'] in args.runners]
 
-    # The rows of the set: every benchmark and n, in the order of the registry.
+    # The rows of the set: every benchmark and n, in the order of the registry. --bench name:n1/n2 selects sizes of
+    # one benchmark.
+    selected = {}
+    for entry in args.bench or []:
+        name, _, sizes = entry.partition(':')
+        selected[name] = [int(v) for v in sizes.split('/')] if sizes else None
     rows = []
     for r in runners:
         for b in r['benchmarks']:
-            if args.bench and b['name'] not in args.bench:
+            if args.bench and b['name'] not in selected:
                 continue
-            for n in args.n or b['series']:
+            for n in selected.get(b['name']) or args.n or b['series']:
                 if [b['name'], n] not in rows:
                     rows.append([b['name'], n])
     if args.bench:
-        unknown = set(args.bench) - {row[0] for row in rows}
+        unknown = set(selected) - {row[0] for row in rows}
         if unknown:
             sys.exit(f'unknown benchmarks: {", ".join(sorted(unknown))}')
     return {
@@ -528,7 +533,7 @@ def main():
     parser.add_argument('--merge', type=Path, metavar='DIR', help='only merge the processes in DIR into results.json')
     parser.add_argument('--config', default='Release', help='the configuration directory of a Visual Studio build (default: Release)')
     parser.add_argument('--runners', type=comma_list, help='only these runners, e.g. csb_lua,csb_python')
-    parser.add_argument('--bench', type=comma_list, help='only these benchmarks')
+    parser.add_argument('--bench', type=comma_list, help='only these benchmarks; name:n1/n2 also selects its sizes')
     parser.add_argument('--n', type=lambda v: [int(x) for x in comma_list(v)], help='replace the series of all benchmarks')
     parser.add_argument('--variants', choices=['all', 'headline'], default='all', help='all variants (default) or only the headline variants')
     parser.add_argument('--processes', type=int, default=3, help='processes per run (default: 3)')
