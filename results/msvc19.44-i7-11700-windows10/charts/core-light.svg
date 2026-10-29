@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="972" viewBox="0 0 880 972" font-family="system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" role="img">
+<title>Core: median time per call</title>
+<rect x="0.5" y="0.5" width="879" height="971" rx="8" fill="#fcfcfb" stroke="rgba(11,11,11,0.10)"/>
+<text x="16.0" y="28.0" font-size="15" fill="#0b0b0b" text-anchor="start" font-weight="600">Core</text>
+<text x="16.0" y="48.0" font-size="12" fill="#52514e" text-anchor="start">Median time per call, log scale. Dot: the median of the processes; line: their range. Headline variants.</text>
+<circle cx="20.0" cy="71.0" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<text x="30.0" y="75.0" font-size="12" fill="#52514e" text-anchor="start">AngelScript</text>
+<circle cx="129.0" cy="71.0" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<text x="139.0" y="75.0" font-size="12" fill="#52514e" text-anchor="start">ChaiScript</text>
+<circle cx="231.0" cy="71.0" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<text x="241.0" y="75.0" font-size="12" fill="#52514e" text-anchor="start">Lua</text>
+<circle cx="284.0" cy="71.0" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<text x="294.0" y="75.0" font-size="12" fill="#52514e" text-anchor="start">Python</text>
+<circle cx="358.0" cy="71.0" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<text x="368.0" y="75.0" font-size="12" fill="#52514e" text-anchor="start">TeaScript</text>
+<line x1="453.0" y1="65.0" x2="453.0" y2="77.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="463.0" y="75.0" font-size="12" fill="#52514e" text-anchor="start">C++ (reference)</text>
+<line x1="210.0" y1="100.0" x2="210.0" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="210.0" y="94.0" font-size="11" fill="#898781" text-anchor="middle">1 µs</text>
+<text x="210.0" y="926.0" font-size="11" fill="#898781" text-anchor="middle">1 µs</text>
+<line x1="290.8" y1="100.0" x2="290.8" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="290.8" y="94.0" font-size="11" fill="#898781" text-anchor="middle">10 µs</text>
+<text x="290.8" y="926.0" font-size="11" fill="#898781" text-anchor="middle">10 µs</text>
+<line x1="371.5" y1="100.0" x2="371.5" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="371.5" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 µs</text>
+<text x="371.5" y="926.0" font-size="11" fill="#898781" text-anchor="middle">100 µs</text>
+<line x1="452.2" y1="100.0" x2="452.2" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="452.2" y="94.0" font-size="11" fill="#898781" text-anchor="middle">1 ms</text>
+<text x="452.2" y="926.0" font-size="11" fill="#898781" text-anchor="middle">1 ms</text>
+<line x1="533.0" y1="100.0" x2="533.0" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="533.0" y="94.0" font-size="11" fill="#898781" text-anchor="middle">10 ms</text>
+<text x="533.0" y="926.0" font-size="11" fill="#898781" text-anchor="middle">10 ms</text>
+<line x1="613.8" y1="100.0" x2="613.8" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="613.8" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 ms</text>
+<text x="613.8" y="926.0" font-size="11" fill="#898781" text-anchor="middle">100 ms</text>
+<line x1="694.5" y1="100.0" x2="694.5" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="694.5" y="94.0" font-size="11" fill="#898781" text-anchor="middle">1 s</text>
+<text x="694.5" y="926.0" font-size="11" fill="#898781" text-anchor="middle">1 s</text>
+<line x1="775.2" y1="100.0" x2="775.2" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="775.2" y="94.0" font-size="11" fill="#898781" text-anchor="middle">10 s</text>
+<text x="775.2" y="926.0" font-size="11" fill="#898781" text-anchor="middle">10 s</text>
+<line x1="856.0" y1="100.0" x2="856.0" y2="912.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="856.0" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 s</text>
+<text x="856.0" y="926.0" font-size="11" fill="#898781" text-anchor="middle">100 s</text>
+<text x="16.0" y="141.5" font-size="12" fill="#0b0b0b" text-anchor="start">fib_recursive</text>
+<text x="200.0" y="141.5" font-size="11" fill="#898781" text-anchor="end">n=15</text>
+<line x1="232.5" y1="107.0" x2="232.5" y2="168.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<line x1="337.5" y1="115.5" x2="339.6" y2="115.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="337.9" cy="115.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="481.3" cy="126.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="330.9" cy="137.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="356.0" y1="148.5" x2="362.9" y2="148.5" stroke="#eda100" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="356.1" cy="148.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="457.3" cy="159.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="171.0" x2="856.0" y2="171.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="208.5" font-size="12" fill="#0b0b0b" text-anchor="start">fib_recursive</text>
+<text x="200.0" y="208.5" font-size="11" fill="#898781" text-anchor="end">n=20</text>
+<line x1="317.0" y1="174.0" x2="317.0" y2="235.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<line x1="421.7" y1="182.5" x2="423.8" y2="182.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="422.8" cy="182.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="627.7" cy="193.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="413.7" y1="204.5" x2="416.0" y2="204.5" stroke="#1baf7a" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="414.2" cy="204.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="439.9" cy="215.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="541.6" cy="226.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="238.0" x2="856.0" y2="238.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="275.5" font-size="12" fill="#0b0b0b" text-anchor="start">fib_recursive</text>
+<text x="200.0" y="275.5" font-size="11" fill="#898781" text-anchor="end">n=25</text>
+<line x1="401.4" y1="241.0" x2="401.4" y2="302.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="506.7" cy="249.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="796.0" cy="260.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="498.5" y1="271.5" x2="501.0" y2="271.5" stroke="#1baf7a" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="499.3" cy="271.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="524.7" cy="282.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="626.0" cy="293.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="305.0" x2="856.0" y2="305.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="342.5" font-size="12" fill="#0b0b0b" text-anchor="start">loop</text>
+<text x="200.0" y="342.5" font-size="11" fill="#898781" text-anchor="end">n=1,000,000</text>
+<line x1="403.6" y1="308.0" x2="403.6" y2="369.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="526.7" cy="316.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="665.9" cy="327.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="505.7" cy="338.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="567.1" y1="349.5" x2="572.8" y2="349.5" stroke="#eda100" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="568.6" cy="349.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="644.8" cy="360.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="372.0" x2="856.0" y2="372.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="409.5" font-size="12" fill="#0b0b0b" text-anchor="start">int_arith</text>
+<text x="200.0" y="409.5" font-size="11" fill="#898781" text-anchor="end">n=5,000</text>
+<line x1="431.3" y1="375.0" x2="431.3" y2="436.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<line x1="521.6" y1="383.5" x2="524.1" y2="383.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="521.6" cy="383.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="649.5" cy="394.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="514.3" cy="405.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="561.1" cy="416.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="648.3" cy="427.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="439.0" x2="856.0" y2="439.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="476.5" font-size="12" fill="#0b0b0b" text-anchor="start">mandelbrot</text>
+<text x="200.0" y="476.5" font-size="11" fill="#898781" text-anchor="end">n=100</text>
+<line x1="419.7" y1="442.0" x2="419.7" y2="503.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="513.2" cy="450.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="662.1" cy="461.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="507.6" cy="472.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="558.1" cy="483.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="647.9" cy="494.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="506.0" x2="856.0" y2="506.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="543.5" font-size="12" fill="#0b0b0b" text-anchor="start">math_builtins</text>
+<text x="200.0" y="543.5" font-size="11" fill="#898781" text-anchor="end">n=100,000</text>
+<line x1="379.5" y1="509.0" x2="379.5" y2="570.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="509.2" cy="517.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="625.3" cy="528.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="495.3" cy="539.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="526.1" y1="550.5" x2="529.4" y2="550.5" stroke="#eda100" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="526.2" cy="550.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="637.0" cy="561.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="573.0" x2="856.0" y2="573.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="610.5" font-size="12" fill="#0b0b0b" text-anchor="start">calls</text>
+<text x="200.0" y="610.5" font-size="11" fill="#898781" text-anchor="end">n=100,000</text>
+<line x1="350.2" y1="576.0" x2="350.2" y2="637.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<line x1="508.9" y1="584.5" x2="511.3" y2="584.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="509.2" cy="584.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="640.0" cy="595.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="506.0" y1="606.5" x2="509.2" y2="606.5" stroke="#1baf7a" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="508.0" cy="606.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="539.3" cy="617.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="632.2" cy="628.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="640.0" x2="856.0" y2="640.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="677.5" font-size="12" fill="#0b0b0b" text-anchor="start">tak</text>
+<text x="200.0" y="677.5" font-size="11" fill="#898781" text-anchor="end">n=4</text>
+<line x1="226.5" y1="643.0" x2="226.5" y2="704.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<line x1="338.7" y1="651.5" x2="341.0" y2="651.5" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="339.7" cy="651.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="497.3" cy="662.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="328.7" cy="673.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="351.1" y1="684.5" x2="356.4" y2="684.5" stroke="#eda100" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="351.5" cy="684.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="463.6" cy="695.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="707.0" x2="856.0" y2="707.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="744.5" font-size="12" fill="#0b0b0b" text-anchor="start">tak</text>
+<text x="200.0" y="744.5" font-size="11" fill="#898781" text-anchor="end">n=5</text>
+<line x1="288.6" y1="710.0" x2="288.6" y2="771.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="401.2" cy="718.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="611.9" cy="729.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="389.8" cy="740.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="413.8" y1="751.5" x2="418.6" y2="751.5" stroke="#eda100" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="414.1" cy="751.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="526.1" cy="762.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="774.0" x2="856.0" y2="774.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="811.5" font-size="12" fill="#0b0b0b" text-anchor="start">tak</text>
+<text x="200.0" y="811.5" font-size="11" fill="#898781" text-anchor="end">n=6</text>
+<line x1="352.2" y1="777.0" x2="352.2" y2="838.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="464.4" cy="785.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="739.7" cy="796.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="453.1" cy="807.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="476.8" cy="818.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="592.8" cy="829.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="16.0" y1="841.0" x2="856.0" y2="841.0" stroke="#e1e0d9" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="878.5" font-size="12" fill="#0b0b0b" text-anchor="start">branching</text>
+<text x="200.0" y="878.5" font-size="11" fill="#898781" text-anchor="end">n=300,000</text>
+<line x1="427.5" y1="844.0" x2="427.5" y2="905.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<circle cx="532.1" cy="852.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="654.6" cy="863.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="507.4" cy="874.5" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<line x1="560.1" y1="885.5" x2="563.3" y2="885.5" stroke="#eda100" stroke-width="2" stroke-linecap="round" stroke-opacity="0.6"/>
+<circle cx="560.7" cy="885.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="657.3" cy="896.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<text x="16.0" y="958.0" font-size="11" fill="#898781" text-anchor="start">i7-11700 · Windows 10 Pro 22H2 · MSVC 19.44.35229 · csb 0.1.0 (18996a9) · 2026-10-29</text>
+</svg>

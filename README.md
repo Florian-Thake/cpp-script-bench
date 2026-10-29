@@ -7,8 +7,9 @@ through the language's own C++ embedding API and does all the measuring. Only CP
 measured, no IO.
 
 > **Status:** early development. The harness and the runners for all languages work, with the
-> core, data, interop and host API benchmarks; the orchestration and the report are next. See
-> [PLAN.md](PLAN.md) for the full plan and the fairness rules.
+> core, data, interop and host API benchmarks, and so do the orchestration and the report. The first
+> result set (MSVC, a preview) is in [results/](results/README.md). See [PLAN.md](PLAN.md) for the
+> full plan and the fairness rules.
 
 ## Languages
 
@@ -167,6 +168,7 @@ in a terminal of its own and leave the machine alone; its status is in `build/se
 
 ```
 python runner/sets.py                        # all variants; --variants headline for the headline variants only
+python runner/sets.py --sets wsl             # only the GCC set in WSL2
 python runner/sets.py --resume build/sets/<time>
 ```
 

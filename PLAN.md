@@ -301,7 +301,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
       [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [x] `memory` (the peak
       memory per process against the C++ baseline, a table per group in the report), [x] the report generator
       (`runner/report.py`), [x] the noise check, [ ] the first result sets (marked "preview" until
-      TeaScript 0.18.0).
+      TeaScript 0.18.0): [x] MSVC, [ ] GCC 11 in WSL2 (measured again with a current Python).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish. Before that: adapt `engine_reset` to the parameter of TeaScript's
       `ResetState()` once it exists (decision log 2026-10-28).
@@ -1054,6 +1054,20 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   - The cloud VM is too noisy for a result set (7.9% within a process, without measurable load in the
     VM and with ~2% steal time: probably other guests of the host): it stays a machine for the
     correctness checks with GCC 13. Pinned and not pinned made no difference there.
+- The first full sets (all variants, 5 processes per run, idle machine, commit `18996a9`): MSVC in 1.6 h, GCC 11
+  in WSL2 in 1.2 h, measured one after the other by `runner/sets.py`. All 3,275 measured processes of each set
+  are ok, no problems. Spreads between the processes as the median / 90th percentile over all runs: 1.5 / 6.1%
+  (MSVC), 2.3 / 8.8% (WSL2). Spreads above 10% are almost always one slow process: leaving out any one process
+  changes the median of a run by 0.2 / 1.0% (MSVC) and 0.3 / 1.3% (WSL2). Runs with two groups of processes more
+  than 8% apart: 1 (MSVC) and 10 (WSL2), each with 3 fast and 2 slow processes, so the median is on the side of
+  the majority. No drift over the hours: the rounds of repetitions differ from the medians by at most 0.6% in
+  the geometric mean. The medians reproduce those of the noise check (the same measured code, hours earlier):
+  factor 0.999 (MSVC) and 0.992-0.995 (WSL2), geometric mean.
+- The WSL2 set is held back: it embedded the distribution's Python 3.10.12, the Windows set Python 3.14.5,
+  against the rule that published results use a current Python (2026-10-06). The effect is large: with GCC,
+  every compiled engine is faster than with MSVC (factor 0.58-0.84 over the core and data benchmarks,
+  geometric mean per language), Python is 1.56x slower. The MSVC set is published alone (the user's choice);
+  the WSL2 set is measured again with a current Python.
 
 ## 10. Open questions
 
