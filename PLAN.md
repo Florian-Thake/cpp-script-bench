@@ -298,9 +298,10 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
       Design round part 1 (where and how results are measured and published) on 2026-10-29. Steps:
-      [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [ ] `memory` (the peak
-      memory of each process is recorded; design round part 2), [ ] the report generator, [ ] the noise
-      check, [ ] the first result sets (marked "preview" until TeaScript 0.18.0).
+      [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [ ] `memory` (decided: the
+      peak memory per process against the C++ baseline; to do in the report), [x] the report generator
+      (`runner/report.py`), [x] the noise check, [ ] the first result sets (marked "preview" until
+      TeaScript 0.18.0).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish. Before that: adapt `engine_reset` to the parameter of TeaScript's
       `ResetState()` once it exists (decision log 2026-10-28).
@@ -977,7 +978,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     all its processes. An interrupted set is continued with `--resume` (crashed processes are run
     again); the set records the number of sessions.
   - With the defaults, a set has 50 rows (benchmark and n), 15 variants and 3 processes per run:
-    2,250 processes (900 with the headline variants only).
+    2,250 processes (900 with the headline variants only). Changed after the noise check: 5 processes
+    per run, 3,750 processes.
 - Implemented: the report generator `runner/report.py` (Python standard library only, like `run.py`).
   - The value of a run is the median of the medians of its processes; its spread is the range of the
     process medians (slowest minus fastest) relative to that median.
@@ -997,9 +999,55 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   - Every chart exists as a light and a dark SVG, shown with `<picture>` and `prefers-color-scheme`.
   - The name of a set comes from its compiler, CPU and OS (e.g. `msvc19.44-i7-11700-windows10`),
     unless `--name` gives one. The status is "preview" by default (until TeaScript 0.18.0).
+- AngelScript's headline stays `no-threads-no-line-cues` (the user's choice: it is the usage the
+  AngelScript manual recommends). A check of the variants with the orchestrator (7 core and data
+  benchmarks, 3 processes per run) found the thread-safe build without line cues (`no-line-cues`)
+  faster: factor 0.90 with MSVC (0.84-0.94), 0.97 with GCC 11 (0.90-1.02), geometric mean. With line
+  cues, both builds are 13-26% slower. The cause is unknown; `AS_NO_THREADS` only removes locks, so it
+  may be the code layout of two separately compiled libraries. To be clarified with the AngelScript
+  community (open questions). ChaiScript's headline is confirmed: its thread-safe build is ~4% slower.
+- `memory` (Phase 5 design round, part 2, the user's choice): the peak memory of each process, which
+  the orchestrator records from the outside (no hooks, no effect on the timings), reported per run
+  against the process of the C++ runner for the same benchmark and n as the baseline (the harness
+  alone: ~4.8 MB with MSVC). Allocation counts are postponed: they need allocator hooks, which slow
+  down the measured calls, and the hooks don't count the same things (e.g. Python serves small ints
+  and floats from free lists that never reach `PyMem`, while a replaced `operator new` counts every
+  C++ allocation of ChaiScript and TeaScript).
+- `run.py --bench name:n1/n2` selects the sizes of one benchmark (for subsets like the noise check).
+- Noise check (2026-10-29): 9 runs of different kinds (`loop`, `fib_recursive` 20, `int_arith`, `records`,
+  `maps`, `binary_trees` 8, `string_exchange`, `engine_lifecycle`, `parse_compile` 1,000), the headline
+  variants, 5 processes per run; spreads as the median / 90th percentile / maximum over the runs:
+
+  | Scenario | within a process | between processes | median of 3 vs 5 processes, worst |
+  |---|---|---|---|
+  | Windows, idle, pinned | 0.5% | 1.3 / 4.0 / 5.9% | 2.4% |
+  | Windows, idle, not pinned | 1.1% | 5.3 / 9.8 / 14.7% | 4.2% |
+  | Windows, light use (editor, browser, an ssh session), pinned | 0.8% | 1.8 / 4.7 / 13.5% | 6.6% |
+  | WSL2, idle, pinned | 0.7% | 3.7 / 20 / 38% | 2.9% |
+  | WSL2, light use, pinned | 0.8% | 2.1 / 6.7 / 29% | 7.6% |
+  | cloud VM (2 vCPUs, GCC 13), idle, pinned | 7.9% | 23 / 45 / 76% | 39% |
+
+  - Light use doesn't move the medians: factor 1.000 (0.92-1.02) on Windows and 1.003 (0.96-1.03) in
+    WSL2 against idle, geometric mean (range). It makes single processes slower now and then.
+  - In WSL2, all languages were 12-38% slower in the same 20 seconds at the end of the idle scenario,
+    while WSL2 itself had no other load: an event on the Windows side, which is not visible from inside
+    WSL2. Interleaving works as intended: the event hit one repetition of all languages alike, and the
+    median of the processes removes it.
+  - Some runs are bimodal between processes without any load (e.g. a process is ~15% slower for its
+    whole run, more often with GCC): the open question on repeated runs, now measured.
+  - Decisions: 5 processes per run (the default of `run.py`; ~2-2.5 h per set): with 3, single runs
+    were still up to ~8% off under light use, or landed on one side of a bimodal run. Pinned to the last
+    logical CPU: without pinning, the spread between the processes is 4x larger (unpinned runs were ~1%
+    faster in the mean, probably on the cores with the highest boost; within a set this doesn't
+    matter). Light use of the machine during a set is acceptable; idle is better for the regular sets.
+  - The cloud VM is too noisy for a result set (7.9% within a process, without measurable load in the
+    VM and with ~2% steal time: probably other guests of the host): it stays a machine for the
+    correctness checks with GCC 13. Pinned and not pinned made no difference there.
 
 ## 10. Open questions
 
+- AngelScript: why is the `AS_NO_THREADS` build slower than the thread-safe one (decision log
+  2026-10-29)? To be asked in the AngelScript community; the headline may change with the answer.
 - Script alternatives: a second script per benchmark and language (e.g. TeaScript `_strtonum` or
   `_strtonumex` instead of `as i64`, Python `"item" + str(i)` instead of an f-string), selectable
   on the command line and reported outside the headline? Until then, alternatives are compared

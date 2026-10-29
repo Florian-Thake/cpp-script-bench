@@ -536,7 +536,7 @@ def main():
     parser.add_argument('--bench', type=comma_list, help='only these benchmarks; name:n1/n2 also selects its sizes')
     parser.add_argument('--n', type=lambda v: [int(x) for x in comma_list(v)], help='replace the series of all benchmarks')
     parser.add_argument('--variants', choices=['all', 'headline'], default='all', help='all variants (default) or only the headline variants')
-    parser.add_argument('--processes', type=int, default=3, help='processes per run (default: 3)')
+    parser.add_argument('--processes', type=int, default=5, help='processes per run (default: 5)')
     parser.add_argument('--warmup', type=int, help="the runners' --warmup (default: theirs)")
     parser.add_argument('--runs', type=int, help="the runners' --runs (default: theirs)")
     parser.add_argument('--budget', type=int, help="the runners' --budget in seconds (default: theirs)")

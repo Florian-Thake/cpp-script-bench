@@ -140,7 +140,7 @@ repetitions are interleaved across the languages, and all processes are pinned t
 Windows with a high priority).
 
 ```
-python runner/run.py build/msvc-local/adapters                   # all runners and variants, 3 processes per run
+python runner/run.py build/msvc-local/adapters                   # all runners and variants, 5 processes per run
 python runner/run.py build/msvc-local/adapters --variants headline --processes 1 --bench loop,sieve
 python runner/run.py build/msvc-local/adapters --dry-run         # only show the plan
 python runner/run.py --resume build/msvc-local/results/<time>    # continue an interrupted set
