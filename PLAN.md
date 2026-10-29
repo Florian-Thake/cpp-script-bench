@@ -124,7 +124,7 @@ benchmarks/   registry + one directory per discipline:
               README.md (spec), reference.cpp (C++ reference), <name>.tea, .chai, .as, .lua, .py
 adapters/     one runner executable per language: csb_cpp, csb_teascript, ...
 cmake/        CMake helpers
-runner/       (later) orchestrates all runners, collects JSON, produces tables and charts
+runner/       orchestrates all runners for a result set (run.py), merges their JSON; tables and charts (later)
 ```
 
 **One executable per language.** Reasons:
@@ -298,8 +298,9 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
       Design round part 1 (where and how results are measured and published) on 2026-10-29. Steps:
-      system info in the JSON, the orchestrator (`runner/`), `memory`, the report generator, the noise
-      check, the first result sets (marked "preview" until TeaScript 0.18.0).
+      [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [ ] `memory` (the peak
+      memory of each process is recorded; design round part 2), [ ] the report generator, [ ] the noise
+      check, [ ] the first result sets (marked "preview" until TeaScript 0.18.0).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish. Before that: adapt `engine_reset` to the parameter of TeaScript's
       `ResetState()` once it exists (decision log 2026-10-28).
@@ -953,6 +954,30 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   WSL2, with an idle machine and with light interactive use (an editor, a browser). It decides the
   number of processes per run, the core for the pinning, and how quiet the machine must be during a
   run.
+- Implemented: the system info and the orchestrator.
+  - The runners record the physical cores, the logical processors, the physical memory, the OS product
+    or distribution (Windows: ProductName and DisplayVersion; Linux: `PRETTY_NAME` of os-release), the
+    hypervisor (the CPUID signature; Hyper-V's root partition is marked) and the C++ flags of the
+    build. In a VM, these are the values of the VM (WSL2 has half the memory of the host by default).
+  - `runner/run.py`, Python 3.10 or newer (the oldest Python on the test machines). Each process is a
+    runner with `--bench b --n n --variant v --json f`; the warm-up engine of the runner stays in every
+    process. Measured from the outside for each process: the wall and the CPU time, the peak memory
+    (Windows: the peak working set and the peak private memory of the exited process; Linux: the peak
+    resident set from `wait4()`), and the load of the machine during the process: the busy logical
+    CPUs minus the process itself (`GetSystemTimes()`, `/proc/stat`), on Linux also the steal time.
+    The load of a process shorter than about 1 s says little: Windows counts CPU times in ticks of
+    15.6 ms.
+  - The orchestrator pins itself, its processes inherit it. Default: the last logical CPU, until the
+    noise check decides. The set records the power plan (Windows) or the frequency governor (Linux).
+  - Runs which are "n/a" are not repeated. A set is refused if its runners were built from different
+    commits, from a modified checkout (`-dirty`, also of a library; `--allow-dirty` marks a test set),
+    or not as a Release build.
+  - The processes and their console output go into a work directory in the build directory
+    (`<build>/results/<UTC time>/`, not in git); `results.json` merges them, one entry per run with
+    all its processes. An interrupted set is continued with `--resume` (crashed processes are run
+    again); the set records the number of sessions.
+  - With the defaults, a set has 50 rows (benchmark and n), 15 variants and 3 processes per run:
+    2,250 processes (900 with the headline variants only).
 
 ## 10. Open questions
 

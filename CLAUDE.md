@@ -37,6 +37,9 @@ build/gcc-local/adapters/<lang>/csb_<lang> --list
 Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--warmup W`, `--runs R`,
 `--budget S`, `--scripts dir`, `--json file`.
 
+Result sets: `python runner/run.py <build dir>/adapters` (Linux: `python3`), one process per run; see
+README.md and PLAN.md (decision log 2026-10-29). A full set takes hours: only on a quiet machine.
+
 - Only Release builds give meaningful numbers.
 - Never take timings while something else compiles or runs on the same machine. A VM or WSL shares
   the CPU with its host.
@@ -56,6 +59,7 @@ Runner options: `--list`, `--bench a,b`, `--variant v|all`, `--n N[,N...]`, `--w
 - `adapters/<lang>/`: one runner executable per language.
 - `cmake/`: `csb_apply_compiler_options()` (same flags for all code built from source),
   `csb_git_describe()`.
+- `runner/`: the orchestrator `run.py` (Python standard library only, 3.10+, so it runs on every machine).
 
 ## Adding a benchmark
 

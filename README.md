@@ -132,6 +132,26 @@ Most host API benchmarks (e.g. `engine_lifecycle`) measure a C++ operation of th
 instead of a script call: every sample is one such operation, measured by the runner of the language.
 They show "-" for startup, bind and load, and the medians of their sub-phases after the status.
 
+## Measuring a result set
+
+`runner/run.py` (Python 3.10 or newer, no packages needed) runs all runners of a build for one result
+set. Every run (variant, benchmark, n) is a process of its own, repeated in several processes; the
+repetitions are interleaved across the languages, and all processes are pinned to one logical CPU (on
+Windows with a high priority).
+
+```
+python runner/run.py build/msvc-local/adapters                   # all runners and variants, 3 processes per run
+python runner/run.py build/msvc-local/adapters --variants headline --processes 1 --bench loop,sieve
+python runner/run.py build/msvc-local/adapters --dry-run         # only show the plan
+python runner/run.py --resume build/msvc-local/results/<time>    # continue an interrupted set
+```
+
+The results go into a work directory in the build directory: one JSON file per process (the runner's
+results plus what the orchestrator measured from the outside: wall and CPU time, peak memory, the load
+of the machine during the process), the console output of each process, and `results.json`, the
+merged set. A set is refused if the runners were built from different commits or from a modified
+checkout (`--allow-dirty` for tests), or if they are not a Release build. `--help` lists all options.
+
 ## Layout
 
 ```
@@ -139,6 +159,7 @@ harness/     shared runner code: command line, measuring, verification, statisti
 benchmarks/  one directory per discipline: spec (README.md), C++ reference, one script per language
 adapters/    one runner executable per language
 cmake/       CMake helpers
+runner/      the orchestrator for result sets
 ```
 
 ## License
