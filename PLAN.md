@@ -1090,8 +1090,9 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   implements modules. `eval_file` stays available: TeaScript's only option which removes it (`NoEvalFile`)
   also removes reading files and `eval`, while the Lua runner keeps `load`. No script uses them.
 - Group charts (the user's request): bars instead of dots. Each bar runs from the left edge of the log axis to
-  the median of its run, with the median written after it. Per benchmark and n the languages are sorted, the
-  slowest on top ("n/a" at the bottom). The C++ median is a gray line drawn over the bars, and its value is
+  the median of its run, with the median written after it. Per benchmark and n the languages are ranked, the
+  fastest on top ("n/a" at the bottom), as in a ranking (the user's choice; first implemented with the slowest on
+  top). The C++ median is a gray line drawn over the bars, and its value is
   written under the name of the benchmark. The range of the process medians is no longer drawn: it was rarely
   visible and then hard to read; the spread stays in the tables. On a log axis, the length of a bar depends on
   where the axis starts, so it is not proportional to the time; the chart says so, and the written medians

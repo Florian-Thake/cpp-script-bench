@@ -260,8 +260,8 @@ def decade_ticks(lo, hi):
 
 
 def group_chart(rs, group, title, theme):
-    """Grouped bars on a log axis: one band per benchmark and n, the script languages sorted by their median (the
-    slowest on top), each bar named and labelled with its median; C++ as a gray reference line on top of the bars.
+    """Grouped bars on a log axis: one band per benchmark and n, the script languages ranked by their median (the
+    fastest on top), each bar named and labelled with its median; C++ as a gray reference line on top of the bars.
 
     The order changes from band to band, so any two languages can be neighbours, and five hues can't be told apart in
     arbitrary pairs (the palette validates only three for all pairs). The name of each bar is its identity; all bars
@@ -286,7 +286,7 @@ def group_chart(rs, group, title, theme):
     x = log_scale(lo, hi, left, width - right)
 
     svg.text(16, 28, title, 15, 'primary', weight='600')
-    svg.text(16, 48, 'Median time per call of the headline variants, log scale. In every benchmark the slowest '
+    svg.text(16, 48, 'Median time per call of the headline variants, log scale. In every benchmark the fastest '
                      'language is on top.', 12, 'secondary')
     svg.text(16, 66, ('The gray line is C++, the reference. ' if ref else '')
              + 'The bars start at the left edge of the axis, so their lengths are not proportional to the times.',
@@ -308,7 +308,7 @@ def group_chart(rs, group, title, theme):
         if rv:
             svg.text(16, y0 + pad + 41, f'C++ {fmt_time(rv.median)}', 11, 'muted')
         entries = [(lane, rs.value(lane, benchmark, n)) for lane in langs]
-        entries.sort(key=lambda e: -e[1].median if e[1] and e[1].ok else math.inf)  # stable: ties keep the order
+        entries.sort(key=lambda e: e[1].median if e[1] and e[1].ok else math.inf)  # stable: ties keep the order
         labels = []  # drawn last, above the reference line
         for k, (lane, v) in enumerate(entries):
             cy = y0 + pad + k * pitch + pitch / 2
