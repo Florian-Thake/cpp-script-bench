@@ -222,6 +222,15 @@ class Svg:
         self.parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="{color}" stroke="{self.t["surface"]}" '
                           f'stroke-width="2"/>')
 
+    def bar(self, x0, y, x1, height, color, title=None, r=4.0):
+        """A horizontal bar from the baseline x0 to x1: square at the baseline, rounded at the data end. The title is
+        the tooltip where the SVG is opened directly (an <img> on GitHub shows none)."""
+        r = min(r, height / 2, x1 - x0)
+        d = (f'M{x0:.1f},{y:.1f} H{x1 - r:.1f} A{r:.1f},{r:.1f} 0 0 1 {x1:.1f},{y + r:.1f} V{y + height - r:.1f} '
+             f'A{r:.1f},{r:.1f} 0 0 1 {x1 - r:.1f},{y + height:.1f} H{x0:.1f} Z')
+        tip = f'<title>{esc(title)}</title>' if title else ''
+        self.parts.append(f'<path d="{d}" fill="{color}">{tip}</path>')
+
     def render(self, title):
         return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{self.width}" height="{self.height:.0f}" '
                 f'viewBox="0 0 {self.width} {self.height:.0f}" font-family="{FONT}" role="img">\n'
@@ -250,74 +259,73 @@ def decade_ticks(lo, hi):
     return ticks
 
 
-def legend(svg, x, y, items, colors):
-    """A row of legend items: (label, kind) with kind 'dot' or 'tick'."""
-    for label, kind in items:
-        if kind == 'tick':
-            svg.line(x + 4, y - 9, x + 4, y + 3, colors[label], 2)
-        else:
-            svg.dot(x + 4, y - 3, colors[label])
-        svg.text(x + 14, y + 1, label, 12, 'secondary')
-        x += 14 + 7.0 * len(label) + 18
-    return x
-
-
 def group_chart(rs, group, title, theme):
-    """A grouped dot plot: one band per benchmark and n, one sub-row per script language, C++ as a reference tick."""
+    """Grouped bars on a log axis: one band per benchmark and n, the script languages sorted by their median (the
+    slowest on top), each bar named and labelled with its median; C++ as a gray reference line on top of the bars.
+
+    The order changes from band to band, so any two languages can be neighbours, and five hues can't be told apart in
+    arbitrary pairs (the palette validates only three for all pairs). The name of each bar is its identity; all bars
+    share one hue, which also favours no language."""
     langs = [lane for lane in rs.headline if lane.id != REFERENCE]
     ref = next((lane for lane in rs.headline if lane.id == REFERENCE), None)
     rows = rs.rows[group]
-    values = [v for lane in rs.headline for b, n in rows if (val := rs.value(lane, b, n)) and val.ok
-              for v in val.medians]
+    if ref and not any((v := rs.value(ref, b, n)) and v.ok for b, n in rows):
+        ref = None  # C++ embeds nothing: the host group
+    values = [v.median for lane in langs + [ref] if lane for b, n in rows if (v := rs.value(lane, b, n)) and v.ok]
     if not values:
         return None
     lo, hi = decades(values)
 
-    width, left, right = 880, 210, 24
-    sub, band_pad = 11, 6
-    band = len(langs) * sub + 2 * band_pad
+    width, left, right = 880, 232, 64  # right: room for the label of the longest bar
+    pitch, thick, pad = 15, 10, 8  # a row per language, the bar in it, the padding of a band
+    band = len(langs) * pitch + 2 * pad
     top = 104
-    height = top + len(rows) * band + 64
+    height = top + len(rows) * band + 58
     svg = Svg(width, height, theme)
-    colors = {lane.name: SLOTS[theme][rs.slot[lane.id]] for lane in langs}
+    color = SLOTS[theme][0]
     x = log_scale(lo, hi, left, width - right)
-    if ref and not any((v := rs.value(ref, b, n)) and v.ok for b, n in rows):
-        ref = None  # C++ embeds nothing: the host group
 
     svg.text(16, 28, title, 15, 'primary', weight='600')
-    svg.text(16, 48, 'Median time per call, log scale. Dot: the median of the processes; line: their range. '
-                     'Headline variants.', 12, 'secondary')
-    items = [(lane.name, 'dot') for lane in langs]
-    if ref:
-        colors['C++ (reference)'] = THEMES[theme]['muted']
-        items.append(('C++ (reference)', 'tick'))
-    legend(svg, 16, 74, items, colors)
+    svg.text(16, 48, 'Median time per call of the headline variants, log scale. In every benchmark the slowest '
+                     'language is on top.', 12, 'secondary')
+    svg.text(16, 66, ('The gray line is C++, the reference. ' if ref else '')
+             + 'The bars start at the left edge of the axis, so their lengths are not proportional to the times.',
+             12, 'secondary')
 
-    ticks = decade_ticks(lo, hi)
     bottom = top + len(rows) * band
-    for t in ticks:
-        svg.line(x(t), top - 4, x(t), bottom + 4, 'grid')
+    for t in decade_ticks(lo, hi):
+        svg.line(x(t), top - 4, x(t), bottom + 4, 'axis' if t == lo else 'grid')
         svg.text(x(t), top - 10, fmt_time(t), 11, 'muted', 'middle')
         svg.text(x(t), bottom + 18, fmt_time(t), 11, 'muted', 'middle')
     for i, (benchmark, n) in enumerate(rows):
         y0 = top + i * band
         if i > 0:
-            svg.line(16, y0, width - right, y0, 'grid')
-        svg.text(16, y0 + band / 2 + 4, benchmark, 12, 'primary')
-        svg.text(left - 10, y0 + band / 2 + 4, f'n={fmt_n(n)}', 11, 'muted', 'end')
-        if ref and (v := rs.value(ref, benchmark, n)) and v.ok:
-            svg.line(x(v.median), y0 + 3, x(v.median), y0 + band - 3, 'muted', 2)
-        for k, lane in enumerate(langs):
-            y = y0 + band_pad + k * sub + sub / 2
-            v = rs.value(lane, benchmark, n)
-            color = SLOTS[theme][rs.slot[lane.id]]
+            svg.line(16, y0, width - 16, y0, 'grid')
+        rv = rs.value(ref, benchmark, n) if ref else None
+        rv = rv if rv and rv.ok else None
+        svg.text(16, y0 + pad + 11, benchmark, 12, 'primary', weight='600')
+        svg.text(16, y0 + pad + 26, f'n = {fmt_n(n)}', 11, 'muted')
+        if rv:
+            svg.text(16, y0 + pad + 41, f'C++ {fmt_time(rv.median)}', 11, 'muted')
+        entries = [(lane, rs.value(lane, benchmark, n)) for lane in langs]
+        entries.sort(key=lambda e: -e[1].median if e[1] and e[1].ok else math.inf)  # stable: ties keep the order
+        labels = []  # drawn last, above the reference line
+        for k, (lane, v) in enumerate(entries):
+            cy = y0 + pad + k * pitch + pitch / 2
+            svg.text(left - 8, cy + 4, lane.name, 11, 'secondary', 'end')
             if v is None or not v.ok:
-                svg.text(left + 4, y + 3.5, 'n/a' if v is None or v.status == 'n/a' else v.status, 9, 'muted')
+                labels.append((left + 6, cy + 4, 'n/a' if v is None or v.status == 'n/a' else v.status, 'muted'))
                 continue
-            x1, x2 = x(min(v.medians)), x(max(v.medians))
-            if x2 - x1 > 2:
-                svg.line(x1, y, x2, y, color, 2, 0.6)
-            svg.dot(x(v.median), y, color)
+            x1 = max(x(v.median), left + 2)
+            tip = f'{lane.label}: {fmt_time(v.median)}' + (f', {fmt_factor(v.median / rv.median)} C++' if rv else '')
+            svg.bar(left, cy - thick / 2, x1, thick, color, tip)
+            labels.append((x1 + 6, cy + 4, fmt_time(v.median), 'primary'))
+        if rv:
+            xr = x(rv.median)
+            svg.line(xr, y0 + 3, xr, y0 + band - 3, 'surface', 6)  # a gap in the surface color around the line
+            svg.line(xr, y0 + 3, xr, y0 + band - 3, 'muted', 2)
+        for lx, ly, s, ink in labels:
+            svg.text(lx, ly, s, 11, ink)
     svg.text(16, height - 14, setup_label(rs.data), 11, 'muted')
     return svg.render(f'{title}: median time per call')
 

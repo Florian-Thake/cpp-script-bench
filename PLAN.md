@@ -1089,6 +1089,19 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   modules (ChaiScript `No_Load_Modules`, Lua without `package`); the option has no effect until TeaScript
   implements modules. `eval_file` stays available: TeaScript's only option which removes it (`NoEvalFile`)
   also removes reading files and `eval`, while the Lua runner keeps `load`. No script uses them.
+- Group charts (the user's request): bars instead of dots. Each bar runs from the left edge of the log axis to
+  the median of its run, with the median written after it. Per benchmark and n the languages are sorted, the
+  slowest on top ("n/a" at the bottom). The C++ median is a gray line drawn over the bars, and its value is
+  written under the name of the benchmark. The range of the process medians is no longer drawn: it was rarely
+  visible and then hard to read; the spread stays in the tables. On a log axis, the length of a bar depends on
+  where the axis starts, so it is not proportional to the time; the chart says so, and the written medians
+  carry the values.
+  - With the sorting, any two languages can be neighbours, and no five colours of the palette stay apart in
+    all pairs (checked with the validator's measures: e.g. orange and yellow ΔE 13.7 with normal vision, below
+    its floor of 15; aqua and magenta 1.6 for deuteranopia in dark mode). So every bar carries the name of its
+    language, and all bars have one colour, which also favours no language. This replaces the dot plot of
+    2026-10-29; the series charts stay as they are.
+  - The published MSVC set of 2026-10-29 gets the new charts from its `results.json`; its data stays.
 
 ## 10. Open questions
 
