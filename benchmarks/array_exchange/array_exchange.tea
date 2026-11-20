@@ -6,6 +6,7 @@
 func f( a ) {
     def b := _tuple_create()
     const size := _tuple_size( a )
+    _tuple_reserve( b, size )
     forall( i in _seq( 0, size - 1, 1 ) ) {
         _tuple_append( b, a[i] + 1 )
     }

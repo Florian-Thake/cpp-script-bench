@@ -32,7 +32,7 @@ return n
 
 | Language    | create                                     | destroy                                   |
 |-------------|--------------------------------------------|-------------------------------------------|
-| TeaScript   | `teascript::Engine` with `config::full()` (the full Core Library) in the mode of the variant (TeaStackVM or AST eval), no tsb path | the destructor |
+| TeaScript   | `teascript::Engine` with `config::no_modules( config::full() )` (the full Core Library, without importing modules; the option has no effect until TeaScript implements modules) in the mode of the variant (TeaStackVM or AST eval), no tsb path | the destructor |
 | ChaiScript  | `chaiscript::ChaiScript` (with `Std_Lib`) and the options `No_Load_Modules` and `No_External_Scripts`, then the math module of ChaiScript_Extras | the destructor |
 | AngelScript | `asCreateScriptEngine()`, the message callback, the line cue property of the variant, the add-ons for strings, arrays, dictionaries and math, one context | `Release()` of the context, `ShutDownAndRelease()` |
 | Lua         | `luaL_newstate()`, `luaL_openselectedlibs()` without `package`, then `dofile` and `loadfile` removed | `lua_close()` |

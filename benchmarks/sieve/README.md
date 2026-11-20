@@ -38,9 +38,9 @@ return count
   `resize`), no slice assignment and no native counting (e.g. `sum()`, `count()`), see rule 4 in
   PLAN.md.
 - A capacity is reserved before the appends where the language can reserve one without changing the
-  size: AngelScript `reserve`, ChaiScript `reserve`, Lua `table.create`. Reserving capacity is the
-  natural form when the final size is known; the appends are still made one by one in the script.
-  TeaScript (Tuple) and Python (list) have no such function.
+  size: AngelScript `reserve`, ChaiScript `reserve`, Lua `table.create`, TeaScript `_tuple_reserve`.
+  Reserving capacity is the natural form when the final size is known; the appends are still made one
+  by one in the script. Python's list has no such function.
 - Use the language's natural counting loops; the crossing-out loop uses the step `i`. The outer loop
   is a `while` loop with the condition `i * i <= n` (or the language's equivalent), no square root.
 - Plain assignments, no compound assignment. All variables are local variables of `bench`.
@@ -48,9 +48,8 @@ return count
 ## Notes per language
 
 **TeaScript**
-- A Tuple, created with `_tuple_create()`, grown with `_tuple_append`, and read and written with the
-  subscript operator `flags[i]`. TeaScript has no way to reserve the capacity of a Tuple in the script;
-  the script will use it if TeaScript gets one.
+- A Tuple, created with `_tuple_create()`, with `_tuple_reserve( flags, n + 1 )` (since 0.18.0), grown
+  with `_tuple_append`, and read and written with the subscript operator `flags[i]`.
 - The outer loop is `repeat` with `if( i * i > n ) { stop }`; TeaScript has no `while`.
 
 **ChaiScript**

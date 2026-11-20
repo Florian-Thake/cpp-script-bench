@@ -48,7 +48,8 @@ return sum
 ## Notes per language
 
 **TeaScript**
-- A Tuple, grown with `_tuple_append`, read and written with the subscript operator `a[j]`.
+- A Tuple with `_tuple_reserve( a, n )`, grown with `_tuple_append`, read and written with the
+  subscript operator `a[j]`.
 - `_tuple_append` shares the value object of its argument with the new element. Appending the
   variable `x` itself would make all elements the same variable, so the script appends a copy
   (`def v := x`). Other forms of a copy (`x + 0`, or appending the expression and reading `x` back

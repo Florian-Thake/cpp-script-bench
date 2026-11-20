@@ -58,7 +58,8 @@ return sum
 | Python      | dict (hash table)                          | `m[k] = i`, `m[k]` | `del m[k]`          | `k in m`                | `f"k{i}"` |
 
 **TeaScript**
-- The keys array is a Tuple. `m[k] := i` stores a copy of `i` (`:=` is a copy assignment).
+- The keys array is a Tuple with `_tuple_reserve( keys, n )`. `m[k] := i` stores a copy of `i` (`:=` is
+  a copy assignment).
 
 **ChaiScript**
 - The keys array is a Vector with `reserve( n )`. ChaiScript's Map has no `contains`; `count` is

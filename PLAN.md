@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-10-29.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-11-20.
 
 ## 1. Goal
 
@@ -303,8 +303,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
       (`runner/report.py`), [x] the noise check, [ ] the first result sets (marked "preview" until
       TeaScript 0.18.0): [x] MSVC, [ ] GCC 11 in WSL2 (measured again with a current Python).
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
-      community reviews, publish. Before that: adapt `engine_reset` to the parameter of TeaScript's
-      `ResetState()` once it exists (decision log 2026-10-28).
+      community reviews, publish. (`engine_reset` uses TeaScript's `ResetStateFor()` since 2026-11-20.)
 
 ## 9. Decision log
 
@@ -576,7 +575,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   reserve the capacity of a container without changing its size, the script does so before the
   appends: AngelScript `reserve`, ChaiScript `reserve`, Lua `table.create`. It is the natural form
   when the final size is known, and the appends are still made one by one. TeaScript (Tuple) and
-  Python (list) have no such function; when TeaScript gets one, its scripts use it. Native fill and
+  Python (list) have no such function; when TeaScript gets one, its scripts use it (done 2026-11-20:
+  `_tuple_reserve`). Native fill and
   preallocated sizes stay excluded (`[x] * n`, `array<T>(n, v)`, `resize`).
   Found with `sieve`: AngelScript's array add-on grows the buffer by exactly one element per
   `insertLast` (a new allocation and a copy of the whole array), so appending is quadratic: 1.5 s
@@ -1068,6 +1068,27 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   every compiled engine is faster than with MSVC (factor 0.58-0.84 over the core and data benchmarks,
   geometric mean per language), Python is 1.56x slower. The MSVC set is published alone (the user's choice);
   the WSL2 set is measured again with a current Python.
+
+**2026-11-20**
+- TeaScript: the pin moves to `v0.17.0-45-g63f3c06` (HEAD, the rule of 2026-10-28). It brings `_tuple_reserve`
+  and `ResetStateFor()`, which the plan waited for. All benchmarks are ok with MSVC, GCC 11 and GCC 13.
+- TeaScript 0.18.0 runs the main script in a local scope of its own by default (a breaking change), not in the
+  global scope with the Core Library. `ExecuteProgram()` does this for the compiled variants. The `ast` variant
+  evaluates the AST itself (so `parse` is measured on its own), so its runner now calls the engine's
+  `FollowCurrentScopeBehavior()` first, as `EvaluateContent()` does; otherwise its scripts would still run in
+  the global scope. Script-level variables (`var_global`, the top-level variable of `engine_reset`) are defined
+  in that scope, and functions find them in the enclosing scopes. The scope made no measurable difference in
+  a check (`var_global` and `string_exchange`, `vm-O1` and `ast`, MSVC).
+- `engine_reset`: TeaScript resets with `ResetStateFor( Reset_ScriptState )` (its local scopes and the script
+  arguments), so the Core Library stays (the to-do of 2026-10-28). The reset takes ~1.7 us instead of ~1.24 ms
+  with MSVC (`vm-O1`), the reset and the load ~29 us instead of ~1.27 ms. `ResetState()` stays the full reset
+  with a new bootstrap of the Core Library.
+- `sieve`, `sort`, `maps` and `array_exchange`: the TeaScript scripts reserve the capacity of their Tuple with
+  `_tuple_reserve` before the appends, like AngelScript, ChaiScript and Lua (the rule of 2026-10-18).
+- The TeaScript engine is created with `config::no_modules( config::full() )`, as the other runners load no
+  modules (ChaiScript `No_Load_Modules`, Lua without `package`); the option has no effect until TeaScript
+  implements modules. `eval_file` stays available: TeaScript's only option which removes it (`NoEvalFile`)
+  also removes reading files and `eval`, while the Lua runner keeps `load`. No script uses them.
 
 ## 10. Open questions
 

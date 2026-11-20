@@ -3,6 +3,7 @@
 
 func bench( n ) {
     def flags := _tuple_create()
+    _tuple_reserve( flags, n + 1 )
     forall( k in _seq( 0, n, 1 ) ) {
         _tuple_append( flags, true )
     }

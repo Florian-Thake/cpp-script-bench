@@ -3,6 +3,7 @@
 
 func bench( n ) {
     def keys := _tuple_create()
+    _tuple_reserve( keys, n )
     forall( i in _seq( 0, n - 1, 1 ) ) {
         _tuple_append( keys, "k" % i )
     }

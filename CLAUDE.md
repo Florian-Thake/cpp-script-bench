@@ -106,7 +106,7 @@ outside any Claude session; a later session picks up the results (`build/sets/<t
   instead of `sum`).
 - Containers (PLAN.md, decision log 2026-10-14 and 2026-10-18): the natural container per language;
   grow by appending in a loop, with a capacity reserved where the language can (AngelScript and
-  ChaiScript `reserve`, Lua `table.create`); no native fill. Lua indexes from 1: shift the loop
+  ChaiScript `reserve`, Lua `table.create`, TeaScript `_tuple_reserve`); no native fill. Lua indexes from 1: shift the loop
   ranges, not every access.
 - TeaScript: `_tuple_append` shares the value object it gets; append a copy of a variable
   (`def v := x`), not the variable itself.

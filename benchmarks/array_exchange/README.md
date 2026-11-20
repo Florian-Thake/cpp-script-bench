@@ -50,8 +50,8 @@ return sum
 
 - C++: the reference calls a normal C++ function, which builds the new `std::vector` with `reserve`
   and `push_back`.
-- TeaScript: `_tuple_append( b, a[i] + 1 )` appends a new value, so no copy is needed (unlike `sort`).
-  The Tuple has no script-level reserve.
+- TeaScript: `_tuple_reserve( b, size )`, then `_tuple_append( b, a[i] + 1 )`, which appends a new value,
+  so no copy is needed (unlike `sort`).
 - ChaiScript: `b.reserve(size)`, then `push_back`, like `sieve`; no `return`, see
   `fib_recursive/README.md`. ChaiScript's `push_back` for a Vector is a ChaiScript function, which
   makes most of its time.
@@ -65,7 +65,7 @@ return sum
 
 | Language    | MSVC: headline | MSVC: `c-api` | GCC 11: headline | GCC 11: `c-api` |
 |-------------|----------------|---------------|------------------|-----------------|
-| TeaScript `vm-O1` | 36.6 / 24.7 / 27.9 ms |  | 23.3 / 16.0 / 21.0 ms |       |
+| TeaScript `vm-O1` | 34.2 / 24.1 / 25.4 ms |  | 23.8 / 16.1 / 20.6 ms |       |
 | ChaiScript `no-threads` | 396 / 351 / 354 ms | | 228 / 198 / 200 ms |        |
 | AngelScript `no-threads-no-line-cues` | 3.7 / 1.8 / 2.0 ms | | 3.7 / 2.3 / 2.4 ms | |
 | Lua         | 3.0 / 1.2 / 1.2 ms (LuaBridge3) | 2.5 / 0.9 / 0.8 ms | 2.1 / 1.0 / 1.1 ms (LuaBridge3) | 1.7 / 0.8 / 0.9 ms |

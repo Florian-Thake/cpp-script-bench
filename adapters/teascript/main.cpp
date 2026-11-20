@@ -54,7 +54,7 @@ constexpr Variant variants[] = {
 };
 
 
-/// Gives access to the Context for evaluating an AST directly.
+/// Evaluates an AST directly, which needs the protected Context.
 class BenchEngine : public teascript::Engine
 {
 public:
@@ -63,7 +63,14 @@ public:
     {
     }
 
-    teascript::Context &GetContext() noexcept { return mContext; }
+    /// Evaluates \param ast like EvaluateContent() does in the Eval mode: the script runs in the scope of the engine's
+    /// scope behavior (the default: a local scope of its own, not the global scope of the Core Library), like
+    /// ExecuteProgram() does for the compiled variants.
+    teascript::ValueObject EvalAst( teascript::ASTNodePtr const &ast )
+    {
+        FollowCurrentScopeBehavior();
+        return ast->Eval( mContext );
+    }
 };
 
 
@@ -163,8 +170,9 @@ public:
 
     void create_engine() override
     {
-        // The full Core Library, like the other languages get their full standard library.
-        mEngine = make_engine( teascript::config::full() );
+        // The full Core Library, like the other languages get their full standard library, but without importing modules
+        // (like the other runners; the option has no effect until TeaScript implements modules).
+        mEngine = make_engine( teascript::config::no_modules( teascript::config::full() ) );
     }
 
     void bind( csb::BenchmarkInfo const &info ) override
@@ -207,7 +215,7 @@ public:
                 phases.push_back( { "top_level", seconds_since( start ) } );
             } else {
                 start = Clock::now();
-                (void)mAst->Eval( mEngine->GetContext() );
+                (void)mEngine->EvalAst( mAst );
                 phases.push_back( { "top_level", seconds_since( start ) } );
             }
 
@@ -284,8 +292,10 @@ public:
                 } );
             }
             if( info.name == "engine_reset" ) {
-                // ResetState(): back to the state after the creation (the Core Library is bootstrapped again).
-                return csb::host::engine_reset::run( *this, info, n, source, []() {}, [&]() { mEngine->ResetState(); } );
+                // The state of the script: its local scopes (the script runs in one of its own) and its arguments. The
+                // global scope with the Core Library stays. (ResetState() would bootstrap the Core Library again.)
+                return csb::host::engine_reset::run( *this, info, n, source, []() {},
+                                                     [&]() { mEngine->ResetStateFor( teascript::Engine::Reset_ScriptState ); } );
             }
             throw std::runtime_error( "no host benchmark: " + std::string( info.name ) );
         } );

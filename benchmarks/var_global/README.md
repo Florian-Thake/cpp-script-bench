@@ -34,8 +34,9 @@ bench( n ):
 ## Notes per language
 
 **TeaScript**
-- `def sum := 0` at the top level. A function finds a name which is not defined in its own scopes
-  in the top-level scope.
+- `def sum := 0` at the top level. Since TeaScript 0.18.0 the script runs in a local scope of its own by
+  default, not in the global scope with the Core Library, so `sum` is defined there. A function finds a
+  name which is not defined in its own scopes in the enclosing scopes.
 
 **ChaiScript**
 - `global sum = 0;`. A `var` at the top level is not visible inside functions; `global` defines a
