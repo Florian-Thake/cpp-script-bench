@@ -171,8 +171,9 @@ public:
     void create_engine() override
     {
         // The full Core Library, like the other languages get their full standard library, but without importing modules
-        // (like the other runners; the option has no effect until TeaScript implements modules).
-        mEngine = make_engine( teascript::config::no_modules( teascript::config::full() ) );
+        // (the option has no effect until TeaScript implements modules) and without loading script files ('eval_file'),
+        // like the other runners. no_eval() is the option which removes 'eval_file'; it removes '_eval' as well.
+        mEngine = make_engine( teascript::config::no_eval( teascript::config::no_modules( teascript::config::full() ) ) );
     }
 
     void bind( csb::BenchmarkInfo const &info ) override

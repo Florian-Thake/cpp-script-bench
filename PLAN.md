@@ -171,7 +171,7 @@ community can review them.
 | ChaiScript  | `develop` HEAD, pinned by commit hash (now `f635b51e`, 2026-05-02; reports itself as 7.0.0) | native API; ChaiScript_Extras `math.hpp` (`master` at `dd116d7`, 2026-04-17) | the last release (6.1.0) is from 2018; headline build: `no-threads` |
 | AngelScript | 2.38.0 (Aug 2026)                         | native API + string, array, dictionary, math add-ons (math with `AS_USE_FLOAT=0`: double) | compiled library; headline: `AS_NO_THREADS`, without line cues |
 | Lua         | 5.5.1                                     | Lua C API; LuaBridge3 `3.0-rc12` for the bindings of C++ (the C API in the variant `c-api`) | compiled library, as C |
-| Python      | the installed system Python (any version pybind11 supports, 3.9+) | pybind11 3.1.0 (embedded interpreter, bindings of C++; the C API in the variant `c-api`) | prebuilt; exact version and build recorded |
+| Python      | the installed system Python (any version pybind11 supports, 3.9+); the published sets: 3.14.10 | pybind11 3.1.0 (embedded interpreter, bindings of C++; the C API in the variant `c-api`) | Windows: python.org installer; Linux sets: built from the python.org source (decision log 2026-11-22); exact version and build recorded |
 | C++         | n/a                                       | reference                          | |
 
 Deferred: Jinx (limited core library, dormant). It may be added later if it can run most disciplines.
@@ -301,7 +301,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
       [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [x] `memory` (the peak
       memory per process against the C++ baseline, a table per group in the report), [x] the report generator
       (`runner/report.py`), [x] the noise check, [ ] the first result sets (marked "preview" until
-      TeaScript 0.18.0): [x] MSVC, [ ] GCC 11 in WSL2 (measured again with a current Python).
+      TeaScript 0.18.0): [x] MSVC, [ ] GCC 11 in WSL2 (measured again with a current Python), [ ] both again
+      with Python 3.14.10 and the TeaScript pin of 2026-11-20.
 - [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish. (`engine_reset` uses TeaScript's `ResetStateFor()` since 2026-11-20.)
 
@@ -1088,7 +1089,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - The TeaScript engine is created with `config::no_modules( config::full() )`, as the other runners load no
   modules (ChaiScript `No_Load_Modules`, Lua without `package`); the option has no effect until TeaScript
   implements modules. `eval_file` stays available: TeaScript's only option which removes it (`NoEvalFile`)
-  also removes reading files and `eval`, while the Lua runner keeps `load`. No script uses them.
+  also removes reading files and `eval`, while the Lua runner keeps `load`. No script uses them. (Corrected
+  on 2026-11-22: `no_eval()` alone removes `eval_file`, see there.)
 - Group charts (the user's request): bars instead of dots. Each bar runs from the left edge of the log axis to
   the median of its run, with the median written after it. Per benchmark and n the languages are ranked, the
   fastest on top ("n/a" at the bottom), as in a ranking (the user's choice; first implemented with the slowest on
@@ -1103,6 +1105,22 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     language, and all bars have one colour, which also favours no language. This replaces the dot plot of
     2026-10-29; the series charts stay as they are.
   - The published MSVC set of 2026-10-29 gets the new charts from its `results.json`; its data stays.
+
+**2026-11-22**
+- Python: both main sets embed the same Python, 3.14.10, the newest bugfix release of 3.14 (the user's choice;
+  3.15.2 was the other option). Windows: the python.org installer. Linux (WSL2): built from the python.org
+  source, as Ubuntu 22.04 only has 3.10, with the options of an optimized build: `--enable-shared` (a
+  `libpython3.14.so`, like the DLL on Windows), `--enable-optimizations` (PGO) and `--with-lto`; `math` is built
+  into the library (`Modules/Setup.local`), as in the Windows and the Ubuntu builds. This replaces "Linux tests
+  use the distribution's Python" (2026-10-06) for the published sets; the VPS (GCC 13, correctness only) keeps
+  Ubuntu's 3.12. Both sets are measured again: the MSVC set of 2026-10-29 predates the TeaScript pin of
+  2026-11-20, and the WSL2 set of 2026-10-29 (Python 3.10.12) stays unpublished.
+- TeaScript: the engine is also created with `config::no_eval()`, so no runner can load script files
+  (ChaiScript `No_External_Scripts`, Lua without `dofile` and `loadfile`). This corrects the entry of
+  2026-11-20: `no_eval()` alone removes `eval_file` (the Core Library leaves it out if either bit of
+  `NoEvalFile` is set), and file reading stays. TeaScript has no option for `eval_file` alone, so `_eval` (of a
+  string) goes as well, while ChaiScript keeps `eval` and Lua `load`; no script uses them. `engine_lifecycle`
+  showed no measurable difference (interleaved processes, MSVC); `engine_minimal` loads neither function anyway.
 
 ## 10. Open questions
 
