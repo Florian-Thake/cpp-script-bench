@@ -616,7 +616,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - `binary_trees`: the series n = 4 / 8 / 12 as planned. TeaScript `vm-O1` needs ~0.26 s per call
   (MSVC), the slowest headline apart from ChaiScript, whose cost of a recursion makes it
   ~0.52 / 0.94 / 7.6 s (n = 12 is limited by the time budget, like `fib_recursive` with 25).
-  - TeaScript uses `false` for "no child" (the user's choice): every node has `left` and `right`
+  - TeaScript uses `false` for "no child" (the maintainer's choice): every node has `left` and `right`
     like in the other languages, and "no child" needs no object of its own, like `None`, `nil` or
     `null`. An empty Tuple (the idiom of TeaScript's linked list demo) allocates two more Tuples per
     leaf (~13% slower); a leaf as a Tuple without elements (~20% faster) is not a record with `left`
@@ -657,7 +657,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   loop, which calls script functions. The host side (the C++ functions, the type, the image buffer,
   the checksum) is shared by the C++ reference and all runners (`benchmarks/<name>/host.hpp`).
   `Language::supports( info )` lets a variant report a benchmark as "n/a".
-- Binding layer (the user's choice): the headline of Lua and Python uses their C++ binding libraries,
+- Binding layer (the maintainer's choice): the headline of Lua and Python uses their C++ binding libraries,
   LuaBridge3 and pybind11. The average C++ user prefers the higher abstraction to programming against
   a C API. The plain C APIs become variants (n/a outside the interop group), so the cost of the
   abstraction stays visible: it is 2x (Lua) and 4.5x (Python) per host call, see the feature checks.
@@ -671,7 +671,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - `host_to_script`: the mirror of `script_to_host`: a C++ loop computes
   `sum = sum + f0() + f1( i ) + f3( i, 1, 2 )` with the script functions of `calls`. n = 100,000
   (checksum 800,000). Each language looks up the function handle once where its API has one.
-  TeaScript calls by name with `CallFuncEx` (the user's choice, like `bench` since 2026-10-09; its
+  TeaScript calls by name with `CallFuncEx` (the maintainer's choice, like `bench` since 2026-10-09; its
   public API has no function handle).
 - `string_exchange`: per i, the host passes the C++ string `"item" + i` to the script function
   `f( s )`, which returns `s`; the host converts the result back to a `std::string` and adds its
@@ -699,7 +699,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   reference; AngelScript `image[i] = v` on a registered type with `opIndex`; Lua `buf[i] = v` on a
   userdata with `__newindex`; Python `buf[i] = v` on a `memoryview` over the host memory.
   TeaScript computes `v` as a `u64` with `u64` literals (`x bit_and 255u64`; an operation with a
-  `u64` operand gives a `u64`), so no cast per pixel is needed (the user's choice): ~8% faster than
+  `u64` operand gives a `u64`), so no cast per pixel is needed (the maintainer's choice): ~8% faster than
   `as u64`. The loop counters stay `i64`, `_seq` takes only `i64`.
 - Order: the interface and `script_to_host` first (with LuaBridge3), then `host_to_script`,
   `cpp_objects`, `buffer`, `string_exchange`, `array_exchange`.
@@ -767,7 +767,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 
 **2026-10-28**
 - TeaScript: the pin moves to `v0.17.0-32-gbdd696c`. Until 0.18.0 is released, TeaScript is pinned to
-  its HEAD by default (the user's rule); every move is verified with all toolchains. All benchmarks
+  its HEAD by default (the maintainer's rule); every move is verified with all toolchains. All benchmarks
   are ok with MSVC, GCC 11 and GCC 13.
 - 4d design round. The catalogue entry `registration` becomes `register_functions` and
   `register_variables`, `function_lookup` becomes `call_by_name` and `call_by_handle`, `engine_minimal`
@@ -806,7 +806,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - `register_functions`: register N C++ functions in a fresh engine with each language's normal API:
   `f1` of `script_to_host` under the names `f0` .. `f{N-1}`, generated before the measurement. An
   unmeasured script calls them for the checksum. `register_variables`: the same with N host `int`
-  variables, in each API's normal form of a global variable (the user's choice; in TeaScript,
+  variables, in each API's normal form of a global variable (the maintainer's choice; in TeaScript,
   functions are variables as well: `AddVar`). Series N = 10 / 100 / 1,000.
 - `call_by_name` and `call_by_handle`: a generated script defines M tiny functions `f_k( a )`; the host
   makes 100,000 calls and cycles through them. `call_by_name` looks the function up by name at every
@@ -816,7 +816,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   (ChaiScript's `std::function`, Lua's `LuaRef` or registry reference, Python's function object,
   AngelScript's `asIScriptFunction *`). Series M = 10 / 1,000 / 10,000: shows whether the cost of a
   lookup grows with the number of functions.
-- TeaScript `call_by_handle` is "n/a" (the user's choice). Its counterpart of a handle is the
+- TeaScript `call_by_handle` is "n/a" (the maintainer's choice). Its counterpart of a handle is the
   `FunctionPtr` from `GetVar()` + `GetValueCopy<FunctionPtr>()`, but calling it needs the `Context`,
   which only a class derived from `Engine` reaches. That is the low-level API, which users can use, but
   not part of the default public API. A public call of a `FunctionPtr` may be added to TeaScript later;
@@ -824,7 +824,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - `engine_reset`: reset an engine and load a small script again (sub-phases `reset` and `load`), to
   compare with a fresh engine. TeaScript `ResetState()`, ChaiScript `set_state()` with the state saved
   after the creation, AngelScript `Discard()` of the module and a new module. Lua and Python have no
-  reset; their form of reuse counts (the user's choice): a fresh `_ENV` table, a fresh globals dict. It
+  reset; their form of reuse counts (the maintainer's choice): a fresh `_ENV` table, a fresh globals dict. It
   does not undo what a script changed in libraries or modules (documented).
 - `memory` moves to Phase 5. The peak working set is a value per process (on Windows it can't be
   reset), so it needs one process per run, which is the job of the orchestration. Allocation counts
@@ -906,11 +906,11 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
     a fresh engine. Numbers in the README.
 - Phase 4d is done, and with it Phase 4.
 - TeaScript's `ResetState()` will get a parameter before the 0.18.0 release, which controls the parts
-  that are reset, so the Core Library can stay without a new bootstrap (the user). `engine_reset` is
+  that are reset, so the Core Library can stay without a new bootstrap (the maintainer). `engine_reset` is
   adapted once it exists.
 
 **2026-10-29**
-- Phase 5 design round, part 1: where and how the results are measured and published (the user's
+- Phase 5 design round, part 1: where and how the results are measured and published (the maintainer's
   decisions; the measurement model was proposed in the same round).
 - The results are part of the repo and readable on GitHub in the browser. One directory per
   configuration (machine, OS, toolchain), `results/<set>/`, with a generated `README.md` (setup, tables,
@@ -1000,14 +1000,14 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   - Every chart exists as a light and a dark SVG, shown with `<picture>` and `prefers-color-scheme`.
   - The name of a set comes from its compiler, CPU and OS (e.g. `msvc19.44-i7-11700-windows10`),
     unless `--name` gives one. The status is "preview" by default (until TeaScript 0.18.0).
-- AngelScript's headline stays `no-threads-no-line-cues` (the user's choice: it is the usage the
+- AngelScript's headline stays `no-threads-no-line-cues` (the maintainer's choice: it is the usage the
   AngelScript manual recommends). A check of the variants with the orchestrator (7 core and data
   benchmarks, 3 processes per run) found the thread-safe build without line cues (`no-line-cues`)
   faster: factor 0.90 with MSVC (0.84-0.94), 0.97 with GCC 11 (0.90-1.02), geometric mean. With line
   cues, both builds are 13-26% slower. The cause is unknown; `AS_NO_THREADS` only removes locks, so it
   may be the code layout of two separately compiled libraries. To be clarified with the AngelScript
   community (open questions). ChaiScript's headline is confirmed: its thread-safe build is ~4% slower.
-- `memory` (Phase 5 design round, part 2, the user's choice): the peak memory of each process, which
+- `memory` (Phase 5 design round, part 2, the maintainer's choice): the peak memory of each process, which
   the orchestrator records from the outside (no hooks, no effect on the timings), reported per run
   against the process of the C++ runner for the same benchmark and n as the baseline (the harness
   alone: ~4.8 MB with MSVC). Allocation counts are postponed: they need allocator hooks, which slow
@@ -1038,7 +1038,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   | cloud VM (2 vCPUs, GCC 13), idle, pinned | 7.9% | 23 / 45 / 76% | 39% |
 
   - The second runs were planned with light use of the machine, but the machine stayed idle (the
-    request to start the light use didn't reach the user in time). So they are a second idle run:
+    request to start the light use didn't reach the maintainer in time). So they are a second idle run:
     their medians differ from the first by a factor of 1.000 (0.92-1.02) on Windows and 1.003
     (0.96-1.03) in WSL2, geometric mean (range). Light use is not measured yet.
   - In WSL2, all languages were 12-38% slower in the same 20 seconds at the end of the idle scenario,
@@ -1067,7 +1067,7 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
 - The WSL2 set is held back: it embedded the distribution's Python 3.10.12, the Windows set Python 3.14.5,
   against the rule that published results use a current Python (2026-10-06). The effect is large: with GCC,
   every compiled engine is faster than with MSVC (factor 0.58-0.84 over the core and data benchmarks,
-  geometric mean per language), Python is 1.56x slower. The MSVC set is published alone (the user's choice);
+  geometric mean per language), Python is 1.56x slower. The MSVC set is published alone (the maintainer's choice);
   the WSL2 set is measured again with a current Python.
 
 **2026-11-20**
@@ -1091,11 +1091,11 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   implements modules. `eval_file` stays available: TeaScript's only option which removes it (`NoEvalFile`)
   also removes reading files and `eval`, while the Lua runner keeps `load`. No script uses them. (Corrected
   on 2026-11-22: `no_eval()` alone removes `eval_file`, see there.)
-- Group charts (the user's request): bars instead of dots. Each bar runs from the left edge of the log axis to
-  the median of its run, with the median written after it. Per benchmark and n the languages are ranked, the
-  fastest on top ("n/a" at the bottom), as in a ranking (the user's choice; first implemented with the slowest on
-  top). The C++ median is a gray line drawn over the bars, and its value is
-  written under the name of the benchmark. The range of the process medians is no longer drawn: it was rarely
+- Group charts (the maintainer's request): bars instead of dots. Each bar runs from the left edge of the log axis
+  to the median of its run, with the median written after it. Per benchmark and n the languages are ranked, the
+  fastest on top ("n/a" at the bottom), as in a ranking (the maintainer's choice; first implemented with the
+  slowest on top). The C++ median is a gray line drawn over the bars, and its value is written under the name
+  of the benchmark. The range of the process medians is no longer drawn: it was rarely
   visible and then hard to read; the spread stays in the tables. On a log axis, the length of a bar depends on
   where the axis starts, so it is not proportional to the time; the chart says so, and the written medians
   carry the values.
@@ -1107,8 +1107,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   - The published MSVC set of 2026-10-29 gets the new charts from its `results.json`; its data stays.
 
 **2026-11-22**
-- Python: both main sets embed the same Python, 3.14.10, the newest bugfix release of 3.14 (the user's choice;
-  3.15.2 was the other option). Windows: the python.org installer. Linux (WSL2): built from the python.org
+- Python: both main sets embed the same Python, 3.14.10, the newest bugfix release of 3.14 (the maintainer's
+  choice; 3.15.2 was the other option). Windows: the python.org installer. Linux (WSL2): built from the python.org
   source, as Ubuntu 22.04 only has 3.10, with the options of an optimized build: `--enable-shared` (a
   `libpython3.14.so`, like the DLL on Windows), `--enable-optimizations` (PGO) and `--with-lto`; `math` is built
   into the library (`Modules/Setup.local`), as in the Windows and the Ubuntu builds. This replaces "Linux tests
@@ -1135,10 +1135,10 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   (`math_builtins`: one process 1.4-2.2x slower); the median of the 5 processes removes it. The other repetitions
   differ from the medians by at most 0.1% (WSL2: 0.4-0.7%), so there is no drift.
 - Reproducibility: the languages which did not change since 2026-10-29 (C++, AngelScript, ChaiScript, Lua; not
-  TeaScript and Python, see 2026-11-20 and 2026-11-22) reproduce the medians of the first sets: geometric mean 0.98-1.01 per variant and group. With MSVC every run
-  is within 0.95-1.07, with WSL2 within 0.94-1.07 except 4 runs with slow processes (below) in the new or the
-  old set: Lua `sort` 1.34, ChaiScript `no-threads` `calls` 1.17, and the thread-safe ChaiScript's
-  `var_lifecycle` 1.24 and `buffer` 0.89.
+  TeaScript and Python, see 2026-11-20 and 2026-11-22) reproduce the medians of the first sets: geometric mean
+  0.98-1.01 per variant and group. With MSVC every run is within 0.95-1.07, with WSL2 within 0.94-1.07 except 4
+  runs with slow processes (below) in the new or the old set: Lua `sort` 1.34, ChaiScript `no-threads` `calls`
+  1.17, and the thread-safe ChaiScript's `var_lifecycle` 1.24 and `buffer` 0.89.
 - WSL2 has more runs with two groups of processes than on 2026-10-29: 32 runs with 2 or 3 processes more than 8%
   slower than the others (2026-10-29: 10). 57 of the 184 TeaScript runs have at least one such process, the
   other languages 2-16% of their runs. A slow process is slow for its whole run, from its first call on, and the
