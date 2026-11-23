@@ -6,22 +6,44 @@ Each benchmark discipline has an equivalent script for every language. A small C
 through the language's own C++ embedding API and does all the measuring. Only CPU and RAM work is
 measured, no IO.
 
-> **Status:** early development. The harness and the runners for all languages work, with the
-> core, data, interop and host API benchmarks, and so do the orchestration and the report. Two result
-> sets are in [results/](results/README.md): MSVC on Windows and GCC 11 in WSL2 on the same machine,
+> **Status:** preview. The harness and the runners for all languages work, with the core, data,
+> interop and host API benchmarks, and so do the orchestration and the report. The result sets are
 > previews until TeaScript 0.18.0 is released. See [PLAN.md](PLAN.md) for the full plan and the
 > fairness rules.
 
+## Results
+
+Two result sets, measured on the same machine (Intel Core i7-11700):
+[MSVC on Windows 10](results/msvc19.44-i7-11700-windows10/README.md) and
+[GCC 11 in WSL2 (Ubuntu 22.04)](results/gcc11.4-i7-11700-ubuntu22.04-wsl2/README.md). Each set has a
+chart and a table per group, the series over n, all variants and the peak memory; the index of the sets
+is [results/](results/README.md). Numbers compare only within a set.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="results/msvc19.44-i7-11700-windows10/charts/core-dark.svg">
+  <img alt="Core benchmarks of the MSVC set: median time per call of each language, log scale" src="results/msvc19.44-i7-11700-windows10/charts/core-light.svg">
+</picture>
+
+## Benchmarks
+
+32 benchmarks in four groups: core (arithmetic, calls, recursion, branching), data (variables, arrays,
+maps, strings, records, allocation), interop (calls and data between script and C++), and host API
+(creating engines, parsing and compiling, registering functions and variables, calls by name and by
+handle, resetting an engine). The list is in [PLAN.md](PLAN.md#7-disciplines); the spec of each
+benchmark, with its rules and notes per language, is in `benchmarks/<name>/README.md`.
+
 ## Languages
 
-| Language    | Embedded via               | Status    |
-|-------------|----------------------------|-----------|
-| C++         | native reference           | available |
-| TeaScript   | native C++ API             | available (variants: TeaStackVM O0/O1/O2, AST eval; headline: O1) |
-| ChaiScript  | native C++ API + ChaiScript_Extras (math module) | available (two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS`) |
-| AngelScript | native C++ API + add-ons (string, array, dictionary, math in double precision) | available (two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues) |
-| Lua         | Lua C API; LuaBridge3 for binding C++ | available (variant `c-api`: binding C++ with the plain C API, interop benchmarks only) |
-| Python      | pybind11 (embedded)        | available (the installed Python, see below; variant `c-api`: binding C++ with the plain C API, interop benchmarks only) |
+| Language    | Version                  | Embedded via               | Variants |
+|-------------|--------------------------|----------------------------|----------|
+| C++         |                          | native reference           | |
+| AngelScript | 2.38.0                   | native C++ API + add-ons (string, array, dictionary, math in double precision) | two builds: default thread-safe, and `AS_NO_THREADS`; each with and without line cues; headline: `AS_NO_THREADS` without line cues |
+| ChaiScript  | `develop` at `f635b51e` (reports 7.0.0) | native C++ API + ChaiScript_Extras (math module) | two builds: default thread-safe, and `CHAISCRIPT_NO_THREADS`; headline: `CHAISCRIPT_NO_THREADS` |
+| Lua         | 5.5.1                    | Lua C API; LuaBridge3 3.0-rc12 for binding C++ | `c-api`: binding C++ with the plain C API (only the benchmarks which use the binding layer) |
+| Python      | the installed Python (see below); 3.14.10 in the result sets | pybind11 3.1.0 (embedded interpreter) | `c-api`: binding C++ with the plain C API (only the benchmarks which use the binding layer) |
+| TeaScript   | 0.18.0 pre-release (`v0.17.0-45-g63f3c06`) | native C++ API | TeaStackVM O0, O1, O2, and AST eval; headline: O1 |
+
+Every library is used at a pinned version or commit ([PLAN.md](PLAN.md#5-languages-and-versions)).
 
 ## Fairness
 
@@ -30,8 +52,9 @@ C++ reference. The scripts use comparable language features, and all libraries b
 use the same compiler and flags. The complete rules are in [PLAN.md](PLAN.md#2-fairness-rules).
 
 This project is maintained by the author of TeaScript. For that reason, all scripts, settings and
-raw results are public. Reviews and pull requests from all language communities are very welcome,
-especially if a script does not use its language well.
+raw results are public. Reviews from all language communities are very welcome, especially if a
+script does not use its language well: as an issue, a pull request, or in the
+[discussions](https://github.com/Florian-Thake/cpp-script-bench/discussions).
 
 ## Building
 
@@ -95,16 +118,16 @@ On Linux, inherit from the `gcc` preset instead (Ninja, Release).
 
 ## Running
 
-There is one runner executable per language: `csb_cpp`, `csb_teascript`, `csb_chaiscript`, `csb_lua`,
-`csb_python`, ...
-Languages with two builds have two: `csb_chaiscript` and `csb_chaiscript_nothreads`,
-`csb_angelscript` and `csb_angelscript_nothreads`.
+There is one runner executable per language: `csb_cpp`, `csb_angelscript`, `csb_chaiscript`, `csb_lua`,
+`csb_python`, `csb_teascript`.
+Languages with two builds have two: `csb_angelscript` and `csb_angelscript_nothreads`,
+`csb_chaiscript` and `csb_chaiscript_nothreads`.
 
 ```
-csb_teascript --list                        # benchmarks and variants
-csb_teascript                               # all benchmarks, default variant
+csb_lua --list                              # benchmarks and variants
+csb_lua                                     # all benchmarks, default variant
 csb_teascript --variant all                 # TeaStackVM O0, O1, O2 and AST eval
-csb_teascript --bench fib_recursive --n 30 --runs 20 --json results.json
+csb_python --bench fib_recursive --n 30 --runs 20 --json results.json
 csb_chaiscript_nothreads --budget 0         # no time budget, always 3 warm-up and 10 measured calls
 ```
 
