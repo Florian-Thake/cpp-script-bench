@@ -75,14 +75,8 @@ is faster with both toolchains:
 - Lua: the index runs from 1, like in a Lua array: `y * n + x + 1`.
 - Python: the memoryview is taken in `bench`, because the host resizes the image before every call.
 
-## Measurements (per call of `bench`, n = 400)
+## Results
 
-| Language    | MSVC: headline | MSVC: `c-api` | GCC 11: headline | GCC 11: `c-api` |
-|-------------|----------------|---------------|------------------|-----------------|
-| TeaScript `vm-O1` | ~145 ms  |               | ~128 ms          |                 |
-| ChaiScript `no-threads` | ~295 ms |         | ~119 ms          |                 |
-| AngelScript `no-threads-no-line-cues` | ~4.3 ms | | ~3.0 ms       |                 |
-| Lua         | ~20 ms (LuaBridge3) | ~9.3 ms  | ~17 ms (LuaBridge3) | ~8.6 ms     |
-| Python      | ~18.5 ms (pybind11) | ~18.3 ms | ~26 ms (pybind11) | ~26 ms        |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The `c-api` variants show the cost of the binding libraries.

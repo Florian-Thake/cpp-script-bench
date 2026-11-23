@@ -45,31 +45,8 @@ check: bench( n ) = v0 + v<n-1>               (not measured)
 - Lua: LuaBridge3's properties of a namespace are read with a metamethod; that only matters for the
   check here.
 
-## Measurements (per sample, median)
+## Results
 
-MSVC:
-
-| Language    | n = 10   | 100      | 1,000    |
-|-------------|----------|----------|----------|
-| TeaScript `vm-O1` | ~1.6 us | ~29 us | ~0.20 ms |
-| ChaiScript `no-threads` | ~2.2 us | ~30 us | ~0.25 ms |
-| AngelScript `no-threads-no-line-cues` | ~12 us | ~0.13 ms | ~1.4 ms |
-| Lua (LuaBridge3) | ~6.6 us | ~38 us | ~0.37 ms |
-| Lua `c-api` | ~1.5 us  | ~9.1 us  | ~0.11 ms |
-| Python (pybind11) | ~2.4 us | ~17 us | ~0.19 ms |
-| Python `c-api` | ~1.6 us | ~11 us | ~0.11 ms |
-
-GCC 11:
-
-| Language    | n = 10   | 100      | 1,000    |
-|-------------|----------|----------|----------|
-| TeaScript `vm-O1` | ~5.5 us | ~27 us | ~0.11 ms |
-| ChaiScript `no-threads` | ~1.9 us | ~14 us | ~0.14 ms |
-| AngelScript `no-threads-no-line-cues` | ~9.3 us | ~97 us | ~1.1 ms |
-| Lua (LuaBridge3) | ~3.3 us | ~28 us | ~0.25 ms |
-| Lua `c-api` | ~0.8 us  | ~7.0 us  | ~71 us   |
-| Python (pybind11) | ~1.9 us | ~14 us | ~0.13 ms |
-| Python `c-api` | ~1.3 us | ~9.8 us | ~92 us |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL). The samples of n = 10 are only a few microseconds,
-so their spread is larger.
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The samples of n = 10 take only a few microseconds, so their spread is larger.

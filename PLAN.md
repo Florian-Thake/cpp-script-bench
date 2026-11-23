@@ -1154,6 +1154,11 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   In the held-back set with Python 3.10.12, Python was 1.56x slower with GCC. 3.14.10 against 3.10.12 in WSL2:
   factor 0.58 over the core, data and interop benchmarks.
 - Phase 5 is done.
+- Before the repo goes public: the measurement tables of the interop and host benchmarks' READMEs, taken during
+  their implementation (the "numbers in the README" of the entries of 2026-10-25 and 2026-10-28, with Python
+  3.10 for GCC), are replaced by a link to the result sets; they stay in the git history. The numbers of the
+  measured alternatives, which justify a script or binding choice, stay in the READMEs. The decision log names
+  "the maintainer" instead of "the user".
 
 ## 10. Open questions
 

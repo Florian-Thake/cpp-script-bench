@@ -70,18 +70,8 @@ bench( n ) = fn0( n ) + fn<n-1>( n )     (footer)
   into `ast.parse` and `compile()` would build Python objects for the AST, which the normal path never
   does (PLAN.md, decision log 2026-10-28). `sum` is called `total`, so it doesn't shadow the built-in.
 
-## Measurements (per sample, median)
+## Results
 
-| Language    | MSVC: n = 100 | 1,000    | 10,000   | GCC 11: n = 100 | 1,000    | 10,000   |
-|-------------|---------------|----------|----------|-----------------|----------|----------|
-| TeaScript `vm-O1` | ~3.0 ms | ~29 ms   | ~291 ms  | ~1.6 ms         | ~17 ms   | ~203 ms  |
-| ChaiScript `no-threads` | ~4.9 ms | ~56 ms | ~1.36 s | ~2.8 ms     | ~33 ms   | ~876 ms  |
-| AngelScript `no-threads-no-line-cues` | ~4.1 ms | ~38 ms | ~570 ms | ~3.1 ms | ~31 ms | ~528 ms |
-| Lua         | ~0.50 ms      | ~4.5 ms  | ~44 ms   | ~0.31 ms        | ~3.0 ms  | ~30 ms   |
-| Python      | ~3.9 ms       | ~41 ms   | ~439 ms  | ~2.4 ms         | ~29 ms   | ~311 ms  |
-
-Sub-phases with n = 10,000 (MSVC): TeaScript `parse` ~176 ms, `compile` ~111 ms, `top_level`
-~3.4 ms; ChaiScript `parse` ~428 ms, `top_level` ~929 ms; Lua `parse_compile` ~43 ms, `top_level`
-~1.1 ms; Python `parse_compile` ~438 ms, `top_level` ~1.2 ms.
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The sub-phases (see above) of every sample are in the raw data of the sets (`results.json`).

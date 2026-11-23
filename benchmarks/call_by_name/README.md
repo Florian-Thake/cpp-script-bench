@@ -59,16 +59,8 @@ return sum
 - Python: the script runs in a fresh namespace dict (PLAN.md, decision log 2026-10-06), in which the
   functions are looked up.
 
-## Measurements (per call of the host's loop, 100,000 calls, median)
+## Results
 
-| Language    | MSVC: n = 10 | 1,000   | 10,000   | GCC 11: n = 10 | 1,000    | 10,000   |
-|-------------|--------------|---------|----------|----------------|----------|----------|
-| TeaScript `vm-O1` | ~65 ms | ~67 ms | ~74 ms   | ~45 ms         | ~46 ms   | ~53 ms   |
-| ChaiScript `no-threads` | ~282 ms | ~404 ms | ~1.47 s | ~161 ms  | ~236 ms  | ~850 ms  |
-| AngelScript `no-threads-no-line-cues` | ~12.2 ms | ~18.6 ms | ~23.4 ms | ~11.6 ms | ~16.5 ms | ~19.8 ms |
-| Lua (LuaBridge3) | ~11.1 ms | ~12.7 ms | ~14.3 ms | ~9.8 ms     | ~11.5 ms | ~12.9 ms |
-| Lua `c-api` | ~3.6 ms      | ~5.8 ms | ~8.0 ms  | ~2.9 ms        | ~5.2 ms  | ~7.2 ms  |
-| Python (pybind11) | ~10.9 ms | ~11.4 ms | ~12.8 ms | ~9.7 ms    | ~10.8 ms | ~12.1 ms |
-| Python `c-api` | ~9.4 ms   | ~10.3 ms | ~11.9 ms | ~9.5 ms       | ~11.0 ms | ~11.9 ms |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`call_by_handle` makes the same calls through handles looked up once.

@@ -50,15 +50,8 @@ return sum
 - The time per call grows only a little with n (at most ~30% from 10 to 10,000 functions), while a
   call by name grows up to ~5x (ChaiScript).
 
-## Measurements (per call of the host's loop, 100,000 calls, median)
+## Results
 
-| Language    | MSVC: n = 10 | 1,000   | 10,000   | GCC 11: n = 10 | 1,000    | 10,000   |
-|-------------|--------------|---------|----------|----------------|----------|----------|
-| ChaiScript `no-threads` | ~47.7 ms | ~50.5 ms | ~54.1 ms | ~20.4 ms | ~21.0 ms | ~23.6 ms |
-| AngelScript `no-threads-no-line-cues` | ~4.9 ms | ~5.3 ms | ~5.4 ms | ~4.6 ms | ~4.7 ms | ~4.9 ms |
-| Lua (LuaBridge3) | ~4.8 ms | ~4.9 ms  | ~5.1 ms  | ~3.4 ms        | ~3.5 ms  | ~3.6 ms  |
-| Lua `c-api` | ~2.9 ms      | ~3.2 ms | ~3.7 ms  | ~2.3 ms        | ~2.4 ms  | ~2.6 ms  |
-| Python (pybind11) | ~4.8 ms | ~5.1 ms | ~5.5 ms  | ~4.9 ms        | ~5.7 ms  | ~6.4 ms  |
-| Python `c-api` | ~4.2 ms   | ~4.7 ms | ~4.9 ms  | ~4.5 ms        | ~5.3 ms  | ~5.9 ms  |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`call_by_name` makes the same calls with a lookup by name at every call.

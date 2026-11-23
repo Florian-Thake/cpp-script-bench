@@ -54,14 +54,8 @@ return sum
 - Python: the C++ string is UTF-8, a Python `str` is converted from and to UTF-8 (the strings are
   ASCII).
 
-## Measurements (per call of the host's loop, n = 250,000)
+## Results
 
-| Language    | MSVC: headline | MSVC: `c-api` | GCC 11: headline | GCC 11: `c-api` |
-|-------------|----------------|---------------|------------------|-----------------|
-| TeaScript `vm-O1` | ~155 ms  |               | ~103 ms          |                 |
-| ChaiScript `no-threads` | ~77 ms |          | ~40 ms           |                 |
-| AngelScript `no-threads-no-line-cues` | ~21.5 ms | | ~27 ms       |                 |
-| Lua         | ~36 ms (LuaBridge3) | ~30 ms   | ~25 ms (LuaBridge3) | ~21 ms      |
-| Python      | ~20 ms (pybind11) | ~16 ms     | ~21 ms (pybind11) | ~16.5 ms      |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The `c-api` variants show the cost of the binding libraries.

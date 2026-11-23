@@ -53,14 +53,9 @@ return sum
   `LuaRef` holds). `lua_getglobal` on every call, the canonical form for single calls (and how the
   runner calls `bench`), was ~17% slower in a scratch test with MSVC.
 
-## Measurements (per call of the host's loop, n = 100,000)
+## Results
 
-| Language    | MSVC: headline | MSVC: `c-api` | GCC 11: headline | GCC 11: `c-api` |
-|-------------|----------------|---------------|------------------|-----------------|
-| TeaScript `vm-O1` | ~215 ms  |               | ~152 ms          |                 |
-| ChaiScript `no-threads` | ~180 ms |         | ~72 ms           |                 |
-| AngelScript `no-threads-no-line-cues` | ~17 ms | | ~16 ms        |                 |
-| Lua         | ~17 ms (LuaBridge3) | ~10.6 ms | ~11.7 ms (LuaBridge3) | ~8.0 ms     |
-| Python      | ~19.4 ms (pybind11) | ~16.0 ms | ~21.1 ms (pybind11) | ~18.5 ms     |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`calls` makes the same calls from inside the script. The `c-api` variants show the cost of the
+binding libraries.

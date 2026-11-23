@@ -55,17 +55,9 @@ check: bench( n )                                            (not measured)
   `__globals__`, so it is a cycle). AngelScript frees a discarded module when nothing refers to it any
   more.
 
-## Measurements (per sample, median)
+## Results
 
-| Language    | MSVC: reset | load     | total    | GCC 11: reset | load     | total    |
-|-------------|-------------|----------|----------|---------------|----------|----------|
-| TeaScript `vm-O1` | ~1.7 us     | ~27 us   | ~29 us   | ~1.5 us       | ~25 us   | ~26 us   |
-| ChaiScript `no-threads` | ~21 us | ~61 us | ~82 us | ~11 us      | ~39 us   | ~49 us   |
-| AngelScript `no-threads-no-line-cues` | ~2.4 us | ~60 us | ~63 us | ~1.9 us | ~51 us | ~53 us |
-| Lua         | ~0.2 us     | ~7.6 us  | ~7.8 us  | ~0.2 us       | ~5.3 us  | ~5.5 us  |
-| Python      | < 0.1 us    | ~63 us   | ~63 us   | < 0.1 us      | ~39 us   | ~39 us   |
-
-For comparison, a fresh engine with MSVC (`engine_lifecycle`, create per engine): TeaScript ~1.0 ms,
-ChaiScript ~3.8 ms, AngelScript ~0.44 ms, Lua ~24 us, Python ~5.4 ms, plus the load.
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`engine_lifecycle` shows the cost of a fresh engine. The sub-phases `reset` and `load` of every sample
+are in the raw data of the sets (`results.json`).

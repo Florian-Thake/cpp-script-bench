@@ -61,14 +61,8 @@ return sum
   `f` is global, so the host can find it.
 - Python: `b.append(a[i] + 1)`, like `sieve` (a list has no reserve).
 
-## Measurements (per call of the host's loop, n = 10 / 1,000 / 40,000)
+## Results
 
-| Language    | MSVC: headline | MSVC: `c-api` | GCC 11: headline | GCC 11: `c-api` |
-|-------------|----------------|---------------|------------------|-----------------|
-| TeaScript `vm-O1` | 34.2 / 24.1 / 25.4 ms |  | 23.8 / 16.1 / 20.6 ms |       |
-| ChaiScript `no-threads` | 396 / 351 / 354 ms | | 228 / 198 / 200 ms |        |
-| AngelScript `no-threads-no-line-cues` | 3.7 / 1.8 / 2.0 ms | | 3.7 / 2.3 / 2.4 ms | |
-| Lua         | 3.0 / 1.2 / 1.2 ms (LuaBridge3) | 2.5 / 0.9 / 0.8 ms | 2.1 / 1.0 / 1.1 ms (LuaBridge3) | 1.7 / 0.8 / 0.9 ms |
-| Python      | 2.8 / 1.6 / 1.8 ms (pybind11) | 2.1 / 1.3 / 1.6 ms | 3.6 / 2.5 / 2.7 ms (pybind11) | 3.0 / 2.2 / 2.3 ms |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The `c-api` variants show the cost of the binding libraries.

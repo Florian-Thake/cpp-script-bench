@@ -48,31 +48,8 @@ check: bench( n ) = fn0( n ) + fn<n-1>( n + 3 )    (not measured)
   `QuickFlatMap`, which is searched linearly (`std::find_if`), see `parse_compile`.
 - AngelScript: the time grows faster than linearly as well (~16x from 100 to 1,000 functions).
 
-## Measurements (per sample, median)
+## Results
 
-MSVC:
-
-| Language    | n = 10   | 100      | 1,000    |
-|-------------|----------|----------|----------|
-| TeaScript `vm-O1` | ~2.5 us | ~39 us | ~0.29 ms |
-| ChaiScript `no-threads` | ~48 us | ~0.53 ms | ~12.7 ms |
-| AngelScript `no-threads-no-line-cues` | ~16 us | ~0.18 ms | ~2.8 ms |
-| Lua (LuaBridge3) | ~3.8 us | ~21 us | ~0.23 ms |
-| Lua `c-api` | ~1.8 us  | ~9.9 us  | ~0.11 ms |
-| Python (pybind11) | ~38 us | ~0.25 ms | ~2.4 ms |
-| Python `c-api` | ~2.5 us | ~19 us | ~0.21 ms |
-
-GCC 11:
-
-| Language    | n = 10   | 100      | 1,000    |
-|-------------|----------|----------|----------|
-| TeaScript `vm-O1` | ~6.0 us | ~29 us | ~0.13 ms |
-| ChaiScript `no-threads` | ~25 us | ~0.29 ms | ~8.0 ms |
-| AngelScript `no-threads-no-line-cues` | ~13 us | ~0.14 ms | ~2.1 ms |
-| Lua (LuaBridge3) | ~2.0 us | ~16 us | ~0.15 ms |
-| Lua `c-api` | ~0.7 us  | ~7.1 us  | ~71 us   |
-| Python (pybind11) | ~29 us | ~0.24 ms | ~2.3 ms |
-| Python `c-api` | ~2.0 us | ~14 us | ~0.19 ms |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL). The samples of n = 10 are only a few microseconds,
-so their spread is larger (up to ~15%).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The samples of n = 10 take only a few microseconds, so their spread is larger.

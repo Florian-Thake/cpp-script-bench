@@ -65,17 +65,9 @@ the variants `c-api` show the same with the plain C API.
   `host` is imported in the `bind` phase (pybind11: an embedded module; `c-api`: a module created by
   the host), so the import of the script only finds it in `sys.modules`.
 
-## Measurements (MSVC, per call of `bench`, n = 100,000)
+## Results
 
-The cost of the binding layer, compared with `calls` (script functions):
-
-| Language    | `calls` | headline | `c-api` |
-|-------------|---------|----------|---------|
-| TeaScript `vm-O1` | 162 ms | 92 ms |  |
-| ChaiScript `no-threads` | 206 ms | 147 ms |  |
-| AngelScript `no-threads-no-line-cues` | 4.5 ms | 6.9 ms |  |
-| Lua         | 4.9 ms  | 9.9 ms (LuaBridge3) | 5.1 ms |
-| Python 3.14 | 12.0 ms | 48.7 ms (pybind11) | 8.4 ms |
-
-With GCC 11 (WSL; Python 3.10): Lua 6.4 ms (LuaBridge3) and 4.2 ms (`c-api`), Python 20.2 ms (pybind11)
-and 10.4 ms (`c-api`).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`calls` runs the same loop with script functions instead of C++ functions, so the two compare
+directly. The `c-api` variants show the cost of the binding libraries.

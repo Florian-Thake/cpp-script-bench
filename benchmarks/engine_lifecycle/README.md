@@ -47,14 +47,8 @@ The `c-api` variants of Lua and Python are "n/a": their engine is the same as th
   the modules of the standard library from disk, after the first time from the cache of the OS (PLAN.md,
   "No IO").
 
-## Measurements (per engine: the median of a sample / 10)
+## Results
 
-| Language    | MSVC: create | MSVC: destroy | GCC 11: create | GCC 11: destroy |
-|-------------|--------------|---------------|----------------|-----------------|
-| TeaScript `vm-O1` | ~1.0 ms | ~45 us        | ~0.64 ms       | ~33 us          |
-| ChaiScript `no-threads` | ~3.8 ms | ~0.28 ms | ~2.0 ms       | ~0.17 ms        |
-| AngelScript `no-threads-no-line-cues` | ~0.44 ms | ~42 us | ~0.34 ms | ~22 us     |
-| Lua         | ~24 us       | ~5.8 us       | ~17 us         | ~2.6 us         |
-| Python      | ~5.4 ms      | ~1.1 ms       | ~2.1 ms        | ~0.48 ms        |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+The sub-phases `create` and `destroy` of every sample are in the raw data of the sets (`results.json`).

@@ -45,11 +45,9 @@ return n
 - Python: "n/a". The interpreter always loads its core modules (`builtins`, `sys`, the import system,
   the codecs); the isolated configuration of `engine_lifecycle` is already its minimum.
 
-## Measurements (per engine: the median of a sample / 10)
+## Results
 
-| Language    | MSVC: create | MSVC: destroy | GCC 11: create | GCC 11: destroy |
-|-------------|--------------|---------------|----------------|-----------------|
-| TeaScript `vm-O1` | ~10 us | ~2.5 us       | ~7.5 us        | ~1.2 us         |
-| ChaiScript `no-threads` | ~15 us | ~3.7 us | ~5.7 us        | ~1.6 us         |
-| AngelScript `no-threads-no-line-cues` | ~20 us | ~2.7 us | ~16 us | ~1.9 us        |
-| Lua         | ~3.1 us      | ~1.2 us       | ~2.3 us        | ~0.55 us        |
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`engine_lifecycle` creates the engines with their standard libraries. The sub-phases `create` and
+`destroy` of every sample are in the raw data of the sets (`results.json`).

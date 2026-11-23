@@ -53,13 +53,9 @@ return p.x + p.y + p.z
   descriptors, which CPython reads and writes directly (like `__slots__`); with pybind11 every access
   is a call of a bound C++ getter or setter.
 
-## Measurements (per call of `bench`, n = 150,000)
+## Results
 
-| Language    | MSVC: `records` | MSVC: headline | MSVC: `c-api` | GCC 11: `records` | GCC 11: headline | GCC 11: `c-api` |
-|-------------|-----------------|----------------|---------------|-------------------|------------------|-----------------|
-| ChaiScript `no-threads` | 433 ms | 460-470 ms |      | 211 ms            | 198 ms           |                 |
-| AngelScript `no-threads-no-line-cues` | 5.0 ms | 5.1 ms | | 2.7 ms     | 2.5 ms           |                 |
-| Lua         | 4.9 ms          | 106 ms (LuaBridge3) | 59.5 ms  | 5.2 ms            | 82.9 ms (LuaBridge3) | 46.4 ms     |
-| Python      | 13.5 ms         | 257 ms (pybind11) | 31 ms      | 34.8 ms           | 124 ms (pybind11) | 37.6 ms        |
-
-Python: 3.14 with MSVC, 3.10 with GCC 11 (WSL).
+The measured numbers of every language and variant, with both toolchains, are in the result sets:
+[results/](../../results/README.md).
+`records` runs the same loop on a script record, so the two compare directly. The `c-api` variants
+show the cost of the binding libraries.
