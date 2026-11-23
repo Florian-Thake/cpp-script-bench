@@ -1,0 +1,289 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1254" viewBox="0 0 880 1254" font-family="system-ui, -apple-system, &quot;Segoe UI&quot;, sans-serif" role="img">
+<title>Core: median time per call</title>
+<rect x="0.5" y="0.5" width="879" height="1253" rx="8" fill="#1a1a19" stroke="rgba(255,255,255,0.10)"/>
+<text x="16.0" y="28.0" font-size="15" fill="#f0efec" text-anchor="start" font-weight="600">Core</text>
+<text x="16.0" y="48.0" font-size="12" fill="#c3c2b7" text-anchor="start">Median time per call of the headline variants, log scale. In every benchmark the fastest language is on top.</text>
+<text x="16.0" y="66.0" font-size="12" fill="#c3c2b7" text-anchor="start">The gray line is C++, the reference. The bars start at the left edge of the axis, so their lengths are not proportional to the times.</text>
+<line x1="232.0" y1="100.0" x2="232.0" y2="1200.0" stroke="#383835" stroke-width="1.0" stroke-linecap="round"/>
+<text x="232.0" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 ns</text>
+<text x="232.0" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">100 ns</text>
+<line x1="296.9" y1="100.0" x2="296.9" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="296.9" y="94.0" font-size="11" fill="#898781" text-anchor="middle">1 µs</text>
+<text x="296.9" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">1 µs</text>
+<line x1="361.8" y1="100.0" x2="361.8" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="361.8" y="94.0" font-size="11" fill="#898781" text-anchor="middle">10 µs</text>
+<text x="361.8" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">10 µs</text>
+<line x1="426.7" y1="100.0" x2="426.7" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="426.7" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 µs</text>
+<text x="426.7" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">100 µs</text>
+<line x1="491.6" y1="100.0" x2="491.6" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="491.6" y="94.0" font-size="11" fill="#898781" text-anchor="middle">1 ms</text>
+<text x="491.6" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">1 ms</text>
+<line x1="556.4" y1="100.0" x2="556.4" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="556.4" y="94.0" font-size="11" fill="#898781" text-anchor="middle">10 ms</text>
+<text x="556.4" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">10 ms</text>
+<line x1="621.3" y1="100.0" x2="621.3" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="621.3" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 ms</text>
+<text x="621.3" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">100 ms</text>
+<line x1="686.2" y1="100.0" x2="686.2" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="686.2" y="94.0" font-size="11" fill="#898781" text-anchor="middle">1 s</text>
+<text x="686.2" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">1 s</text>
+<line x1="751.1" y1="100.0" x2="751.1" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="751.1" y="94.0" font-size="11" fill="#898781" text-anchor="middle">10 s</text>
+<text x="751.1" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">10 s</text>
+<line x1="816.0" y1="100.0" x2="816.0" y2="1200.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="816.0" y="94.0" font-size="11" fill="#898781" text-anchor="middle">100 s</text>
+<text x="816.0" y="1214.0" font-size="11" fill="#898781" text-anchor="middle">100 s</text>
+<text x="16.0" y="123.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">fib_recursive</text>
+<text x="16.0" y="138.0" font-size="11" fill="#898781" text-anchor="start">n = 15</text>
+<text x="16.0" y="153.0" font-size="11" fill="#898781" text-anchor="start">C++ 700 ns</text>
+<text x="224.0" y="123.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,114.5 H388.0 A4.0,4.0 0 0 1 392.0,118.5 V120.5 A4.0,4.0 0 0 1 388.0,124.5 H232.0 Z" fill="#3987e5"><title>Lua: 29.2 µs, 41.8× C++</title></path>
+<text x="224.0" y="138.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,129.5 H390.7 A4.0,4.0 0 0 1 394.7,133.5 V135.5 A4.0,4.0 0 0 1 390.7,139.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 32.2 µs, 46× C++</title></path>
+<text x="224.0" y="153.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,144.5 H403.4 A4.0,4.0 0 0 1 407.4,148.5 V150.5 A4.0,4.0 0 0 1 403.4,154.5 H232.0 Z" fill="#3987e5"><title>Python: 50.4 µs, 72× C++</title></path>
+<text x="224.0" y="168.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,159.5 H484.6 A4.0,4.0 0 0 1 488.6,163.5 V165.5 A4.0,4.0 0 0 1 484.6,169.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 902 µs, 1,288× C++</title></path>
+<text x="224.0" y="183.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,174.5 H500.9 A4.0,4.0 0 0 1 504.9,178.5 V180.5 A4.0,4.0 0 0 1 500.9,184.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 1.61 ms, 2,297× C++</title></path>
+<line x1="286.8" y1="107.0" x2="286.8" y2="192.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="286.8" y1="107.0" x2="286.8" y2="192.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="398.0" y="123.5" font-size="11" fill="#f0efec" text-anchor="start">29.2 µs</text>
+<text x="400.7" y="138.5" font-size="11" fill="#f0efec" text-anchor="start">32.2 µs</text>
+<text x="413.4" y="153.5" font-size="11" fill="#f0efec" text-anchor="start">50.4 µs</text>
+<text x="494.6" y="168.5" font-size="11" fill="#f0efec" text-anchor="start">902 µs</text>
+<text x="510.9" y="183.5" font-size="11" fill="#f0efec" text-anchor="start">1.61 ms</text>
+<line x1="16.0" y1="195.0" x2="864.0" y2="195.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="214.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">fib_recursive</text>
+<text x="16.0" y="229.0" font-size="11" fill="#898781" text-anchor="start">n = 20</text>
+<text x="16.0" y="244.0" font-size="11" fill="#898781" text-anchor="start">C++ 8.4 µs</text>
+<text x="224.0" y="214.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,205.5 H455.4 A4.0,4.0 0 0 1 459.4,209.5 V211.5 A4.0,4.0 0 0 1 455.4,215.5 H232.0 Z" fill="#3987e5"><title>Lua: 320 µs, 38.1× C++</title></path>
+<text x="224.0" y="229.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,220.5 H459.8 A4.0,4.0 0 0 1 463.8,224.5 V226.5 A4.0,4.0 0 0 1 459.8,230.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 374 µs, 44.5× C++</title></path>
+<text x="224.0" y="244.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,235.5 H470.3 A4.0,4.0 0 0 1 474.3,239.5 V241.5 A4.0,4.0 0 0 1 470.3,245.5 H232.0 Z" fill="#3987e5"><title>Python: 542 µs, 64.6× C++</title></path>
+<text x="224.0" y="259.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,250.5 H550.7 A4.0,4.0 0 0 1 554.7,254.5 V256.5 A4.0,4.0 0 0 1 550.7,260.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 9.4 ms, 1,119× C++</title></path>
+<text x="224.0" y="274.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,265.5 H626.5 A4.0,4.0 0 0 1 630.5,269.5 V271.5 A4.0,4.0 0 0 1 626.5,275.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 138 ms, 16,485× C++</title></path>
+<line x1="356.9" y1="198.0" x2="356.9" y2="283.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="356.9" y1="198.0" x2="356.9" y2="283.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="465.4" y="214.5" font-size="11" fill="#f0efec" text-anchor="start">320 µs</text>
+<text x="469.8" y="229.5" font-size="11" fill="#f0efec" text-anchor="start">374 µs</text>
+<text x="480.3" y="244.5" font-size="11" fill="#f0efec" text-anchor="start">542 µs</text>
+<text x="560.7" y="259.5" font-size="11" fill="#f0efec" text-anchor="start">9.4 ms</text>
+<text x="636.5" y="274.5" font-size="11" fill="#f0efec" text-anchor="start">138 ms</text>
+<line x1="16.0" y1="286.0" x2="864.0" y2="286.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="305.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">fib_recursive</text>
+<text x="16.0" y="320.0" font-size="11" fill="#898781" text-anchor="start">n = 25</text>
+<text x="16.0" y="335.0" font-size="11" fill="#898781" text-anchor="start">C++ 122 µs</text>
+<text x="224.0" y="305.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,296.5 H521.7 A4.0,4.0 0 0 1 525.7,300.5 V302.5 A4.0,4.0 0 0 1 521.7,306.5 H232.0 Z" fill="#3987e5"><title>Lua: 3.36 ms, 27.6× C++</title></path>
+<text x="224.0" y="320.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,311.5 H524.3 A4.0,4.0 0 0 1 528.3,315.5 V317.5 A4.0,4.0 0 0 1 524.3,321.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 3.68 ms, 30.2× C++</title></path>
+<text x="224.0" y="335.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,326.5 H536.9 A4.0,4.0 0 0 1 540.9,330.5 V332.5 A4.0,4.0 0 0 1 536.9,336.5 H232.0 Z" fill="#3987e5"><title>Python: 5.75 ms, 47.2× C++</title></path>
+<text x="224.0" y="350.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,341.5 H618.5 A4.0,4.0 0 0 1 622.5,345.5 V347.5 A4.0,4.0 0 0 1 618.5,351.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 104 ms, 855× C++</title></path>
+<text x="224.0" y="365.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,356.5 H762.8 A4.0,4.0 0 0 1 766.8,360.5 V362.5 A4.0,4.0 0 0 1 762.8,366.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 17.5 s, 143,174× C++</title></path>
+<line x1="432.2" y1="289.0" x2="432.2" y2="374.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="432.2" y1="289.0" x2="432.2" y2="374.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="531.7" y="305.5" font-size="11" fill="#f0efec" text-anchor="start">3.36 ms</text>
+<text x="534.3" y="320.5" font-size="11" fill="#f0efec" text-anchor="start">3.68 ms</text>
+<text x="546.9" y="335.5" font-size="11" fill="#f0efec" text-anchor="start">5.75 ms</text>
+<text x="628.5" y="350.5" font-size="11" fill="#f0efec" text-anchor="start">104 ms</text>
+<text x="772.8" y="365.5" font-size="11" fill="#f0efec" text-anchor="start">17.5 s</text>
+<line x1="16.0" y1="377.0" x2="864.0" y2="377.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="396.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">loop</text>
+<text x="16.0" y="411.0" font-size="11" fill="#898781" text-anchor="start">n = 1,000,000</text>
+<text x="16.0" y="426.0" font-size="11" fill="#898781" text-anchor="start">C++ 347 µs</text>
+<text x="224.0" y="396.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,387.5 H528.5 A4.0,4.0 0 0 1 532.5,391.5 V393.5 A4.0,4.0 0 0 1 528.5,397.5 H232.0 Z" fill="#3987e5"><title>Lua: 4.28 ms, 12.3× C++</title></path>
+<text x="224.0" y="411.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,402.5 H531.6 A4.0,4.0 0 0 1 535.6,406.5 V408.5 A4.0,4.0 0 0 1 531.6,412.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 4.77 ms, 13.8× C++</title></path>
+<text x="224.0" y="426.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,417.5 H582.9 A4.0,4.0 0 0 1 586.9,421.5 V423.5 A4.0,4.0 0 0 1 582.9,427.5 H232.0 Z" fill="#3987e5"><title>Python: 29.5 ms, 85× C++</title></path>
+<text x="224.0" y="441.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,432.5 H633.8 A4.0,4.0 0 0 1 637.8,436.5 V438.5 A4.0,4.0 0 0 1 633.8,442.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 180 ms, 517× C++</title></path>
+<text x="224.0" y="456.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,447.5 H634.1 A4.0,4.0 0 0 1 638.1,451.5 V453.5 A4.0,4.0 0 0 1 634.1,457.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 182 ms, 523× C++</title></path>
+<line x1="461.7" y1="380.0" x2="461.7" y2="465.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="461.7" y1="380.0" x2="461.7" y2="465.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="538.5" y="396.5" font-size="11" fill="#f0efec" text-anchor="start">4.28 ms</text>
+<text x="541.6" y="411.5" font-size="11" fill="#f0efec" text-anchor="start">4.77 ms</text>
+<text x="592.9" y="426.5" font-size="11" fill="#f0efec" text-anchor="start">29.5 ms</text>
+<text x="643.8" y="441.5" font-size="11" fill="#f0efec" text-anchor="start">180 ms</text>
+<text x="644.1" y="456.5" font-size="11" fill="#f0efec" text-anchor="start">182 ms</text>
+<line x1="16.0" y1="468.0" x2="864.0" y2="468.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="487.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">int_arith</text>
+<text x="16.0" y="502.0" font-size="11" fill="#898781" text-anchor="start">n = 5,000</text>
+<text x="16.0" y="517.0" font-size="11" fill="#898781" text-anchor="start">C++ 473 µs</text>
+<text x="224.0" y="487.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,478.5 H528.8 A4.0,4.0 0 0 1 532.8,482.5 V484.5 A4.0,4.0 0 0 1 528.8,488.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 4.32 ms, 9.11× C++</title></path>
+<text x="224.0" y="502.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,493.5 H536.3 A4.0,4.0 0 0 1 540.3,497.5 V499.5 A4.0,4.0 0 0 1 536.3,503.5 H232.0 Z" fill="#3987e5"><title>Lua: 5.64 ms, 11.9× C++</title></path>
+<text x="224.0" y="517.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,508.5 H571.9 A4.0,4.0 0 0 1 575.9,512.5 V514.5 A4.0,4.0 0 0 1 571.9,518.5 H232.0 Z" fill="#3987e5"><title>Python: 20 ms, 42.2× C++</title></path>
+<text x="224.0" y="532.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,523.5 H619.1 A4.0,4.0 0 0 1 623.1,527.5 V529.5 A4.0,4.0 0 0 1 619.1,533.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 106 ms, 225× C++</title></path>
+<text x="224.0" y="547.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,538.5 H638.1 A4.0,4.0 0 0 1 642.1,542.5 V544.5 A4.0,4.0 0 0 1 638.1,548.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 209 ms, 441× C++</title></path>
+<line x1="470.5" y1="471.0" x2="470.5" y2="556.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="470.5" y1="471.0" x2="470.5" y2="556.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="538.8" y="487.5" font-size="11" fill="#f0efec" text-anchor="start">4.32 ms</text>
+<text x="546.3" y="502.5" font-size="11" fill="#f0efec" text-anchor="start">5.64 ms</text>
+<text x="581.9" y="517.5" font-size="11" fill="#f0efec" text-anchor="start">20 ms</text>
+<text x="629.1" y="532.5" font-size="11" fill="#f0efec" text-anchor="start">106 ms</text>
+<text x="648.1" y="547.5" font-size="11" fill="#f0efec" text-anchor="start">209 ms</text>
+<line x1="16.0" y1="559.0" x2="864.0" y2="559.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="578.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">mandelbrot</text>
+<text x="16.0" y="593.0" font-size="11" fill="#898781" text-anchor="start">n = 100</text>
+<text x="16.0" y="608.0" font-size="11" fill="#898781" text-anchor="start">C++ 417 µs</text>
+<text x="224.0" y="578.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,569.5 H523.8 A4.0,4.0 0 0 1 527.8,573.5 V575.5 A4.0,4.0 0 0 1 523.8,579.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 3.62 ms, 8.7× C++</title></path>
+<text x="224.0" y="593.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,584.5 H524.6 A4.0,4.0 0 0 1 528.6,588.5 V590.5 A4.0,4.0 0 0 1 524.6,594.5 H232.0 Z" fill="#3987e5"><title>Lua: 3.72 ms, 8.92× C++</title></path>
+<text x="224.0" y="608.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,599.5 H566.6 A4.0,4.0 0 0 1 570.6,603.5 V605.5 A4.0,4.0 0 0 1 566.6,609.5 H232.0 Z" fill="#3987e5"><title>Python: 16.6 ms, 39.7× C++</title></path>
+<text x="224.0" y="623.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,614.5 H631.3 A4.0,4.0 0 0 1 635.3,618.5 V620.5 A4.0,4.0 0 0 1 631.3,624.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 164 ms, 395× C++</title></path>
+<text x="224.0" y="638.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,629.5 H639.0 A4.0,4.0 0 0 1 643.0,633.5 V635.5 A4.0,4.0 0 0 1 639.0,639.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 216 ms, 518× C++</title></path>
+<line x1="466.9" y1="562.0" x2="466.9" y2="647.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="466.9" y1="562.0" x2="466.9" y2="647.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="533.8" y="578.5" font-size="11" fill="#f0efec" text-anchor="start">3.62 ms</text>
+<text x="534.6" y="593.5" font-size="11" fill="#f0efec" text-anchor="start">3.72 ms</text>
+<text x="576.6" y="608.5" font-size="11" fill="#f0efec" text-anchor="start">16.6 ms</text>
+<text x="641.3" y="623.5" font-size="11" fill="#f0efec" text-anchor="start">164 ms</text>
+<text x="649.0" y="638.5" font-size="11" fill="#f0efec" text-anchor="start">216 ms</text>
+<line x1="16.0" y1="650.0" x2="864.0" y2="650.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="669.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">math_builtins</text>
+<text x="16.0" y="684.0" font-size="11" fill="#898781" text-anchor="start">n = 100,000</text>
+<text x="16.0" y="699.0" font-size="11" fill="#898781" text-anchor="start">C++ 131 µs</text>
+<text x="224.0" y="669.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,660.5 H514.2 A4.0,4.0 0 0 1 518.2,664.5 V666.5 A4.0,4.0 0 0 1 514.2,670.5 H232.0 Z" fill="#3987e5"><title>Lua: 2.58 ms, 19.7× C++</title></path>
+<text x="224.0" y="684.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,675.5 H536.7 A4.0,4.0 0 0 1 540.7,679.5 V681.5 A4.0,4.0 0 0 1 536.7,685.5 H232.0 Z" fill="#3987e5"><title>Python: 5.71 ms, 43.7× C++</title></path>
+<text x="224.0" y="699.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,690.5 H541.1 A4.0,4.0 0 0 1 545.1,694.5 V696.5 A4.0,4.0 0 0 1 541.1,700.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 6.69 ms, 51.2× C++</title></path>
+<text x="224.0" y="714.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,705.5 H603.5 A4.0,4.0 0 0 1 607.5,709.5 V711.5 A4.0,4.0 0 0 1 603.5,715.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 61.1 ms, 467× C++</title></path>
+<text x="224.0" y="729.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,720.5 H626.3 A4.0,4.0 0 0 1 630.3,724.5 V726.5 A4.0,4.0 0 0 1 626.3,730.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 138 ms, 1,052× C++</title></path>
+<line x1="434.2" y1="653.0" x2="434.2" y2="738.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="434.2" y1="653.0" x2="434.2" y2="738.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="524.2" y="669.5" font-size="11" fill="#f0efec" text-anchor="start">2.58 ms</text>
+<text x="546.7" y="684.5" font-size="11" fill="#f0efec" text-anchor="start">5.71 ms</text>
+<text x="551.1" y="699.5" font-size="11" fill="#f0efec" text-anchor="start">6.69 ms</text>
+<text x="613.5" y="714.5" font-size="11" fill="#f0efec" text-anchor="start">61.1 ms</text>
+<text x="636.3" y="729.5" font-size="11" fill="#f0efec" text-anchor="start">138 ms</text>
+<line x1="16.0" y1="741.0" x2="864.0" y2="741.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="760.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">calls</text>
+<text x="16.0" y="775.0" font-size="11" fill="#898781" text-anchor="start">n = 100,000</text>
+<text x="16.0" y="790.0" font-size="11" fill="#898781" text-anchor="start">C++ 54.1 µs</text>
+<text x="224.0" y="760.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,751.5 H527.2 A4.0,4.0 0 0 1 531.2,755.5 V757.5 A4.0,4.0 0 0 1 527.2,761.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 4.08 ms, 75.5× C++</title></path>
+<text x="224.0" y="775.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,766.5 H533.8 A4.0,4.0 0 0 1 537.8,770.5 V772.5 A4.0,4.0 0 0 1 533.8,776.5 H232.0 Z" fill="#3987e5"><title>Lua: 5.16 ms, 95.4× C++</title></path>
+<text x="224.0" y="790.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,781.5 H554.4 A4.0,4.0 0 0 1 558.4,785.5 V787.5 A4.0,4.0 0 0 1 554.4,791.5 H232.0 Z" fill="#3987e5"><title>Python: 10.7 ms, 198× C++</title></path>
+<text x="224.0" y="805.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,796.5 H619.7 A4.0,4.0 0 0 1 623.7,800.5 V802.5 A4.0,4.0 0 0 1 619.7,806.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 109 ms, 2,007× C++</title></path>
+<text x="224.0" y="820.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,811.5 H629.0 A4.0,4.0 0 0 1 633.0,815.5 V817.5 A4.0,4.0 0 0 1 629.0,821.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 151 ms, 2,795× C++</title></path>
+<line x1="409.4" y1="744.0" x2="409.4" y2="829.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="409.4" y1="744.0" x2="409.4" y2="829.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="537.2" y="760.5" font-size="11" fill="#f0efec" text-anchor="start">4.08 ms</text>
+<text x="543.8" y="775.5" font-size="11" fill="#f0efec" text-anchor="start">5.16 ms</text>
+<text x="564.4" y="790.5" font-size="11" fill="#f0efec" text-anchor="start">10.7 ms</text>
+<text x="629.7" y="805.5" font-size="11" fill="#f0efec" text-anchor="start">109 ms</text>
+<text x="639.0" y="820.5" font-size="11" fill="#f0efec" text-anchor="start">151 ms</text>
+<line x1="16.0" y1="832.0" x2="864.0" y2="832.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="851.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">tak</text>
+<text x="16.0" y="866.0" font-size="11" fill="#898781" text-anchor="start">n = 4</text>
+<text x="16.0" y="881.0" font-size="11" fill="#898781" text-anchor="start">C++ 1.5 µs</text>
+<text x="224.0" y="851.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,842.5 H381.1 A4.0,4.0 0 0 1 385.1,846.5 V848.5 A4.0,4.0 0 0 1 381.1,852.5 H232.0 Z" fill="#3987e5"><title>Lua: 22.9 µs, 15.3× C++</title></path>
+<text x="224.0" y="866.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,857.5 H388.7 A4.0,4.0 0 0 1 392.7,861.5 V863.5 A4.0,4.0 0 0 1 388.7,867.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 30 µs, 20× C++</title></path>
+<text x="224.0" y="881.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,872.5 H396.7 A4.0,4.0 0 0 1 400.7,876.5 V878.5 A4.0,4.0 0 0 1 396.7,882.5 H232.0 Z" fill="#3987e5"><title>Python: 39.8 µs, 26.5× C++</title></path>
+<text x="224.0" y="896.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,887.5 H491.8 A4.0,4.0 0 0 1 495.8,891.5 V893.5 A4.0,4.0 0 0 1 491.8,897.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 1.16 ms, 775× C++</title></path>
+<text x="224.0" y="911.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,902.5 H518.7 A4.0,4.0 0 0 1 522.7,906.5 V908.5 A4.0,4.0 0 0 1 518.7,912.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 3.02 ms, 2,012× C++</title></path>
+<line x1="308.3" y1="835.0" x2="308.3" y2="920.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="308.3" y1="835.0" x2="308.3" y2="920.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="391.1" y="851.5" font-size="11" fill="#f0efec" text-anchor="start">22.9 µs</text>
+<text x="398.7" y="866.5" font-size="11" fill="#f0efec" text-anchor="start">30 µs</text>
+<text x="406.7" y="881.5" font-size="11" fill="#f0efec" text-anchor="start">39.8 µs</text>
+<text x="501.8" y="896.5" font-size="11" fill="#f0efec" text-anchor="start">1.16 ms</text>
+<text x="528.7" y="911.5" font-size="11" fill="#f0efec" text-anchor="start">3.02 ms</text>
+<line x1="16.0" y1="923.0" x2="864.0" y2="923.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="942.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">tak</text>
+<text x="16.0" y="957.0" font-size="11" fill="#898781" text-anchor="start">n = 5</text>
+<text x="16.0" y="972.0" font-size="11" fill="#898781" text-anchor="start">C++ 8.9 µs</text>
+<text x="224.0" y="942.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,933.5 H431.9 A4.0,4.0 0 0 1 435.9,937.5 V939.5 A4.0,4.0 0 0 1 431.9,943.5 H232.0 Z" fill="#3987e5"><title>Lua: 139 µs, 15.6× C++</title></path>
+<text x="224.0" y="957.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,948.5 H439.9 A4.0,4.0 0 0 1 443.9,952.5 V954.5 A4.0,4.0 0 0 1 439.9,958.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 184 µs, 20.7× C++</title></path>
+<text x="224.0" y="972.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,963.5 H446.4 A4.0,4.0 0 0 1 450.4,967.5 V969.5 A4.0,4.0 0 0 1 446.4,973.5 H232.0 Z" fill="#3987e5"><title>Python: 232 µs, 26.1× C++</title></path>
+<text x="224.0" y="987.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,978.5 H540.6 A4.0,4.0 0 0 1 544.6,982.5 V984.5 A4.0,4.0 0 0 1 540.6,988.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 6.57 ms, 738× C++</title></path>
+<text x="224.0" y="1002.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,993.5 H614.2 A4.0,4.0 0 0 1 618.2,997.5 V999.5 A4.0,4.0 0 0 1 614.2,1003.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 89.4 ms, 10,041× C++</title></path>
+<line x1="358.5" y1="926.0" x2="358.5" y2="1011.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="358.5" y1="926.0" x2="358.5" y2="1011.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="441.9" y="942.5" font-size="11" fill="#f0efec" text-anchor="start">139 µs</text>
+<text x="449.9" y="957.5" font-size="11" fill="#f0efec" text-anchor="start">184 µs</text>
+<text x="456.4" y="972.5" font-size="11" fill="#f0efec" text-anchor="start">232 µs</text>
+<text x="550.6" y="987.5" font-size="11" fill="#f0efec" text-anchor="start">6.57 ms</text>
+<text x="624.2" y="1002.5" font-size="11" fill="#f0efec" text-anchor="start">89.4 ms</text>
+<line x1="16.0" y1="1014.0" x2="864.0" y2="1014.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="1033.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">tak</text>
+<text x="16.0" y="1048.0" font-size="11" fill="#898781" text-anchor="start">n = 6</text>
+<text x="16.0" y="1063.0" font-size="11" fill="#898781" text-anchor="start">C++ 54.2 µs</text>
+<text x="224.0" y="1033.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,1024.5 H482.9 A4.0,4.0 0 0 1 486.9,1028.5 V1030.5 A4.0,4.0 0 0 1 482.9,1034.5 H232.0 Z" fill="#3987e5"><title>Lua: 846 µs, 15.6× C++</title></path>
+<text x="224.0" y="1048.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,1039.5 H490.1 A4.0,4.0 0 0 1 494.1,1043.5 V1045.5 A4.0,4.0 0 0 1 490.1,1049.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 1.09 ms, 20.2× C++</title></path>
+<text x="224.0" y="1063.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,1054.5 H496.5 A4.0,4.0 0 0 1 500.5,1058.5 V1060.5 A4.0,4.0 0 0 1 496.5,1064.5 H232.0 Z" fill="#3987e5"><title>Python: 1.37 ms, 25.3× C++</title></path>
+<text x="224.0" y="1078.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,1069.5 H593.5 A4.0,4.0 0 0 1 597.5,1073.5 V1075.5 A4.0,4.0 0 0 1 593.5,1079.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 43 ms, 792× C++</title></path>
+<text x="224.0" y="1093.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,1084.5 H717.7 A4.0,4.0 0 0 1 721.7,1088.5 V1090.5 A4.0,4.0 0 0 1 717.7,1094.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 3.53 s, 65,022× C++</title></path>
+<line x1="409.4" y1="1017.0" x2="409.4" y2="1102.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="409.4" y1="1017.0" x2="409.4" y2="1102.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="492.9" y="1033.5" font-size="11" fill="#f0efec" text-anchor="start">846 µs</text>
+<text x="500.1" y="1048.5" font-size="11" fill="#f0efec" text-anchor="start">1.09 ms</text>
+<text x="506.5" y="1063.5" font-size="11" fill="#f0efec" text-anchor="start">1.37 ms</text>
+<text x="603.5" y="1078.5" font-size="11" fill="#f0efec" text-anchor="start">43 ms</text>
+<text x="727.7" y="1093.5" font-size="11" fill="#f0efec" text-anchor="start">3.53 s</text>
+<line x1="16.0" y1="1105.0" x2="864.0" y2="1105.0" stroke="#2c2c2a" stroke-width="1.0" stroke-linecap="round"/>
+<text x="16.0" y="1124.0" font-size="12" fill="#f0efec" text-anchor="start" font-weight="600">branching</text>
+<text x="16.0" y="1139.0" font-size="11" fill="#898781" text-anchor="start">n = 300,000</text>
+<text x="16.0" y="1154.0" font-size="11" fill="#898781" text-anchor="start">C++ 212 µs</text>
+<text x="224.0" y="1124.5" font-size="11" fill="#c3c2b7" text-anchor="end">Lua</text>
+<path d="M232.0,1115.5 H529.7 A4.0,4.0 0 0 1 533.7,1119.5 V1121.5 A4.0,4.0 0 0 1 529.7,1125.5 H232.0 Z" fill="#3987e5"><title>Lua: 4.46 ms, 21× C++</title></path>
+<text x="224.0" y="1139.5" font-size="11" fill="#c3c2b7" text-anchor="end">AngelScript</text>
+<path d="M232.0,1130.5 H535.7 A4.0,4.0 0 0 1 539.7,1134.5 V1136.5 A4.0,4.0 0 0 1 535.7,1140.5 H232.0 Z" fill="#3987e5"><title>AngelScript no-threads-no-line-cues: 5.51 ms, 25.9× C++</title></path>
+<text x="224.0" y="1154.5" font-size="11" fill="#c3c2b7" text-anchor="end">Python</text>
+<path d="M232.0,1145.5 H570.9 A4.0,4.0 0 0 1 574.9,1149.5 V1151.5 A4.0,4.0 0 0 1 570.9,1155.5 H232.0 Z" fill="#3987e5"><title>Python: 19.2 ms, 90.5× C++</title></path>
+<text x="224.0" y="1169.5" font-size="11" fill="#c3c2b7" text-anchor="end">ChaiScript</text>
+<path d="M232.0,1160.5 H628.7 A4.0,4.0 0 0 1 632.7,1164.5 V1166.5 A4.0,4.0 0 0 1 628.7,1170.5 H232.0 Z" fill="#3987e5"><title>ChaiScript no-threads: 150 ms, 704× C++</title></path>
+<text x="224.0" y="1184.5" font-size="11" fill="#c3c2b7" text-anchor="end">TeaScript</text>
+<path d="M232.0,1175.5 H643.5 A4.0,4.0 0 0 1 647.5,1179.5 V1181.5 A4.0,4.0 0 0 1 643.5,1185.5 H232.0 Z" fill="#3987e5"><title>TeaScript vm-O1: 253 ms, 1,192× C++</title></path>
+<line x1="447.9" y1="1108.0" x2="447.9" y2="1193.0" stroke="#1a1a19" stroke-width="6" stroke-linecap="round"/>
+<line x1="447.9" y1="1108.0" x2="447.9" y2="1193.0" stroke="#898781" stroke-width="2" stroke-linecap="round"/>
+<text x="539.7" y="1124.5" font-size="11" fill="#f0efec" text-anchor="start">4.46 ms</text>
+<text x="545.7" y="1139.5" font-size="11" fill="#f0efec" text-anchor="start">5.51 ms</text>
+<text x="580.9" y="1154.5" font-size="11" fill="#f0efec" text-anchor="start">19.2 ms</text>
+<text x="638.7" y="1169.5" font-size="11" fill="#f0efec" text-anchor="start">150 ms</text>
+<text x="653.5" y="1184.5" font-size="11" fill="#f0efec" text-anchor="start">253 ms</text>
+<text x="16.0" y="1240.0" font-size="11" fill="#898781" text-anchor="start">i7-11700 · Ubuntu 22.04.4 LTS · GCC 11.4.0 · csb 0.1.0 (19b31d8) · 2026-11-22</text>
+</svg>

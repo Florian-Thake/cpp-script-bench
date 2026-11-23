@@ -1,6 +1,6 @@
 # cpp-script-bench: Plan
 
-A living document: goals, rules, architecture and roadmap. Last updated: 2026-11-20.
+A living document: goals, rules, architecture and roadmap. Last updated: 2026-11-23.
 
 ## 1. Goal
 
@@ -295,15 +295,15 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
         `register_functions`, `register_variables`, `call_by_name`, `call_by_handle`, `engine_reset`
         (design round and implementation 2026-10-28). A new kind of benchmark: the adapter times C++
         operations (`run_host()`).
-- [ ] **Phase 5 (next):** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
+- [x] **Phase 5:** orchestration and report: run all runners, merge JSON, tables and charts; `memory`
       (peak working set and allocation counts per engine and per workload, one process per run).
       Design round part 1 (where and how results are measured and published) on 2026-10-29. Steps:
       [x] system info in the JSON, [x] the orchestrator (`runner/run.py`), [x] `memory` (the peak
       memory per process against the C++ baseline, a table per group in the report), [x] the report generator
-      (`runner/report.py`), [x] the noise check, [ ] the first result sets (marked "preview" until
-      TeaScript 0.18.0): [x] MSVC, [ ] GCC 11 in WSL2 (measured again with a current Python), [ ] both again
-      with Python 3.14.10 and the TeaScript pin of 2026-11-20.
-- [ ] **Phase 6:** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
+      (`runner/report.py`), [x] the noise check, [x] the first result sets (marked "preview" until
+      TeaScript 0.18.0): [x] MSVC, [x] GCC 11 in WSL2 (measured again with a current Python), [x] both again
+      with Python 3.14.10 and the TeaScript pin of 2026-11-20 (measured 2026-11-22, published 2026-11-23).
+- [ ] **Phase 6 (next):** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
       community reviews, publish. (`engine_reset` uses TeaScript's `ResetStateFor()` since 2026-11-20.)
 
 ## 9. Decision log
@@ -1122,7 +1122,46 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   string) goes as well, while ChaiScript keeps `eval` and Lua `load`; no script uses them. `engine_lifecycle`
   showed no measurable difference (interleaved processes, MSVC); `engine_minimal` loads neither function anyway.
 
+**2026-11-23**
+- The second sets (all variants, 5 processes per run, idle machine, commit `19b31d8`; Python 3.14.10 and TeaScript
+  `v0.17.0-45-g63f3c06` in both), measured on 2026-11-22 by `runner/sets.py`: MSVC in 1.5 h, then GCC 11 in WSL2
+  in 1.2 h. All 3,275 measured processes of each set are ok (95 runs n/a), no problems; only ChaiScript's
+  `fib_recursive` 25, `tak` 6 and `binary_trees` 12 were limited by the time budget. Both sets are published as
+  previews; the WSL2 set replaces the held-back one of 2026-10-29.
+- Spreads between the processes as the median / 90th percentile over all runs: 2.2 / 7.7% (MSVC), 2.3 / 12.5%
+  (WSL2). Leaving out any one process changes the median of a run by 0.2 / 1.0% (MSVC) and 0.3 / 1.7% (WSL2).
+- MSVC: other processes used up to 3.5 logical CPUs during minutes 4 to 11 of the set (the first repetition of
+  the first benchmarks), and none afterwards. These processes were 1.6% slower in the geometric mean
+  (`math_builtins`: one process 1.4-2.2x slower); the median of the 5 processes removes it. The other repetitions
+  differ from the medians by at most 0.1% (WSL2: 0.4-0.7%), so there is no drift.
+- Reproducibility: the languages which did not change since 2026-10-29 (C++, AngelScript, ChaiScript, Lua; not
+  TeaScript and Python, see 2026-11-20 and 2026-11-22) reproduce the medians of the first sets: geometric mean 0.98-1.01 per variant and group. With MSVC every run
+  is within 0.95-1.07, with WSL2 within 0.94-1.07 except 4 runs with slow processes (below) in the new or the
+  old set: Lua `sort` 1.34, ChaiScript `no-threads` `calls` 1.17, and the thread-safe ChaiScript's
+  `var_lifecycle` 1.24 and `buffer` 0.89.
+- WSL2 has more runs with two groups of processes than on 2026-10-29: 32 runs with 2 or 3 processes more than 8%
+  slower than the others (2026-10-29: 10). 57 of the 184 TeaScript runs have at least one such process, the
+  other languages 2-16% of their runs. A slow process is slow for its whole run, from its first call on, and the
+  slow processes are spread evenly over the 5 repetitions: a state of the process, not an event in time. Where 3
+  of 5 processes were slow, the median is on the slow side: Lua `sort` 1.34x its median of 2026-10-29 (its 2
+  fast processes match that median), ChaiScript `no-threads` `calls` 1.17x, TeaScript `vm-O1` `calls` 1.16x,
+  `host_to_script` 1.14x, `call_by_name` 1.14-1.20x. No ranking changes: per benchmark and n, ordering the
+  headline variants by their fastest process gives the same order as the medians. Not caused by ASLR: on
+  2026-11-23, TeaScript `loop` and Lua `sort` ran in the fast mode in 8 of 8 processes each, with and without
+  `setarch -R`. The cause is open (open questions); the spread column of the tables shows the affected runs.
+- Python: with the same Python in both sets, GCC is faster than MSVC for Python as for the other engines (factor
+  0.69-0.88 per group for Python, 0.45-0.96 for the compiled engines; geometric means of the headline variants).
+  In the held-back set with Python 3.10.12, Python was 1.56x slower with GCC. 3.14.10 against 3.10.12 in WSL2:
+  factor 0.58 over the core, data and interop benchmarks.
+- Phase 5 is done.
+
 ## 10. Open questions
+
+- WSL2: why do some processes run 10-40% slower for their whole run, and what used up to 3.5 logical CPUs at
+  the start of the MSVC set (decision log 2026-11-23)? Not ASLR. Next sets: background work of the OS which can
+  start during a run (updates, virus scans) is paused before the start. If slow processes appear again, the
+  WSL2 set is repeated, to see whether they always appear, and their cause is looked for during a run. It
+  decides whether the release sets need more processes per run, or another statistic for runs with two groups.
 
 - AngelScript: why is the `AS_NO_THREADS` build slower than the thread-safe one (decision log
   2026-10-29)? To be asked in the AngelScript community; the headline may change with the answer.

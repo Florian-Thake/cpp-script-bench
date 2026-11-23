@@ -16,40 +16,40 @@
 <text x="76.0" y="262.0" font-size="11" fill="#898781" text-anchor="middle">10</text>
 <text x="237.0" y="262.0" font-size="11" fill="#898781" text-anchor="middle">100</text>
 <text x="398.0" y="262.0" font-size="11" fill="#898781" text-anchor="middle">1,000</text>
-<polyline points="76.0,190.9 237.0,141.9 398.0,92.6" fill="none" stroke="#2a78d6" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="76.0" cy="190.9" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="76.0,190.7 237.0,141.9 398.0,92.5" fill="none" stroke="#2a78d6" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="76.0" cy="190.7" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
 <circle cx="237.0" cy="141.9" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="398.0" cy="92.6" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="398.0" cy="92.5" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
 <line x1="426.0" y1="56.0" x2="442.0" y2="56.0" stroke="#2a78d6" stroke-width="2" stroke-linecap="round"/>
 <circle cx="434.0" cy="56.0" r="4.0" fill="#2a78d6" stroke="#fcfcfb" stroke-width="2"/>
 <text x="450.0" y="60.0" font-size="12" fill="#52514e" text-anchor="start">AngelScript</text>
-<polyline points="76.0,226.6 237.0,180.3 398.0,128.5" fill="none" stroke="#eb6834" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="76.0" cy="226.6" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="76.0,227.1 237.0,180.3 398.0,128.8" fill="none" stroke="#eb6834" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="76.0" cy="227.1" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
 <circle cx="237.0" cy="180.3" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="398.0" cy="128.5" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="398.0" cy="128.8" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
 <line x1="426.0" y1="76.0" x2="442.0" y2="76.0" stroke="#eb6834" stroke-width="2" stroke-linecap="round"/>
 <circle cx="434.0" cy="76.0" r="4.0" fill="#eb6834" stroke="#fcfcfb" stroke-width="2"/>
 <text x="450.0" y="80.0" font-size="12" fill="#52514e" text-anchor="start">ChaiScript</text>
-<polyline points="76.0,210.7 237.0,169.2 398.0,120.1" fill="none" stroke="#1baf7a" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="76.0,210.7 237.0,169.3 398.0,120.4" fill="none" stroke="#1baf7a" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
 <circle cx="76.0" cy="210.7" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="237.0" cy="169.2" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="398.0" cy="120.1" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="237.0" cy="169.3" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="398.0" cy="120.4" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
 <line x1="426.0" y1="96.0" x2="442.0" y2="96.0" stroke="#1baf7a" stroke-width="2" stroke-linecap="round"/>
 <circle cx="434.0" cy="96.0" r="4.0" fill="#1baf7a" stroke="#fcfcfb" stroke-width="2"/>
 <text x="450.0" y="100.0" font-size="12" fill="#52514e" text-anchor="start">Lua</text>
-<polyline points="76.0,224.1 237.0,183.3 398.0,134.2" fill="none" stroke="#eda100" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="76.0" cy="224.1" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="237.0" cy="183.3" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="398.0" cy="134.2" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="76.0,224.5 237.0,183.9 398.0,134.3" fill="none" stroke="#eda100" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="76.0" cy="224.5" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="237.0" cy="183.9" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="398.0" cy="134.3" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
 <line x1="426.0" y1="116.0" x2="442.0" y2="116.0" stroke="#eda100" stroke-width="2" stroke-linecap="round"/>
 <circle cx="434.0" cy="116.0" r="4.0" fill="#eda100" stroke="#fcfcfb" stroke-width="2"/>
 <text x="450.0" y="120.0" font-size="12" fill="#52514e" text-anchor="start">Python</text>
-<polyline points="76.0,226.6 237.0,172.1 398.0,131.5" fill="none" stroke="#e87ba4" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
-<circle cx="76.0" cy="226.6" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<polyline points="76.0,225.7 237.0,172.1 398.0,131.6" fill="none" stroke="#e87ba4" stroke-width="2.0" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="76.0" cy="225.7" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
 <circle cx="237.0" cy="172.1" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
-<circle cx="398.0" cy="131.5" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="398.0" cy="131.6" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
 <line x1="426.0" y1="136.0" x2="442.0" y2="136.0" stroke="#e87ba4" stroke-width="2" stroke-linecap="round"/>
 <circle cx="434.0" cy="136.0" r="4.0" fill="#e87ba4" stroke="#fcfcfb" stroke-width="2"/>
 <text x="450.0" y="140.0" font-size="12" fill="#52514e" text-anchor="start">TeaScript</text>
-<text x="16.0" y="288.0" font-size="10" fill="#898781" text-anchor="start">i7-11700 · Windows 10 Pro 22H2 · MSVC 19.44.35229 · csb 0.1.0 (18996a9) · 2026-10-29</text>
+<text x="16.0" y="288.0" font-size="10" fill="#898781" text-anchor="start">i7-11700 · Windows 10 Pro 22H2 · MSVC 19.44.35229 · csb 0.1.0 (19b31d8) · 2026-11-22</text>
 </svg>
