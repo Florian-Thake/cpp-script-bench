@@ -304,7 +304,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
       TeaScript 0.18.0): [x] MSVC, [x] GCC 11 in WSL2 (measured again with a current Python), [x] both again
       with Python 3.14.10 and the TeaScript pin of 2026-11-20 (measured 2026-11-22, published 2026-11-23).
 - [ ] **Phase 6 (next):** pin TeaScript 0.18.0, automate fetching the dependencies (optional), invite
-      community reviews, publish. (`engine_reset` uses TeaScript's `ResetStateFor()` since 2026-11-20.)
+      community reviews, publish. The repo is public since 2026-11-23, with discussions for reviews.
+      (`engine_reset` uses TeaScript's `ResetStateFor()` since 2026-11-20.)
 
 ## 9. Decision log
 
@@ -1159,6 +1160,8 @@ The catalogue entries `registration` and `function_lookup` were split, `engine_m
   3.10 for GCC), are replaced by a link to the result sets; they stay in the git history. The numbers of the
   measured alternatives, which justify a script or binding choice, stay in the READMEs. The decision log names
   "the maintainer" instead of "the user".
+- The repo is public, with GitHub Discussions for reviews besides issues and pull requests. Its git history stays
+  as it is, so the source commit which the result sets record stays valid.
 
 ## 10. Open questions
 
